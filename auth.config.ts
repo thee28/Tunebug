@@ -1,13 +1,27 @@
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
-import GitHub from "next-auth/providers/github";
+import Facebook from "next-auth/providers/facebook";
+import Credentials from "next-auth/providers/credentials";
 
-// Edge-safe config: providers only, NO Prisma imports
+// Edge-safe config: NO Prisma imports here (runs in Edge middleware)
 export const authConfig: NextAuthConfig = {
-  providers: [Google, GitHub],
+  providers: [
+    Google,
+    Facebook,
+    Credentials({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      // Full authorize logic lives in lib/auth.ts (non-edge)
+      authorize: async () => null,
+    }),
+  ],
   pages: {
     signIn: "/login",
   },
+  session: { strategy: "jwt" },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
