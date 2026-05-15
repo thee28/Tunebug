@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  xp            Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  progress     LessonProgress[]
+  streak       DailyStreak?
+  achievements Achievement[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Stage {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  order       Int
+  icon        String?
+  createdAt   DateTime @default(now())
+
+  lessons Lesson[]
+}
+
+model Lesson {
+  id             String       @id @default(cuid())
+  stageId        String
+  slug           String       @unique
+  title          String
+  order          Int
+  exerciseType   ExerciseType
+  exerciseConfig Json
+  passingScore   Int          @default(70)
+  xpReward       Int          @default(10)
+  createdAt      DateTime     @default(now())
+
+  stage    Stage            @relation(fields: [stageId], references: [id])
+  progress LessonProgress[]
+
+  @@index([stageId, order])
+}
+
+enum ExerciseType {
+  PITCH_MATCH
+  SIGHT_READ_PIANO
+  EAR_SINGLE
+  EAR_MULTI
+  INTERVAL_ID
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  score       Int
+  passed      Boolean  @default(false)
+  attempts    Int      @default(1)
+  xpEarned    Int      @default(0)
+  completedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@index([userId, lessonId])
+  @@index([userId, completedAt])
+}
+
+model DailyStreak {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActivityDate DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id         String          @id @default(cuid())
+  userId     String
+  type       AchievementType
+  unlockedAt DateTime        @default(now())
+  metadata   Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+enum AchievementType {
+  FIRST_LESSON
+  PERFECT_SCORE
+  STREAK_7
+  STREAK_30
+  STAGE_COMPLETE
+  ALL_STAGES
+}
