@@ -33,6 +33,20 @@ const stagger = (delayChildren = 0.05) => ({
   visible: { transition: { staggerChildren: 0.1, delayChildren } },
 });
 
+// col/row are 0-indexed on the 3×3 sprite sheet
+function BugSprite({ col, row, className }: { col: 0|1|2; row: 0|1|2; className?: string }) {
+  const x = col === 0 ? "0%" : col === 1 ? "50%" : "100%";
+  const y = row === 0 ? "0%" : row === 1 ? "50%" : "100%";
+  return (
+    <div className={className} style={{
+      backgroundImage: "url('/tunebug.png')",
+      backgroundSize: "300% 300%",
+      backgroundPosition: `${x} ${y}`,
+      backgroundRepeat: "no-repeat",
+    }} />
+  );
+}
+
 const glassStyle = {
   background: C.surface,
   backdropFilter: "blur(10px)",
@@ -138,10 +152,7 @@ function HeroSection({ heroCtaRef }: { heroCtaRef: React.RefObject<HTMLDivElemen
             initial={{ opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease, delay: 0.15 }}>
-            <div className="relative w-full max-w-[440px] aspect-square">
-              <img alt="Tunebug character" className="w-full h-full object-contain"
-                src="https://lh3.googleusercontent.com/aida/ADBb0ug-j11tBG7V5JYEsCIH_jFXnCf4KexYEcu5kYsaZQyCkA9jzYSPTW4A1ybekERoAjtDyuE1ixeCQG1VtOycOEuuTCVzBARSWyRW9HHUehB-3k6d40GaphTlABZgCusgO_1E8PuMMVP0Zwqg6JPdDZVfca6EWGY4A8I_ea7Fnb96cR6Dbc5jTXEt74CVlGFdtXsWcgWEjGEfRAgwdQA9-NbQML4wQpL42f4RK9IL-K1As6LA98edzzDXzP4fYzlpoJJ7_Q4CG3soJGo" />
-            </div>
+            <img alt="Tunebug character" src="/bug_hero.png" className="w-full max-w-[440px] object-contain" />
           </motion.div>
 
           {/* Copy + CTAs */}
@@ -273,10 +284,7 @@ function FeaturePrecision() {
   return (
     <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
       <ScrollReveal from="left" delay={0.1} className="order-2 md:order-1 flex justify-center">
-        <div className="relative w-full max-w-[440px] aspect-square">
-          <img alt="Science of music" className="w-full h-full object-contain rounded-3xl"
-            src="https://lh3.googleusercontent.com/aida/ADBb0ugqlG_gXn3z6cgSQFbc1MYP6Qvv64ZSoONZ9XtVELBdEAZmsdxIz7pdfScP849r6sgAViGuSJwYHmK7aZLMZB3zd6SOzsR38tt4wi9YilpnXAzoIm-s4-Dd6kpD4CTnrROP8AMZVlHY6jVjPRy3TMN63xigbuLKqs5giFAYZICq3vVSufffgMd5PRjr55t1sjYtOra_v3bx2lHBGxTUiKtxKyRqFrzA4wMUt5ogX2AGh98velE6ibvXy4ij6hLRWKmxCuefH-RLhc4" />
-        </div>
+        <img alt="Tunebug singing" src="/bug_sing.png" className="w-full max-w-[440px] object-contain" />
       </ScrollReveal>
       <ScrollReveal from="right" className="order-1 md:order-2">
         <div className="space-y-6">
