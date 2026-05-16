@@ -1,6 +1,14 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import { config } from "dotenv";
+import path from "path";
 
-const prisma = new PrismaClient();
+config({ path: path.resolve(process.cwd(), ".env.local") });
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const stages = [
   {
