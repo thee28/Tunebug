@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { motion, useInView, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -11,6 +11,7 @@ const C = {
   primaryDim:   "#c5c0ff",
   primaryDark:  "#41379b",
   secondary:    "#006c4e",
+  secondaryDark:"#004d35",
   secondaryDim: "#68dbae",
   tertiaryDim:  "#ffb95d",
   coral:        "#D85A30",
@@ -20,7 +21,6 @@ const C = {
   mutedBorder:  "rgba(71,69,82,0.2)",
 };
 
-// ─── Animation helpers ────────────────────────────────────────────────────────
 const ease = [0.22, 1, 0.36, 1] as const;
 
 const slideUp = (delay = 0) => ({
@@ -33,47 +33,184 @@ const stagger = (delayChildren = 0.05) => ({
   visible: { transition: { staggerChildren: 0.1, delayChildren } },
 });
 
-function ScrollReveal({
-  children,
-  className,
-  delay = 0,
-  from = "bottom",
-}: {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-  from?: "bottom" | "left" | "right";
-}) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const initial =
-    from === "left"  ? { opacity: 0, x: -48 } :
-    from === "right" ? { opacity: 0, x: 48 } :
-                       { opacity: 0, y: 48 };
-  const visible =
-    from === "left"  ? { opacity: 1, x: 0 } :
-    from === "right" ? { opacity: 1, x: 0 } :
-                       { opacity: 1, y: 0 };
-  return (
-    <motion.div
-      ref={ref}
-      initial={initial}
-      animate={inView ? visible : initial}
-      transition={{ duration: 0.7, ease, delay }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-// ─── Glass card ───────────────────────────────────────────────────────────────
 const glassStyle = {
   background: C.surface,
   backdropFilter: "blur(10px)",
   border: `1px solid ${C.border}`,
 };
 
+function ScrollReveal({
+  children, className, delay = 0, from = "bottom",
+}: {
+  children: React.ReactNode; className?: string; delay?: number;
+  from?: "bottom" | "left" | "right";
+}) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const initial =
+    from === "left"  ? { opacity: 0, x: -48 } :
+    from === "right" ? { opacity: 0, x:  48 } :
+                       { opacity: 0, y:  48 };
+  const visible =
+    from === "left"  ? { opacity: 1, x: 0 } :
+    from === "right" ? { opacity: 1, x: 0 } :
+                       { opacity: 1, y: 0 };
+  return (
+    <motion.div ref={ref} initial={initial}
+      animate={inView ? visible : initial}
+      transition={{ duration: 0.7, ease, delay }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Nav ──────────────────────────────────────────────────────────────────────
+function Nav({ showCTA }: { showCTA: boolean }) {
+  return (
+    <motion.header
+      initial={{ y: -64, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease }}
+      className="sticky top-0 z-50 border-b-2"
+      style={{ backgroundColor: C.dark, borderColor: C.mutedBorder }}
+    >
+      <div className="flex justify-between items-center h-16 px-5 md:px-10 w-full max-w-[1200px] mx-auto">
+        <span className="text-2xl font-bold tracking-tight"
+          style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}>
+          Tunebug
+        </span>
+        <AnimatePresence mode="wait">
+          {showCTA ? (
+            <motion.div key="cta"
+              initial={{ opacity: 0, y: -8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.95 }}
+              transition={{ duration: 0.25, ease }}>
+              <Link href="/login?tab=signup">
+                <motion.span
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ y: 2 }}
+                  className="block px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest cursor-pointer text-white"
+                  style={{ backgroundColor: C.primary, borderBottom: `3px solid ${C.primaryDark}` }}>
+                  Start Now
+                </motion.span>
+              </Link>
+            </motion.div>
+          ) : (
+            <motion.div key="login"
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.25, ease }}>
+              <Link href="/login">
+                <motion.span
+                  whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+                  whileTap={{ scale: 0.96 }}
+                  className="block px-6 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest cursor-pointer"
+                  style={{ color: C.primaryDim }}>
+                  Login
+                </motion.span>
+              </Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.header>
+  );
+}
+
+// ─── Hero + Instrument bar (one viewport-height unit) ─────────────────────────
+const instruments = [
+  { icon: "mic",        label: "Vocals",        color: C.tertiaryDim },
+  { icon: "music_note", label: "Theory",        color: C.coral },
+  { icon: "graphic_eq", label: "Ear Training",  color: C.secondaryDim },
+  { icon: "lyrics",     label: "Sight Singing", color: C.primaryDim },
+];
+
+function HeroSection({ heroCtaRef }: { heroCtaRef: React.RefObject<HTMLDivElement | null> }) {
+  return (
+    <div className="flex flex-col" style={{ minHeight: "calc(100vh - 64px)" }}>
+      {/* Hero */}
+      <div className="flex-1 flex items-center max-w-[1200px] mx-auto px-5 md:px-10 py-10 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center w-full">
+          {/* Illustration */}
+          <motion.div className="order-2 md:order-1 flex justify-center"
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.9, ease, delay: 0.15 }}>
+            <div className="relative w-full max-w-[440px] aspect-square">
+              <img alt="Tunebug character" className="w-full h-full object-contain"
+                src="https://lh3.googleusercontent.com/aida/ADBb0ug-j11tBG7V5JYEsCIH_jFXnCf4KexYEcu5kYsaZQyCkA9jzYSPTW4A1ybekERoAjtDyuE1ixeCQG1VtOycOEuuTCVzBARSWyRW9HHUehB-3k6d40GaphTlABZgCusgO_1E8PuMMVP0Zwqg6JPdDZVfca6EWGY4A8I_ea7Fnb96cR6Dbc5jTXEt74CVlGFdtXsWcgWEjGEfRAgwdQA9-NbQML4wQpL42f4RK9IL-K1As6LA98edzzDXzP4fYzlpoJJ7_Q4CG3soJGo" />
+            </div>
+          </motion.div>
+
+          {/* Copy + CTAs */}
+          <motion.div className="order-1 md:order-2 space-y-8 text-center md:text-left"
+            initial="hidden" animate="visible" variants={stagger(0.1)}>
+            <motion.h1
+              variants={slideUp(0)}
+              className="text-4xl md:text-5xl font-extrabold text-white leading-tight"
+              style={{ fontFamily: "'Nunito', sans-serif", letterSpacing: "-0.01em" }}>
+              The free, fun, and effective way to learn music!
+            </motion.h1>
+
+            <motion.div variants={stagger(0.15)}
+              className="flex flex-col gap-4 max-w-sm mx-auto md:mx-0" ref={heroCtaRef}>
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}>
+                <Link href="/login?tab=signup" className="block">
+                  <motion.span whileHover={{ scale: 1.02 }} whileTap={{ y: 2 }}
+                    className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-bold uppercase tracking-widest text-white cursor-pointer"
+                    style={{ backgroundColor: C.primary, borderBottom: `4px solid ${C.primaryDark}` }}>
+                    Get Started
+                  </motion.span>
+                </Link>
+              </motion.div>
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}>
+                <Link href="/login" className="block">
+                  <motion.span
+                    whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                    whileTap={{ y: 2 }}
+                    className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-semibold uppercase tracking-widest cursor-pointer transition-colors"
+                    style={{ color: C.muted, border: `2px solid ${C.muted}`, borderBottom: `4px solid ${C.muted}` }}>
+                    I already have an account
+                  </motion.span>
+                </Link>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Instrument bar pinned to bottom of first viewport */}
+      <InstrumentBar />
+    </div>
+  );
+}
+
+function InstrumentBar() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  return (
+    <section className="border-y-2 py-6 overflow-hidden shrink-0"
+      style={{ borderColor: "rgba(71,69,82,0.1)", background: "rgba(15,15,19,0.6)" }}>
+      <motion.div ref={ref} initial="hidden" animate={inView ? "visible" : "hidden"}
+        variants={stagger(0.05)}
+        className="max-w-[1200px] mx-auto px-5 md:px-10 flex justify-center items-center gap-12 overflow-x-auto"
+        style={{ scrollbarWidth: "none" }}>
+        {instruments.map(({ icon, label, color }) => (
+          <motion.div key={label}
+            variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}
+            className="flex items-center gap-2 shrink-0">
+            <span className="material-symbols-outlined" style={{ color, fontSize: 22 }}>{icon}</span>
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.muted }}>{label}</span>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
+
+// ─── Feature glass card (Feature 1) ───────────────────────────────────────────
 const glassIcons = [
   { icon: "mic",        color: C.secondaryDim, accent: "rgba(0,108,78,0.4)" },
   { icon: "music_note", color: C.primaryDim,   accent: "rgba(87,78,177,0.4)" },
@@ -85,46 +222,21 @@ function FeatureGlassCard() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <div
-      ref={ref}
-      className="w-full max-w-[400px] rounded-[40px] p-8 relative overflow-hidden"
-      style={glassStyle}
-    >
-      {/* Progress bar */}
+    <div ref={ref} className="w-full max-w-[400px] rounded-[40px] p-8 relative overflow-hidden" style={glassStyle}>
       <div className="h-4 rounded-full w-full mb-8 relative overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={inView ? { width: "67%" } : { width: 0 }}
+        <motion.div initial={{ width: 0 }} animate={inView ? { width: "67%" } : { width: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.4 }}
           className="absolute inset-y-0 left-0 rounded-full"
-          style={{ background: C.secondaryDim, boxShadow: "0 0 16px rgba(104,219,174,0.5)" }}
-        />
+          style={{ background: C.secondaryDim, boxShadow: "0 0 16px rgba(104,219,174,0.5)" }} />
       </div>
-
-      {/* Icon grid */}
-      <motion.div
-        initial="hidden"
-        animate={inView ? "visible" : "hidden"}
-        variants={stagger(0.25)}
-        className="grid grid-cols-2 gap-4"
-      >
+      <motion.div initial="hidden" animate={inView ? "visible" : "hidden"} variants={stagger(0.25)} className="grid grid-cols-2 gap-4">
         {glassIcons.map(({ icon, color, accent }) => (
-          <motion.div
-            key={icon}
-            variants={{
-              hidden: { opacity: 0, scale: 0.75 },
-              visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease } },
-            }}
+          <motion.div key={icon}
+            variants={{ hidden: { opacity: 0, scale: 0.75 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease } } }}
             whileHover={{ scale: 1.06 }}
             className="aspect-square rounded-2xl flex items-center justify-center"
-            style={{ ...glassStyle, borderBottom: `4px solid ${accent}` }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 36, color, fontVariationSettings: "'FILL' 1" }}
-            >
-              {icon}
-            </span>
+            style={{ ...glassStyle, borderBottom: `4px solid ${accent}` }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 36, color, fontVariationSettings: "'FILL' 1" }}>{icon}</span>
           </motion.div>
         ))}
       </motion.div>
@@ -132,166 +244,14 @@ function FeatureGlassCard() {
   );
 }
 
-// ─── Nav ──────────────────────────────────────────────────────────────────────
-function Nav() {
-  return (
-    <motion.header
-      initial={{ y: -64, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease }}
-      className="sticky top-0 z-50 border-b-2"
-      style={{ backgroundColor: C.dark, borderColor: C.mutedBorder }}
-    >
-      <div className="flex justify-between items-center h-16 px-5 md:px-10 w-full max-w-[1200px] mx-auto">
-        <span
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
-        >
-          Tunebug
-        </span>
-        <div className="flex items-center gap-4">
-          <div
-            className="hidden md:flex items-center gap-1 px-4 py-2 rounded-xl cursor-pointer transition-colors hover:bg-white/5 select-none"
-            style={{ color: C.muted }}
-          >
-            <span className="text-xs font-semibold uppercase tracking-widest">Site Language: English</span>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_more</span>
-          </div>
-          <Link href="/login">
-            <motion.span
-              whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }}
-              whileTap={{ scale: 0.96 }}
-              className="block px-6 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest cursor-pointer"
-              style={{ color: C.primaryDim }}
-            >
-              Login
-            </motion.span>
-          </Link>
-        </div>
-      </div>
-    </motion.header>
-  );
-}
-
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-function Hero() {
-  return (
-    <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-12 md:py-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-      {/* Illustration */}
-      <motion.div
-        className="order-2 md:order-1 flex justify-center"
-        initial={{ opacity: 0, scale: 0.88 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.9, ease, delay: 0.15 }}
-      >
-        <div className="relative w-full max-w-[440px] aspect-square">
-          <img
-            alt="Tunebug character"
-            className="w-full h-full object-contain"
-            src="https://lh3.googleusercontent.com/aida/ADBb0ug-j11tBG7V5JYEsCIH_jFXnCf4KexYEcu5kYsaZQyCkA9jzYSPTW4A1ybekERoAjtDyuE1ixeCQG1VtOycOEuuTCVzBARSWyRW9HHUehB-3k6d40GaphTlABZgCusgO_1E8PuMMVP0Zwqg6JPdDZVfca6EWGY4A8I_ea7Fnb96cR6Dbc5jTXEt74CVlGFdtXsWcgWEjGEfRAgwdQA9-NbQML4wQpL42f4RK9IL-K1As6LA98edzzDXzP4fYzlpoJJ7_Q4CG3soJGo"
-          />
-        </div>
-      </motion.div>
-
-      {/* Copy + CTAs */}
-      <motion.div
-        className="order-1 md:order-2 space-y-8 text-center md:text-left"
-        initial="hidden"
-        animate="visible"
-        variants={stagger(0.1)}
-      >
-        <motion.h1
-          variants={slideUp(0)}
-          className="text-4xl md:text-5xl font-extrabold text-white leading-tight"
-          style={{ fontFamily: "'Nunito', sans-serif", letterSpacing: "-0.01em" }}
-        >
-          The free, fun, and effective way to learn music!
-        </motion.h1>
-
-        <motion.div
-          variants={stagger(0.15)}
-          className="flex flex-col gap-4 max-w-sm mx-auto md:mx-0"
-        >
-          <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}>
-            <Link href="/login?tab=signup" className="block">
-              <motion.span
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ y: 2 }}
-                className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-bold uppercase tracking-widest text-white cursor-pointer"
-                style={{ backgroundColor: C.primary, borderBottom: `4px solid ${C.primaryDark}` }}
-              >
-                Get Started
-              </motion.span>
-            </Link>
-          </motion.div>
-
-          <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}>
-            <Link href="/login" className="block">
-              <motion.span
-                whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
-                whileTap={{ y: 2 }}
-                className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-semibold uppercase tracking-widest cursor-pointer transition-colors"
-                style={{ color: C.muted, border: `2px solid ${C.muted}`, borderBottom: `4px solid ${C.muted}` }}
-              >
-                I already have an account
-              </motion.span>
-            </Link>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-    </section>
-  );
-}
-
-// ─── Instrument bar ────────────────────────────────────────────────────────────
-const instruments = [
-  { icon: "mic",        label: "Vocals",        color: C.tertiaryDim },
-  { icon: "music_note", label: "Theory",        color: C.coral },
-  { icon: "graphic_eq", label: "Ear Training",  color: C.secondaryDim },
-  { icon: "lyrics",     label: "Sight Singing", color: C.primaryDim },
-];
-
-function InstrumentBar() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
-  return (
-    <section
-      className="border-y-2 py-6 overflow-hidden"
-      style={{ borderColor: "rgba(71,69,82,0.1)", background: "rgba(15,15,19,0.6)" }}
-    >
-      <motion.div
-        ref={ref}
-        initial="hidden"
-        animate={inView ? "visible" : "hidden"}
-        variants={stagger(0.05)}
-        className="max-w-[1200px] mx-auto px-5 md:px-10 flex justify-center items-center gap-12 overflow-x-auto"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {instruments.map(({ icon, label, color }) => (
-          <motion.div
-            key={label}
-            variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}
-            className="flex items-center gap-2 shrink-0"
-          >
-            <span className="material-symbols-outlined" style={{ color, fontSize: 22 }}>{icon}</span>
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.muted }}>{label}</span>
-          </motion.div>
-        ))}
-      </motion.div>
-    </section>
-  );
-}
-
-// ─── Feature 1 ────────────────────────────────────────────────────────────────
+// ─── Feature 1: Master your voice ────────────────────────────────────────────
 function FeatureVoice() {
   return (
     <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
       <ScrollReveal from="left">
         <div className="space-y-6">
-          <h2
-            className="text-3xl md:text-4xl font-bold leading-tight"
-            style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}
-          >
+          <h2 className="text-3xl md:text-4xl font-bold leading-tight"
+            style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}>
             Master your voice.<br />Any time. Anywhere.
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
@@ -308,25 +268,20 @@ function FeatureVoice() {
   );
 }
 
-// ─── Feature 2 ────────────────────────────────────────────────────────────────
+// ─── Feature 2: Tuned for Precision ──────────────────────────────────────────
 function FeaturePrecision() {
   return (
     <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
       <ScrollReveal from="left" delay={0.1} className="order-2 md:order-1 flex justify-center">
         <div className="relative w-full max-w-[440px] aspect-square">
-          <img
-            alt="Science of music"
-            className="w-full h-full object-contain rounded-3xl"
-            src="https://lh3.googleusercontent.com/aida/ADBb0ugqlG_gXn3z6cgSQFbc1MYP6Qvv64ZSoONZ9XtVELBdEAZmsdxIz7pdfScP849r6sgAViGuSJwYHmK7aZLMZB3zd6SOzsR38tt4wi9YilpnXAzoIm-s4-Dd6kpD4CTnrROP8AMZVlHY6jVjPRy3TMN63xigbuLKqs5giFAYZICq3vVSufffgMd5PRjr55t1sjYtOra_v3bx2lHBGxTUiKtxKyRqFrzA4wMUt5ogX2AGh98velE6ibvXy4ij6hLRWKmxCuefH-RLhc4"
-          />
+          <img alt="Science of music" className="w-full h-full object-contain rounded-3xl"
+            src="https://lh3.googleusercontent.com/aida/ADBb0ugqlG_gXn3z6cgSQFbc1MYP6Qvv64ZSoONZ9XtVELBdEAZmsdxIz7pdfScP849r6sgAViGuSJwYHmK7aZLMZB3zd6SOzsR38tt4wi9YilpnXAzoIm-s4-Dd6kpD4CTnrROP8AMZVlHY6jVjPRy3TMN63xigbuLKqs5giFAYZICq3vVSufffgMd5PRjr55t1sjYtOra_v3bx2lHBGxTUiKtxKyRqFrzA4wMUt5ogX2AGh98velE6ibvXy4ij6hLRWKmxCuefH-RLhc4" />
         </div>
       </ScrollReveal>
       <ScrollReveal from="right" className="order-1 md:order-2">
         <div className="space-y-6">
-          <h2
-            className="text-3xl md:text-4xl font-bold"
-            style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
-          >
+          <h2 className="text-3xl md:text-4xl font-bold"
+            style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}>
             Tuned for Precision
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
@@ -338,112 +293,224 @@ function FeaturePrecision() {
   );
 }
 
+// ─── Feature 3: Build Your Streak ────────────────────────────────────────────
+function StreakCard() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <div ref={ref} className="w-full max-w-[400px] rounded-[40px] p-8 space-y-6" style={glassStyle}>
+      {/* Streak badge */}
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
+        transition={{ duration: 0.5, ease, delay: 0.2 }}
+        className="flex items-center gap-3 rounded-2xl px-5 py-4"
+        style={{ background: "rgba(255,185,93,0.12)", border: "1px solid rgba(255,185,93,0.25)" }}>
+        <span style={{ fontSize: 36 }}>🔥</span>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.tertiaryDim }}>Current Streak</p>
+          <p className="text-3xl font-extrabold text-white" style={{ fontFamily: "'Nunito', sans-serif" }}>7 Days</p>
+        </div>
+      </motion.div>
+
+      {/* Stage progress */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+        transition={{ duration: 0.5, ease, delay: 0.35 }}
+        className="space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.muted }}>Stage 2: Intervals</span>
+          <span className="text-xs font-bold" style={{ color: C.primaryDim }}>4 / 6</span>
+        </div>
+        <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+          <motion.div initial={{ width: 0 }} animate={inView ? { width: "67%" } : { width: 0 }}
+            transition={{ duration: 1, ease, delay: 0.5 }}
+            className="h-full rounded-full"
+            style={{ background: C.primaryDim, boxShadow: "0 0 12px rgba(197,192,255,0.5)" }} />
+        </div>
+      </motion.div>
+
+      {/* XP earned today */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+        transition={{ duration: 0.5, ease, delay: 0.5 }}
+        className="flex items-center justify-between rounded-2xl px-5 py-4"
+        style={{ background: "rgba(104,219,174,0.1)", border: "1px solid rgba(104,219,174,0.2)" }}>
+        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.secondaryDim }}>XP Earned Today</span>
+        <span className="text-2xl font-extrabold" style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}>+30 ⭐</span>
+      </motion.div>
+    </div>
+  );
+}
+
+function FeatureStreak() {
+  return (
+    <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <ScrollReveal from="left">
+        <div className="space-y-6">
+          <h2 className="text-3xl md:text-4xl font-bold leading-tight"
+            style={{ color: C.tertiaryDim, fontFamily: "'Nunito', sans-serif" }}>
+            Stay Consistent.<br />Never Miss a Beat.
+          </h2>
+          <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
+            Building a skill takes daily practice. Tunebug keeps you coming back with{" "}
+            <span className="font-bold" style={{ color: C.tertiaryDim }}>daily streaks, XP rewards, and stage unlocks</span>{" "}
+            — so every session feels like progress. Miss a day? No worries. Just pick up where you left off.
+          </p>
+        </div>
+      </ScrollReveal>
+      <ScrollReveal from="right" delay={0.1} className="flex justify-center">
+        <StreakCard />
+      </ScrollReveal>
+    </section>
+  );
+}
+
 // ─── Final CTA ────────────────────────────────────────────────────────────────
+const floaters = [
+  { emoji: "🎵", style: { top: "12%",  left: "8%"  }, delay: 0,    dur: 4   },
+  { emoji: "🎶", style: { top: "18%",  right: "10%" }, delay: 0.7,  dur: 5   },
+  { emoji: "✨", style: { bottom: "25%", left: "12%" }, delay: 1.2,  dur: 3.5 },
+  { emoji: "🎤", style: { top: "50%",  right: "7%"  }, delay: 0.4,  dur: 4.5 },
+  { emoji: "🎸", style: { bottom: "15%", right: "14%" }, delay: 1.6, dur: 5.5 },
+  { emoji: "⭐", style: { top: "30%",  left: "5%"  }, delay: 0.9,  dur: 3.8 },
+];
+
+const stats = [
+  { value: "500K+", label: "Learners" },
+  { value: "100%",  label: "Free forever" },
+  { value: "4",     label: "Skill trees" },
+];
+
 function FinalCTA() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <section ref={ref} className="relative py-24 md:py-32 overflow-hidden">
-      {/* Gradient overlay */}
-      <div
-        className="absolute inset-0 opacity-60"
-        style={{ background: "linear-gradient(to bottom, #0F0F13, #1a1a2e, #0F0F13)" }}
-      />
-      {/* Glow orbs */}
+    <section ref={ref} className="relative py-24 md:py-36 overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0"
+        style={{ background: "linear-gradient(160deg, #1a0d2e 0%, #0a1f15 50%, #0F0F13 100%)" }} />
+
+      {/* Pulsing glow blobs */}
       <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.16, 0.08] }}
+        animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.28, 0.15] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-24 -left-24 w-96 h-96 rounded-full blur-[100px] pointer-events-none"
-        style={{ backgroundColor: C.primary }}
-      />
+        className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full pointer-events-none"
+        style={{ background: C.primary, filter: "blur(120px)", transform: "translate(-50%, -40%)" }} />
       <motion.div
-        animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.14, 0.08] }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.12, 0.22, 0.12] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-        className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full blur-[100px] pointer-events-none"
-        style={{ backgroundColor: C.secondary }}
-      />
+        className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
+        style={{ background: C.secondary, filter: "blur(100px)", transform: "translate(50%, 40%)" }} />
+
+      {/* Floating emoji decorations */}
+      {floaters.map(({ emoji, style, delay, dur }) => (
+        <motion.span key={emoji + JSON.stringify(style)}
+          className="absolute text-3xl pointer-events-none select-none"
+          style={{ ...style, position: "absolute" }}
+          animate={{ y: [0, -14, 0], rotate: [-4, 4, -4], opacity: [0.5, 0.9, 0.5] }}
+          transition={{ duration: dur, repeat: Infinity, ease: "easeInOut", delay }}>
+          {emoji}
+        </motion.span>
+      ))}
+
       {/* Content */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
         transition={{ duration: 0.8, ease }}
-        className="relative max-w-[1200px] mx-auto px-5 md:px-10 text-center space-y-10"
-      >
-        <h2
-          className="text-3xl md:text-4xl font-bold text-white max-w-2xl mx-auto"
-          style={{ fontFamily: "'Nunito', sans-serif" }}
-        >
-          Ready to start your musical journey?
+        className="relative max-w-[1200px] mx-auto px-5 md:px-10 text-center flex flex-col items-center gap-10">
+
+        {/* Pill badge */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ duration: 0.5, ease, delay: 0.1 }}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest"
+          style={{ background: "rgba(104,219,174,0.15)", border: "1px solid rgba(104,219,174,0.35)", color: C.secondaryDim }}>
+          <span>🎵</span> Join 500K+ learners — it&apos;s free
+        </motion.div>
+
+        <h2 className="text-4xl md:text-6xl font-extrabold text-white max-w-2xl leading-tight"
+          style={{ fontFamily: "'Nunito', sans-serif" }}>
+          Ready to play the rhythm?
         </h2>
+
+        <p className="text-lg max-w-md" style={{ color: C.muted }}>
+          Start your musical journey today. No instrument required. No credit card. Just you and the music.
+        </p>
+
+        {/* CTA button */}
         <Link href="/login?tab=signup" className="inline-block">
           <motion.span
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ y: 3 }}
-            className="block py-5 px-14 rounded-3xl font-bold text-white uppercase tracking-widest text-lg md:text-2xl cursor-pointer"
+            whileHover={{ scale: 1.06, y: -2 }}
+            whileTap={{ y: 4 }}
+            className="block py-5 px-16 rounded-full font-extrabold text-white text-xl cursor-pointer"
             style={{
-              backgroundColor: C.primary,
-              borderBottom: `4px solid ${C.primaryDark}`,
               fontFamily: "'Nunito', sans-serif",
-            }}
-          >
-            Get Started
+              background: `linear-gradient(135deg, ${C.secondaryDim}, ${C.secondary})`,
+              boxShadow: `0 8px 0 0 ${C.secondaryDark}, 0 16px 40px rgba(104,219,174,0.35)`,
+            }}>
+            Get Started for Free 🎵
           </motion.span>
         </Link>
+
+        {/* Stats row */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+          transition={{ duration: 0.6, ease, delay: 0.3 }}
+          className="flex flex-wrap justify-center gap-8 pt-2">
+          {stats.map(({ value, label }) => (
+            <div key={label} className="flex flex-col items-center gap-1">
+              <span className="text-2xl font-extrabold text-white" style={{ fontFamily: "'Nunito', sans-serif" }}>{value}</span>
+              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.muted }}>{label}</span>
+            </div>
+          ))}
+        </motion.div>
       </motion.div>
     </section>
   );
 }
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
-const footerLinks = ["Privacy", "Terms", "Support", "Careers"];
+const footerLinks  = ["Privacy", "Terms", "Support", "Careers"];
 const socialIcons  = ["public", "groups", "play_circle"];
 
 function Footer() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
   return (
-    <motion.footer
-      ref={ref}
-      initial={{ opacity: 0 }}
-      animate={inView ? { opacity: 1 } : { opacity: 0 }}
+    <motion.footer ref={ref} initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : { opacity: 0 }}
       transition={{ duration: 0.7, ease }}
       className="border-t py-16"
-      style={{ backgroundColor: C.dark, borderColor: "rgba(200,196,212,0.1)" }}
-    >
+      style={{ backgroundColor: C.dark, borderColor: "rgba(200,196,212,0.1)" }}>
       <div className="max-w-[1200px] mx-auto px-5 md:px-10 flex flex-col items-center gap-12">
         <div className="flex flex-wrap justify-center gap-4">
           {footerLinks.map((link) => (
-            <a
-              key={link}
-              href="#"
+            <a key={link} href="#"
               className="text-xs font-semibold uppercase tracking-widest transition-colors"
               style={{ color: C.muted }}
               onMouseEnter={e => (e.currentTarget.style.color = C.primaryDim)}
-              onMouseLeave={e => (e.currentTarget.style.color = C.muted)}
-            >
+              onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
               {link}
             </a>
           ))}
         </div>
         <div className="flex flex-col items-center gap-4">
-          <span
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
-          >
+          <span className="text-2xl font-bold tracking-tight"
+            style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}>
             Tunebug
           </span>
-          <p className="text-sm" style={{ color: "rgba(71,69,82,0.6)" }}>
-            © 2024 Tunebug Music. Play the rhythm.
-          </p>
+          <p className="text-sm" style={{ color: "rgba(71,69,82,0.6)" }}>© 2024 Tunebug Music. Play the rhythm.</p>
         </div>
         <div className="flex gap-4">
           {socialIcons.map((icon) => (
-            <motion.div
-              key={icon}
-              whileHover={{ color: "#ffffff", borderColor: "rgba(255,255,255,0.3)" }}
+            <motion.div key={icon} whileHover={{ color: "#ffffff", borderColor: "rgba(255,255,255,0.3)" }}
               className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
-              style={{ ...glassStyle, color: C.muted }}
-            >
+              style={{ ...glassStyle, color: C.muted }}>
               <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{icon}</span>
             </motion.div>
           ))}
@@ -455,14 +522,25 @@ function Footer() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const heroCtaRef = useRef<HTMLDivElement>(null);
+  const [showNavCTA, setShowNavCTA] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (y) => {
+    const el = heroCtaRef.current;
+    if (!el) return;
+    const bottom = el.getBoundingClientRect().bottom;
+    setShowNavCTA(bottom < 0);
+  });
+
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: C.dark, color: "#ffffff" }}>
-      <Nav />
+      <Nav showCTA={showNavCTA} />
       <main>
-        <Hero />
-        <InstrumentBar />
+        <HeroSection heroCtaRef={heroCtaRef} />
         <FeatureVoice />
         <FeaturePrecision />
+        <FeatureStreak />
         <FinalCTA />
       </main>
       <Footer />
