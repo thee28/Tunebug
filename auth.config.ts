@@ -1,13 +1,11 @@
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
-import Facebook from "next-auth/providers/facebook";
 import Credentials from "next-auth/providers/credentials";
 
 // Edge-safe config: NO Prisma imports here (runs in Edge middleware)
 export const authConfig: NextAuthConfig = {
   providers: [
     Google,
-    Facebook,
     Credentials({
       name: "credentials",
       credentials: {
