@@ -152,7 +152,7 @@ function HeroSection({ heroCtaRef }: { heroCtaRef: React.RefObject<HTMLDivElemen
             initial={{ opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease, delay: 0.15 }}>
-            <img alt="Tunebug character" src="/bug_hero.png" className="w-full max-w-[440px] object-contain" />
+            <img alt="Tunebug character" src="https://i.imgur.com/QQirykv.png" className="w-full max-w-[440px] object-contain" />
           </motion.div>
 
           {/* Copy + CTAs */}
@@ -284,7 +284,7 @@ function FeaturePrecision() {
   return (
     <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
       <ScrollReveal from="left" delay={0.1} className="order-2 md:order-1 flex justify-center">
-        <img alt="Tunebug singing" src="/bug_sing.png" className="w-full max-w-[440px] object-contain" />
+        <img alt="Tunebug singing" src="https://i.imgur.com/p7J15zR.png" className="w-full max-w-[440px] object-contain" />
       </ScrollReveal>
       <ScrollReveal from="right" className="order-1 md:order-2">
         <div className="space-y-6">
