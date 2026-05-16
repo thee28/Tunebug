@@ -23,14 +23,10 @@ const C = {
 // ─── Animation helpers ────────────────────────────────────────────────────────
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const slideUp = {
+const slideUp = (delay = 0) => ({
   hidden: { opacity: 0, y: 40 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease, delay },
-  }),
-};
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease, delay } },
+});
 
 const stagger = (delayChildren = 0.05) => ({
   hidden: {},
