@@ -1,22 +1,23 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
 @theme inline {
-  --color-background: #EEF2FF;
-  --color-foreground: #312E81;
-  --color-primary: #4F46E5;
-  --color-primary-light: #818CF8;
-  --color-primary-dark: #3730A3;
-  --color-secondary: #818CF8;
-  --color-success: #22C55E;
-  --color-success-dark: #16A34A;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-surface: #FFFFFF;
-  --color-muted: #6366F1;
+  --color-background: #fcf8fe;
+  --color-foreground: #1b1b1f;
+  --color-primary: #574eb1;
+  --color-primary-light: #c5c0ff;
+  --color-primary-dark: #41379b;
+  --color-secondary: #006c4e;
+  --color-secondary-light: #83f5c6;
+  --color-success: #006c4e;
+  --color-success-dark: #00513a;
+  --color-warning: #825100;
+  --color-danger: #ba1a1a;
+  --color-surface: #ffffff;
+  --color-muted: #474552;
 
-  --font-sans: 'Nunito', system-ui, sans-serif;
-  --font-display: 'Baloo 2', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Syne', system-ui, sans-serif;
 }
 
 * {
@@ -24,7 +25,7 @@
 }
 
 html {
-  background-color: #EEF2FF;
+  background-color: #fcf8fe;
 }
 
 body {
@@ -38,15 +39,50 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
 
+/* Tactile 3D button system */
+.btn-primary {
+  box-shadow: 0 4px 0 0 #41379b;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+.btn-primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 0 #41379b;
+}
+
+.btn-teal {
+  box-shadow: 0 4px 0 0 #00513a;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+.btn-teal:hover {
+  background-color: #007151;
+}
+.btn-teal:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 0 #00513a;
+}
+
+.btn-white {
+  box-shadow: 0 4px 0 0 #c5c0ff;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+.btn-white:hover {
+  background-color: #f0edf3;
+}
+.btn-white:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 0 #c5c0ff;
+}
+
+/* Legacy clay classes (used in login/dashboard) */
 .clay {
-  box-shadow: 0 4px 0 0 #3730A3, 0 8px 24px rgba(79,70,229,0.18);
-  border: 3px solid #3730A3;
+  box-shadow: 0 4px 0 0 #41379b, 0 8px 24px rgba(87,78,177,0.18);
+  border: 3px solid #41379b;
   border-radius: 20px;
 }
 
 .clay-green {
-  box-shadow: 0 4px 0 0 #16A34A, 0 8px 24px rgba(34,197,94,0.18);
-  border: 3px solid #16A34A;
+  box-shadow: 0 4px 0 0 #00513a, 0 8px 24px rgba(0,108,78,0.18);
+  border: 3px solid #00513a;
   border-radius: 20px;
 }
 
@@ -57,8 +93,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .clay-sm {
-  box-shadow: 0 3px 0 0 #3730A3, 0 6px 16px rgba(79,70,229,0.15);
-  border: 2px solid #3730A3;
+  box-shadow: 0 3px 0 0 #41379b, 0 6px 16px rgba(87,78,177,0.15);
+  border: 2px solid #41379b;
   border-radius: 16px;
 }
 
@@ -67,7 +103,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .clay-press:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 0 #3730A3, 0 2px 8px rgba(79,70,229,0.12);
+  box-shadow: 0 1px 0 0 #41379b, 0 2px 8px rgba(87,78,177,0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {
