@@ -356,8 +356,8 @@ function FeatureStreak() {
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
             Building a skill takes daily practice. Tunebug keeps you coming back with{" "}
-            <span className="font-bold" style={{ color: C.tertiaryDim }}>daily streaks, XP rewards, and stage unlocks</span>{" "}
-            — so every session feels like progress. Miss a day? No worries. Just pick up where you left off.
+            <span className="font-bold" style={{ color: C.tertiaryDim }}>daily streaks, XP rewards, and stage unlocks,</span>{" "}
+             so every session feels like progress. Miss a day? No worries. Just pick up where you left off.
           </p>
         </div>
       </ScrollReveal>
@@ -369,108 +369,61 @@ function FeatureStreak() {
 }
 
 // ─── Final CTA ────────────────────────────────────────────────────────────────
-const floaters = [
-  { emoji: "🎵", style: { top: "12%",  left: "8%"  }, delay: 0,    dur: 4   },
-  { emoji: "🎶", style: { top: "18%",  right: "10%" }, delay: 0.7,  dur: 5   },
-  { emoji: "✨", style: { bottom: "25%", left: "12%" }, delay: 1.2,  dur: 3.5 },
-  { emoji: "🎤", style: { top: "50%",  right: "7%"  }, delay: 0.4,  dur: 4.5 },
-  { emoji: "🎸", style: { bottom: "15%", right: "14%" }, delay: 1.6, dur: 5.5 },
-  { emoji: "⭐", style: { top: "30%",  left: "5%"  }, delay: 0.9,  dur: 3.8 },
-];
-
-const stats = [
-  { value: "500K+", label: "Learners" },
-  { value: "100%",  label: "Free forever" },
-  { value: "4",     label: "Skill trees" },
-];
-
 function FinalCTA() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <section ref={ref} className="relative py-24 md:py-36 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0"
-        style={{ background: "linear-gradient(160deg, #1a0d2e 0%, #0a1f15 50%, #0F0F13 100%)" }} />
+    <section ref={ref} className="relative pt-16 pb-0" style={{ overflow: "hidden" }}>
 
-      {/* Pulsing glow blobs */}
+      {/* Headline + button — no glow, plain dark bg same as rest of page */}
       <motion.div
-        animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.28, 0.15] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full pointer-events-none"
-        style={{ background: C.primary, filter: "blur(120px)", transform: "translate(-50%, -40%)" }} />
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.12, 0.22, 0.12] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-        className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: C.secondary, filter: "blur(100px)", transform: "translate(50%, 40%)" }} />
-
-      {/* Floating emoji decorations */}
-      {floaters.map(({ emoji, style, delay, dur }) => (
-        <motion.span key={emoji + JSON.stringify(style)}
-          className="absolute text-3xl pointer-events-none select-none"
-          style={{ ...style, position: "absolute" }}
-          animate={{ y: [0, -14, 0], rotate: [-4, 4, -4], opacity: [0.5, 0.9, 0.5] }}
-          transition={{ duration: dur, repeat: Infinity, ease: "easeInOut", delay }}>
-          {emoji}
-        </motion.span>
-      ))}
-
-      {/* Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-        transition={{ duration: 0.8, ease }}
-        className="relative max-w-[1200px] mx-auto px-5 md:px-10 text-center flex flex-col items-center gap-10">
-
-        {/* Pill badge */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
-          transition={{ duration: 0.5, ease, delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest"
-          style={{ background: "rgba(104,219,174,0.15)", border: "1px solid rgba(104,219,174,0.35)", color: C.secondaryDim }}>
-          <span>🎵</span> Join 500K+ learners — it&apos;s free
-        </motion.div>
-
-        <h2 className="text-4xl md:text-6xl font-extrabold text-white max-w-2xl leading-tight"
+        initial={{ opacity: 0, y: 32 }}
+        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 }}
+        transition={{ duration: 0.7, ease }}
+        className="relative text-center flex flex-col items-center gap-8 px-5 pb-2">
+        <h2 className="text-4xl md:text-6xl font-extrabold text-white leading-tight"
           style={{ fontFamily: "'Nunito', sans-serif" }}>
-          Ready to play the rhythm?
+          Ready to start<br />your musical journey?
         </h2>
-
-        <p className="text-lg max-w-md" style={{ color: C.muted }}>
-          Start your musical journey today. No instrument required. No credit card. Just you and the music.
-        </p>
-
-        {/* CTA button */}
         <Link href="/login?tab=signup" className="inline-block">
           <motion.span
-            whileHover={{ scale: 1.06, y: -2 }}
-            whileTap={{ y: 4 }}
-            className="block py-5 px-16 rounded-full font-extrabold text-white text-xl cursor-pointer"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ y: 3 }}
+            className="block py-4 px-14 rounded-2xl font-extrabold text-white text-lg cursor-pointer uppercase tracking-wider"
             style={{
               fontFamily: "'Nunito', sans-serif",
-              background: `linear-gradient(135deg, ${C.secondaryDim}, ${C.secondary})`,
-              boxShadow: `0 8px 0 0 ${C.secondaryDark}, 0 16px 40px rgba(104,219,174,0.35)`,
+              backgroundColor: C.primary,
+              borderBottom: `5px solid ${C.primaryDark}`,
             }}>
-            Get Started for Free 🎵
+            Get Started
           </motion.span>
         </Link>
-
-        {/* Stats row */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.6, ease, delay: 0.3 }}
-          className="flex flex-wrap justify-center gap-8 pt-2">
-          {stats.map(({ value, label }) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <span className="text-2xl font-extrabold text-white" style={{ fontFamily: "'Nunito', sans-serif" }}>{value}</span>
-              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.muted }}>{label}</span>
-            </div>
-          ))}
-        </motion.div>
       </motion.div>
+
+      {/* Stage: emoji placeholder + layered waves */}
+      <div className="relative w-full" style={{ height: 280 }}>
+
+        {/* 3-layer wave — back to front, progressively lighter dark indigo */}
+        <svg viewBox="0 0 1440 420" preserveAspectRatio="none"
+          className="absolute bottom-0 left-0 w-full h-full" style={{ pointerEvents: "none" }}>
+
+          {/* Layer 1 — deepest back, highest hills */}
+          <path
+            d="M0,420 L0,20 C160,-20 380,200 720,230 C1060,260 1280,-20 1440,20 L1440,420 Z"
+            fill="#0c0a1e"
+          />
+          {/* Layer 2 — mid depth */}
+          <path
+            d="M0,420 L0,70 C190,30 400,215 720,245 C1040,275 1250,30 1440,70 L1440,420 Z"
+            fill="#111030"
+          />
+          {/* Layer 3 — front, lowest hills, lightest */}
+          <path
+            d="M0,420 L0,130 C220,85 420,235 720,265 C1020,295 1220,85 1440,130 L1440,420 Z"
+            fill="#18163f"
+          />
+        </svg>
+      </div>
     </section>
   );
 }
@@ -534,7 +487,7 @@ export default function LandingPage() {
   });
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: C.dark, color: "#ffffff" }}>
+    <div className="min-h-screen" style={{ backgroundColor: C.dark, color: "#ffffff" }}>
       <Nav showCTA={showNavCTA} />
       <main>
         <HeroSection heroCtaRef={heroCtaRef} />
