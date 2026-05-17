@@ -58,7 +58,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-[#EEF2FF] flex flex-col items-center justify-center px-4">
       <Link href="/" className="text-2xl font-bold text-[#4F46E5] mb-8 cursor-pointer" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
-        🐛 TuneBug
+        Log in
       </Link>
 
       <div className="bg-white clay w-full max-w-md p-8">
