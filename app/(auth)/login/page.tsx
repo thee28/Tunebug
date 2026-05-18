@@ -84,8 +84,36 @@ function LoginForm() {
     }
   }
 
-  async function handleGoogle() {
-    await signIn("google", { callbackUrl: "/dashboard" });
+  function handleGoogle() {
+    const width = 500;
+    const height = 620;
+    const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+
+    const popup = window.open(
+      "/oauth-google",
+      "google-signin",
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no`
+    );
+
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data === "oauth-complete") {
+        window.removeEventListener("message", onMessage);
+        clearInterval(poll);
+        router.push("/dashboard");
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+
+    // Fallback: if popup closed without posting (e.g. user dismissed)
+    const poll = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(poll);
+        window.removeEventListener("message", onMessage);
+      }
+    }, 500);
   }
 
 return (
