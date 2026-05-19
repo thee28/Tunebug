@@ -22,9 +22,7 @@ const socialBtn: React.CSSProperties = {
   ...nunito,
   fontWeight: 800,
   fontSize: "14px",
-  background: "rgba(255, 255, 255, 0.05)",
   border: "2px solid rgba(255, 255, 255, 0.1)",
-  boxShadow: "0 4px 0 0 rgba(255, 255, 255, 0.05)",
   color: "white",
   cursor: "pointer",
 };

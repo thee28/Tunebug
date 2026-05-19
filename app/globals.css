@@ -77,13 +77,15 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Ghost button (dark bg, translucent border) */
 .btn-ghost {
+  background-color: rgba(255, 255, 255, 0.05);
   transition: transform 100ms ease, background-color 100ms ease;
 }
 .btn-ghost:hover:not(:active) {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 .btn-ghost:active {
   transform: translateY(2px);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 /* Legacy clay classes (used in login/dashboard) */
