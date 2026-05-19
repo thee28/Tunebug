@@ -25,7 +25,10 @@ const navItems = [
   { icon: "school", label: "Learn", href: "/dashboard", active: true },
   { icon: "music_note", label: "Practice", href: "/practice", active: false },
   { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
+  { icon: "trending_up", label: "Progress", href: "#", active: false },
+  { icon: "workspace_premium", label: "Achievements", href: "#", active: false },
   { icon: "person", label: "Profile", href: "#", active: false },
+  { icon: "settings", label: "Settings", href: "#", active: false },
 ];
 
 const mobileNav = [
@@ -53,6 +56,22 @@ export default async function DashboardPage() {
   const totalXP = userWithXP?.xp ?? 0;
   const currentStreak = streak?.currentStreak ?? 0;
 
+  const displayName = session.user.name ?? session.user.email ?? "Musician";
+  const initials = displayName
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  // XP level: every 500 XP = 1 level
+  const level = Math.floor(totalXP / 500) + 1;
+  const xpInLevel = totalXP % 500;
+  const xpProgress = Math.round((xpInLevel / 500) * 100);
+
+  const completedStages = stages.filter((s) => s.status === "complete").length;
+  const totalStages = stages.length;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: C.dark, color: C.text }}>
       {/* ── Header ── */}
@@ -70,52 +89,39 @@ export default async function DashboardPage() {
           </Link>
 
           <div className="flex items-center gap-1">
-            {/* Streak */}
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer transition-colors"
-              style={{ fontFamily: "'Nunito', sans-serif" }}
-              onMouseEnter={undefined}
-            >
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer">
               <span
                 className="material-symbols-outlined"
                 style={{ fontSize: 22, color: C.tertiary, fontVariationSettings: "'FILL' 1" }}
               >
                 local_fire_department
               </span>
-              <span className="font-bold text-sm" style={{ color: C.text }}>
+              <span className="font-bold text-sm" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
                 {currentStreak}
               </span>
             </div>
 
-            {/* XP */}
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
-              style={{ fontFamily: "'Nunito', sans-serif" }}
-            >
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer">
               <span
                 className="material-symbols-outlined"
                 style={{ fontSize: 22, color: C.primaryDim, fontVariationSettings: "'FILL' 1" }}
               >
                 stars
               </span>
-              <span className="font-bold text-sm" style={{ color: C.text }}>
+              <span className="font-bold text-sm" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
                 {totalXP}
               </span>
             </div>
 
-            {/* Hearts */}
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
-              style={{ fontFamily: "'Nunito', sans-serif" }}
-            >
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer">
               <span
                 className="material-symbols-outlined"
                 style={{ fontSize: 22, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}
               >
                 favorite
               </span>
-              <span className="font-bold text-sm" style={{ color: C.text }}>
-                5
+              <span className="font-bold text-sm" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
+                ∞
               </span>
             </div>
           </div>
@@ -125,13 +131,45 @@ export default async function DashboardPage() {
       <div className="max-w-[1200px] mx-auto flex">
         {/* ── Left Sidebar ── */}
         <aside
-          className="hidden md:flex flex-col w-60 shrink-0 sticky top-14 py-6 px-3 gap-1"
+          className="hidden md:flex flex-col w-64 shrink-0 sticky top-14 py-5 px-3 gap-2"
           style={{
             height: "calc(100vh - 56px)",
             borderRight: `2px solid ${C.border}`,
           }}
         >
-          <nav className="flex flex-col gap-1 flex-1">
+          {/* User profile card */}
+          <div
+            className="flex items-center gap-3 px-3 py-3 rounded-2xl mb-3"
+            style={{ backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-extrabold text-sm"
+              style={{
+                backgroundColor: C.primary,
+                color: "white",
+                fontFamily: "'Nunito', sans-serif",
+              }}
+            >
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p
+                className="font-bold text-sm truncate"
+                style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}
+              >
+                {displayName}
+              </p>
+              <p
+                className="text-xs"
+                style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}
+              >
+                Level {level}
+              </p>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <nav className="flex flex-col gap-0.5 flex-1">
             {navItems.map(({ icon, label, href, active }) => (
               <Link
                 key={label}
@@ -140,9 +178,7 @@ export default async function DashboardPage() {
                 style={{
                   backgroundColor: active ? "rgba(87,78,177,0.15)" : "transparent",
                   color: active ? C.primaryDim : C.muted,
-                  border: active
-                    ? `2px solid rgba(87,78,177,0.3)`
-                    : "2px solid transparent",
+                  border: active ? `2px solid rgba(87,78,177,0.3)` : "2px solid transparent",
                   fontFamily: "'Nunito', sans-serif",
                   fontSize: "13px",
                 }}
@@ -160,35 +196,13 @@ export default async function DashboardPage() {
               </Link>
             ))}
           </nav>
-
-          {/* Premium promo */}
-          <div
-            className="rounded-2xl p-4 mt-auto"
-            style={{ backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}
-          >
-            <p
-              className="font-bold text-xs uppercase tracking-widest mb-1"
-              style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}
-            >
-              Go Premium
-            </p>
-            <p className="text-xs mb-3" style={{ color: C.muted }}>
-              Unlimited hearts &amp; no ads
-            </p>
-            <button
-              className="btn-teal w-full py-2 rounded-xl font-bold text-xs uppercase tracking-widest text-white"
-              style={{ backgroundColor: C.secondary, fontFamily: "'Nunito', sans-serif" }}
-            >
-              Try Free
-            </button>
-          </div>
         </aside>
 
         {/* ── Main Path ── */}
-        <main className="flex-1 flex flex-col items-center py-8 px-4 md:px-8 pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col items-center py-8 px-6 pb-24 md:pb-8">
           {/* Unit banner */}
           <div
-            className="w-full max-w-lg mb-10 rounded-2xl p-5 flex items-center justify-between"
+            className="w-full mb-10 rounded-2xl p-5 flex items-center justify-between"
             style={{
               backgroundColor: C.primary,
               borderBottom: `4px solid ${C.primaryDark}`,
@@ -197,10 +211,7 @@ export default async function DashboardPage() {
             <div>
               <p
                 className="text-xs uppercase tracking-widest mb-1"
-                style={{
-                  color: "rgba(255,255,255,0.6)",
-                  fontFamily: "'Nunito', sans-serif",
-                }}
+                style={{ color: "rgba(255,255,255,0.6)", fontFamily: "'Nunito', sans-serif" }}
               >
                 ← Section 1, Unit 1
               </p>
@@ -213,7 +224,7 @@ export default async function DashboardPage() {
             </div>
             <Link href="/practice">
               <button
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white transition-all hover:bg-white/20"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white"
                 style={{
                   backgroundColor: "rgba(255,255,255,0.15)",
                   border: "2px solid rgba(255,255,255,0.25)",
@@ -234,9 +245,85 @@ export default async function DashboardPage() {
 
         {/* ── Right Sidebar ── */}
         <aside
-          className="hidden lg:flex flex-col w-80 shrink-0 sticky top-14 py-6 px-4 gap-4 overflow-y-auto"
+          className="hidden lg:flex flex-col w-72 shrink-0 sticky top-14 py-5 px-4 gap-4 overflow-y-auto"
           style={{ height: "calc(100vh - 56px)" }}
         >
+          {/* XP Progress */}
+          <div
+            className="rounded-2xl p-5"
+            style={{ backgroundColor: C.surface, border: `2px solid ${C.border}` }}
+          >
+            <h3
+              className="font-bold text-xs uppercase tracking-widest mb-4"
+              style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}
+            >
+              Your Progress
+            </h3>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: 20, color: C.tertiary, fontVariationSettings: "'FILL' 1" }}
+                  >
+                    local_fire_department
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}>
+                    Streak
+                  </span>
+                </div>
+                <span className="font-bold text-base" style={{ color: C.tertiary, fontFamily: "'Nunito', sans-serif" }}>
+                  {currentStreak} days
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: 20, color: C.secondaryDim, fontVariationSettings: "'FILL' 1" }}
+                  >
+                    check_circle
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}>
+                    Stages done
+                  </span>
+                </div>
+                <span className="font-bold text-base" style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}>
+                  {completedStages}/{totalStages}
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: 20, color: C.primaryDim, fontVariationSettings: "'FILL' 1" }}
+                    >
+                      stars
+                    </span>
+                    <span className="text-sm font-semibold" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}>
+                      Level {level}
+                    </span>
+                  </div>
+                  <span className="font-bold text-sm" style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}>
+                    {totalXP} XP
+                  </span>
+                </div>
+                <div className="w-full h-3 rounded-full" style={{ backgroundColor: C.border }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${xpProgress}%`, backgroundColor: C.primaryDim }}
+                  />
+                </div>
+                <p className="text-xs mt-1 text-right" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}>
+                  {xpInLevel} / 500 to next level
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Daily Quest */}
           <div
             className="rounded-2xl p-5"
@@ -263,11 +350,7 @@ export default async function DashboardPage() {
               >
                 <span
                   className="material-symbols-outlined"
-                  style={{
-                    fontSize: 26,
-                    color: C.tertiary,
-                    fontVariationSettings: "'FILL' 1",
-                  }}
+                  style={{ fontSize: 26, color: C.tertiary, fontVariationSettings: "'FILL' 1" }}
                 >
                   bolt
                 </span>
@@ -279,14 +362,11 @@ export default async function DashboardPage() {
                 >
                   Earn 10 XP
                 </p>
-                <div
-                  className="w-full h-2.5 rounded-full"
-                  style={{ backgroundColor: C.border }}
-                >
+                <div className="w-full h-2.5 rounded-full" style={{ backgroundColor: C.border }}>
                   <div
                     className="h-full rounded-full"
                     style={{
-                      width: `${Math.min((totalXP % 100) / 10 * 10, 100)}%`,
+                      width: `${Math.min((totalXP % 100) * 10, 100)}%`,
                       backgroundColor: C.tertiary,
                     }}
                   />
@@ -302,10 +382,7 @@ export default async function DashboardPage() {
                   border: "2px solid rgba(130,81,0,0.4)",
                 }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 20, color: C.tertiary }}
-                >
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: C.tertiary }}>
                   emoji_events
                 </span>
               </div>
@@ -328,7 +405,7 @@ export default async function DashboardPage() {
                 className="font-bold text-xs uppercase tracking-widest"
                 style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
               >
-                View League
+                View
               </button>
             </div>
             <div className="flex items-center gap-3">
@@ -336,10 +413,7 @@ export default async function DashboardPage() {
                 className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
                 style={{ backgroundColor: C.surfaceHigh }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 30, color: C.muted }}
-                >
+                <span className="material-symbols-outlined" style={{ fontSize: 30, color: C.muted }}>
                   bedtime
                 </span>
               </div>
@@ -347,41 +421,6 @@ export default async function DashboardPage() {
                 Complete a lesson to join this week&apos;s leaderboard!
               </p>
             </div>
-          </div>
-
-          {/* Super upgrade */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: "#1A1832",
-              border: `2px solid ${C.border}`,
-              borderBottom: `4px solid ${C.primaryDark}`,
-            }}
-          >
-            <div
-              className="inline-flex px-3 py-1 rounded-full mb-3 text-xs font-bold uppercase tracking-widest text-white"
-              style={{
-                background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
-                fontFamily: "'Nunito', sans-serif",
-              }}
-            >
-              SUPER
-            </div>
-            <h4
-              className="text-lg font-extrabold text-white mb-2"
-              style={{ fontFamily: "'Nunito', sans-serif" }}
-            >
-              Try Super for free
-            </h4>
-            <p className="text-sm mb-4" style={{ color: C.muted }}>
-              No ads, unlimited hearts, and personalized practice!
-            </p>
-            <button
-              className="btn-primary w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wider text-white"
-              style={{ backgroundColor: C.primary, fontFamily: "'Nunito', sans-serif" }}
-            >
-              Try 1 Week Free
-            </button>
           </div>
         </aside>
       </div>
