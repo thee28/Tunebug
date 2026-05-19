@@ -41,35 +41,49 @@ h1, h2, h3, h4, h5, h6 {
 /* Tactile 3D button system */
 .btn-primary {
   box-shadow: 0 4px 0 0 #41379b;
-  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
 }
-.btn-primary:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 0 #41379b;
+.btn-primary:hover:not(:active):not(:disabled) {
+  filter: brightness(1.1);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: none;
 }
 
 .btn-teal {
   box-shadow: 0 4px 0 0 #00513a;
-  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
 }
-.btn-teal:hover {
-  background-color: #007151;
+.btn-teal:hover:not(:active) {
+  filter: brightness(1.1);
 }
 .btn-teal:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 0 #00513a;
+  transform: translateY(4px);
+  box-shadow: none;
 }
 
 .btn-white {
   box-shadow: 0 4px 0 0 #c5c0ff;
-  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
 }
-.btn-white:hover {
-  background-color: #f0edf3;
+.btn-white:hover:not(:active) {
+  filter: brightness(0.95);
 }
 .btn-white:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 0 #c5c0ff;
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+/* Ghost button (dark bg, translucent border) */
+.btn-ghost {
+  transition: transform 100ms ease, background-color 100ms ease;
+}
+.btn-ghost:hover:not(:active) {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.btn-ghost:active {
+  transform: translateY(2px);
 }
 
 /* Legacy clay classes (used in login/dashboard) */
@@ -98,11 +112,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .clay-press {
-  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+  transition: transform 100ms ease, box-shadow 100ms ease;
 }
 .clay-press:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 0 #41379b, 0 2px 8px rgba(87,78,177,0.12);
+  transform: translateY(4px);
+  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

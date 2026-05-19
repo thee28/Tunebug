@@ -102,10 +102,11 @@ function Nav({ showCTA }: { showCTA: boolean }) {
               transition={{ duration: 0.25, ease }}>
               <Link href="/login?tab=signup">
                 <motion.span
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ y: 2 }}
+                  whileTap={{ y: 3, borderBottomWidth: "0px" }}
                   className="block px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest cursor-pointer text-white"
-                  style={{ backgroundColor: C.primary, borderBottom: `3px solid ${C.primaryDark}` }}>
+                  style={{ backgroundColor: C.primary, borderBottom: `3px solid ${C.primaryDark}`, transition: "filter 100ms ease" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.filter = "brightness(1.1)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.filter = "")}>
                   Start Now
                 </motion.span>
               </Link>
@@ -169,9 +170,11 @@ function HeroSection({ heroCtaRef }: { heroCtaRef: React.RefObject<HTMLDivElemen
               className="flex flex-col gap-4 max-w-sm mx-auto md:mx-0" ref={heroCtaRef}>
               <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }}>
                 <Link href="/login?tab=signup" className="block">
-                  <motion.span whileHover={{ scale: 1.02 }} whileTap={{ y: 2 }}
+                  <motion.span whileTap={{ y: 4, borderBottomWidth: "0px" }}
                     className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-bold uppercase tracking-widest text-white cursor-pointer"
-                    style={{ backgroundColor: C.primary, borderBottom: `4px solid ${C.primaryDark}` }}>
+                    style={{ backgroundColor: C.primary, borderBottom: `4px solid ${C.primaryDark}`, transition: "filter 100ms ease" }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.filter = "brightness(1.1)")}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.filter = "")}>
                     Get Started
                   </motion.span>
                 </Link>
@@ -180,8 +183,8 @@ function HeroSection({ heroCtaRef }: { heroCtaRef: React.RefObject<HTMLDivElemen
                 <Link href="/login" className="block">
                   <motion.span
                     whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
-                    whileTap={{ y: 2 }}
-                    className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-semibold uppercase tracking-widest cursor-pointer transition-colors"
+                    whileTap={{ y: 4, borderBottomWidth: "0px" }}
+                    className="block w-full py-4 px-8 rounded-2xl text-center text-xs font-semibold uppercase tracking-widest cursor-pointer"
                     style={{ color: C.muted, border: `2px solid ${C.muted}`, borderBottom: `4px solid ${C.muted}` }}>
                     I already have an account
                   </motion.span>
@@ -395,14 +398,16 @@ function FinalCTA() {
         </h2>
         <Link href="/login?tab=signup" className="inline-block">
           <motion.span
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ y: 3 }}
+            whileTap={{ y: 5, borderBottomWidth: "0px" }}
             className="block py-4 px-14 rounded-2xl font-extrabold text-white text-lg cursor-pointer uppercase tracking-wider"
             style={{
               fontFamily: "'Nunito', sans-serif",
               backgroundColor: C.primary,
               borderBottom: `5px solid ${C.primaryDark}`,
-            }}>
+              transition: "filter 100ms ease",
+            }}
+            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.filter = "brightness(1.1)")}
+            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.filter = "")}>
             Get Started
           </motion.span>
         </Link>

@@ -133,7 +133,7 @@ return (
         </Link>
         <button
           onClick={() => { setTab(tab === "login" ? "signup" : "login"); setError(""); }}
-          className="px-6 py-2 rounded-xl uppercase transition-all hover:bg-white/10"
+          className="btn-ghost px-6 py-2 rounded-xl uppercase"
           style={socialBtn}
         >
           {tab === "login" ? "Sign Up" : "Log in"}
@@ -208,25 +208,13 @@ return (
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 rounded-2xl uppercase tracking-widest text-white disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary w-full h-14 rounded-2xl uppercase tracking-widest text-white disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
                 ...nunito,
                 fontWeight: 800,
                 fontSize: "18px",
                 backgroundColor: "#574eb1",
-                boxShadow: "0 4px 0 0 #41379b",
-                transition: "transform 0.1s, box-shadow 0.1s",
                 cursor: loading ? "not-allowed" : "pointer",
-              }}
-              onMouseDown={(e) => {
-                if (!loading) {
-                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(2px)";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 0 #41379b";
-                }
-              }}
-              onMouseUp={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.transform = "";
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 0 0 #41379b";
               }}
             >
               {loading ? "Loading..." : tab === "signup" ? "Sign up" : "Log in"}
@@ -249,7 +237,7 @@ return (
           <div className="w-full">
             <button
               onClick={handleGoogle}
-              className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 uppercase transition-all hover:bg-white/10"
+              className="btn-ghost w-full h-14 rounded-2xl flex items-center justify-center gap-3 uppercase"
               style={socialBtn}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

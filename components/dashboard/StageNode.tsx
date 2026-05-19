@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Stage } from "@/types/lesson";
 
@@ -39,21 +38,28 @@ export default function StageNode({ stage, index }: Props) {
         />
       )}
 
-      <Link
-        href={isLocked ? "#" : `/stages/${stage.slug}`}
-        aria-disabled={isLocked}
-        className={`flex flex-col items-center gap-3 p-5 rounded-3xl w-64 transition-all duration-200 ${
-          isLocked
-            ? "cursor-not-allowed"
-            : "cursor-pointer hover:-translate-y-1"
-        }`}
+      <motion.div
+        whileHover={isLocked ? {} : { y: -4 }}
+        whileTap={isLocked ? {} : { y: 4, scale: 0.99 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
         style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "12px",
+          padding: "20px",
+          borderRadius: "24px",
+          width: "256px",
+          cursor: isLocked ? "not-allowed" : "pointer",
           backgroundColor: isLocked ? "#F3F4F6" : color.bg,
           border: `3px solid ${isLocked ? "#9CA3AF" : color.border}`,
           boxShadow: isLocked
             ? "0 4px 0 0 #9CA3AF, 0 6px 16px rgba(0,0,0,0.08)"
             : `0 4px 0 0 ${color.shadow}, 0 8px 20px ${color.bg}40`,
         }}
+        onClick={isLocked ? undefined : () => window.location.href = `/stages/${stage.slug}`}
+        role="link"
+        aria-disabled={isLocked}
       >
         <div className="flex items-center gap-2 w-full">
           <span className="text-3xl" aria-hidden>
@@ -92,7 +98,7 @@ export default function StageNode({ stage, index }: Props) {
             </p>
           </div>
         )}
-      </Link>
+      </motion.div>
     </motion.div>
   );
 }
