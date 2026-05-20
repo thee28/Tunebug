@@ -36,7 +36,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
     ? `6px solid ${C.primaryDark}`
     : `4px solid #0A0A0E`;
   const iconColor = isComplete ? C.secondaryDim : isLocked ? C.muted : "white";
-  const icon = isComplete ? "check" : isAvailable ? (stage.icon ?? "play_arrow") : "lock";
+  const icon = isComplete ? "check" : isAvailable ? "star" : "lock";
 
   return (
     <motion.div
