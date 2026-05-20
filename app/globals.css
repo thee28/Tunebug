@@ -38,6 +38,44 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
 
+/* Sidebar nav link hover */
+.nav-link {
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.nav-link:hover:not(.nav-active) {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  color: #e8e4f4 !important;
+}
+.nav-link:hover:not(.nav-active) span {
+  color: #e8e4f4 !important;
+}
+
+/* Guidebook / glass button press */
+.btn-glass {
+  transition: transform 100ms ease, background-color 100ms ease, filter 100ms ease;
+}
+.btn-glass:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+.btn-glass:active {
+  transform: translateY(3px);
+  filter: brightness(0.9);
+}
+
+/* Duolingo-style stage node press */
+.node-press {
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.node-press:hover {
+  filter: brightness(1.12);
+}
+.node-press:active {
+  transform: translateY(9px) !important;
+  box-shadow: 0 0 0 11px #2d2d3e !important;
+}
+
 /* Tactile 3D button system */
 .btn-primary {
   box-shadow: 0 4px 0 0 #41379b;

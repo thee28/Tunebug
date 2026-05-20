@@ -156,7 +156,7 @@ export default async function DashboardPage() {
             <Link
               key={label}
               href={href}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl font-bold uppercase tracking-wide transition-all"
+              className={`nav-link${active ? " nav-active" : ""} flex items-center gap-3 px-4 py-3 rounded-2xl font-bold uppercase tracking-wide`}
               style={{
                 backgroundColor: active ? "rgba(87,78,177,0.15)" : "transparent",
                 color: active ? C.primaryDim : C.muted,
@@ -371,7 +371,7 @@ export default async function DashboardPage() {
           </div>
           <Link href="/practice">
             <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white"
+              className="btn-glass flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white"
               style={{
                 backgroundColor: "rgba(255,255,255,0.15)",
                 border: "2px solid rgba(255,255,255,0.25)",
