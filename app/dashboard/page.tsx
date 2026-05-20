@@ -23,7 +23,7 @@ const C = {
 
 const navItems = [
   { icon: "school", label: "Learn", href: "/dashboard", active: true },
-  { icon: "music_note", label: "Practice", href: "/practice", active: false },
+  { icon: "music_note", label: "Free Practice", href: "/practice", active: false },
   { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
   { icon: "trending_up", label: "Progress", href: "#", active: false },
   { icon: "workspace_premium", label: "Achievements", href: "#", active: false },
@@ -33,7 +33,7 @@ const navItems = [
 
 const mobileNav = [
   { icon: "school", label: "Learn", active: true },
-  { icon: "music_note", label: "Practice", active: false },
+  { icon: "music_note", label: "Free Practice", active: false },
   { icon: "emoji_events", label: "Stats", active: false },
   { icon: "person", label: "Profile", active: false },
 ];
@@ -179,7 +179,7 @@ export default async function DashboardPage() {
 
       {/* ── Right Sidebar — fixed to right edge ── */}
       <aside
-        className="hidden lg:flex flex-col fixed right-0 top-14 bottom-0 w-72 py-5 px-4 gap-4 overflow-y-auto"
+        className="hidden lg:flex flex-col fixed right-0 top-14 bottom-0 w-80 py-5 px-4 gap-4 overflow-y-auto"
         style={{ backgroundColor: C.dark, borderLeft: `2px solid ${C.border}` }}
       >
         {/* Your Progress */}
@@ -351,7 +351,7 @@ export default async function DashboardPage() {
 
       {/* ── Main content — inset by sidebar widths ── */}
       <main
-        className="pt-14 pb-24 md:pb-8 md:ml-64 lg:mr-72 min-h-screen flex flex-col items-center px-6 py-8"
+        className="pt-20 pb-24 md:pb-8 md:ml-64 lg:mr-80 min-h-screen flex flex-col items-center px-6 py-8"
       >
         {/* Unit banner */}
         <div

@@ -28,7 +28,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
   const isAvailable = stage.status === "available";
   const isActive = isAvailable && isFirstActive;
 
-  const size = isActive ? 88 : 72;
+  const size = isActive ? 104 : 84;
   const bg = isComplete ? C.secondary : isAvailable ? C.primary : C.surfaceHigh;
   const borderBottom = isComplete
     ? `6px solid ${C.secondaryDark}`
@@ -121,7 +121,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
         <span
           className="material-symbols-outlined"
           style={{
-            fontSize: isActive ? 40 : 30,
+            fontSize: isActive ? 48 : 36,
             color: iconColor,
             fontVariationSettings: isComplete
               ? "'FILL' 1, 'wght' 700"
