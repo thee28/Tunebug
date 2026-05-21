@@ -353,9 +353,9 @@ function StreakCard() {
         animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
         transition={{ duration: 0.5, ease, delay: 0.5 }}
         className="flex items-center justify-between rounded-2xl px-5 py-4"
-        style={{ background: "rgba(104,219,174,0.1)", border: "1px solid rgba(104,219,174,0.2)" }}>
-        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.secondaryDim }}>XP Earned Today</span>
-        <span className="text-2xl font-extrabold flex items-center gap-1" style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}>
+        style={{ background: "rgba(197,192,255,0.1)", border: "1px solid rgba(197,192,255,0.2)" }}>
+        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.primaryDim }}>XP Earned Today</span>
+        <span className="text-2xl font-extrabold flex items-center gap-1" style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}>
           +30
           <span
             className="material-symbols-outlined"
