@@ -27,7 +27,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
   const isAvailable = stage.status === "available";
   const isActive = isAvailable && isFirstActive;
 
-  const size = isActive ? 100 : 80;
+  const size = isActive ? 90 : 70;
 
   const bg = isComplete ? C.secondary : isAvailable ? C.primary : C.surfaceHigh;
 
@@ -38,7 +38,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
   // Layers 2+3 together form a continuous ring around the entire coin shape.
   let coinDepth: string;
   if (isActive) {
-    coinDepth = `0 9px 0 0 ${C.primaryDark}, 0 0 0 11px #2d2d3e, 0 9px 0 11px #2d2d3e`;
+    coinDepth = `0 9px 0 0 ${C.primaryDark}, 0 0 0 10px #2d2d3e, 0 9px 0 10px #2d2d3e`;
   } else if (isComplete) {
     coinDepth = `0 9px 0 0 ${C.secondaryDark}`;
   } else if (isAvailable) {
@@ -55,7 +55,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
       className={isLocked ? "" : "node-press"}
       onClick={isLocked ? undefined : () => (window.location.href = `/stages/${stage.slug}`)}
       style={{
-        width: size,
+        width: size * 1.15,
         height: size,
         borderRadius: "50%",
         backgroundColor: bg,
