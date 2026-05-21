@@ -317,7 +317,12 @@ function StreakCard() {
         transition={{ duration: 0.5, ease, delay: 0.2 }}
         className="flex items-center gap-3 rounded-2xl px-5 py-4"
         style={{ background: "rgba(255,185,93,0.12)", border: "1px solid rgba(255,185,93,0.25)" }}>
-        <span style={{ fontSize: 36 }}>🔥</span>
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: 36, color: C.tertiaryDim, fontVariationSettings: "'FILL' 1" }}
+        >
+          local_fire_department
+        </span>
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.tertiaryDim }}>Current Streak</p>
           <p className="text-3xl font-extrabold text-white" style={{ fontFamily: "'Nunito', sans-serif" }}>7 Days</p>
@@ -350,7 +355,15 @@ function StreakCard() {
         className="flex items-center justify-between rounded-2xl px-5 py-4"
         style={{ background: "rgba(104,219,174,0.1)", border: "1px solid rgba(104,219,174,0.2)" }}>
         <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: C.secondaryDim }}>XP Earned Today</span>
-        <span className="text-2xl font-extrabold" style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}>+30 ⭐</span>
+        <span className="text-2xl font-extrabold flex items-center gap-1" style={{ color: C.secondaryDim, fontFamily: "'Nunito', sans-serif" }}>
+          +30
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: 24, color: C.primaryDim, fontVariationSettings: "'FILL' 1" }}
+          >
+            stars
+          </span>
+        </span>
       </motion.div>
     </div>
   );
