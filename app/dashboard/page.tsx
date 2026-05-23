@@ -87,7 +87,7 @@ export default async function DashboardPage() {
         </Link>
 
         <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-default select-none">
             <span
               className="material-symbols-outlined"
               style={{ fontSize: 22, color: C.tertiary, fontVariationSettings: "'FILL' 1" }}
@@ -99,7 +99,7 @@ export default async function DashboardPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-default select-none">
             <span
               className="material-symbols-outlined"
               style={{ fontSize: 22, color: C.primaryDim, fontVariationSettings: "'FILL' 1" }}
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-default select-none">
             <span
               className="material-symbols-outlined"
               style={{ fontSize: 22, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}
