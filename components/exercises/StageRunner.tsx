@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import type { Stage, Lesson } from "@/types/lesson";
+import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "./LessonRunner";
 
@@ -18,125 +18,219 @@ const C = {
   border: "#33313D", muted: "#938F99", text: "#f3eff5",
 };
 
+type View =
+  | { phase: "stage" }
+  | { phase: "unit"; unit: Unit }
+  | { phase: "exercise"; unit: Unit; lesson: Lesson };
+
 export function StageRunner({ stage, difficulty }: Props) {
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [view, setView] = useState<View>({ phase: "stage" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(
-    new Set(stage.lessons.filter((l) => l.passed).map((l) => l.id))
+    new Set(
+      stage.units.flatMap((u) => u.lessons).filter((l) => l.passed).map((l) => l.id)
+    )
   );
 
-  if (activeLesson) {
+  // ── Exercise view ─────────────────────────
+  if (view.phase === "exercise") {
+    const { unit, lesson } = view;
     return (
       <LessonRunner
-        title={activeLesson.title}
-        exercises={[{ type: activeLesson.exerciseType, config: activeLesson.exerciseConfig }]}
+        title={`${stage.title} · ${unit.title}`}
+        exercises={[{ type: lesson.exerciseType, config: lesson.exerciseConfig }]}
         difficulty={difficulty}
-        xpReward={activeLesson.xpReward}
+        xpReward={lesson.xpReward}
         onComplete={async (score) => {
           await fetch("/api/progress", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lessonId: activeLesson.id, score }),
+            body: JSON.stringify({ lessonId: lesson.id, score }),
           });
-          if (score >= activeLesson.passingScore) {
-            setCompletedIds((prev) => new Set([...prev, activeLesson.id]));
+          if (score >= lesson.passingScore) {
+            setCompletedIds((prev) => new Set([...prev, lesson.id]));
           }
         }}
-        onExit={() => setActiveLesson(null)}
+        onExit={() => setView({ phase: "unit", unit })}
       />
     );
   }
 
-  const allComplete = stage.lessons.every((l) => completedIds.has(l.id));
+  // ── Unit view (lesson list) ────────────────
+  if (view.phase === "unit") {
+    const { unit } = view;
+    const lessons = unit.lessons.map((lesson, i) => {
+      const prevLesson = unit.lessons[i - 1];
+      const prevPassed = i === 0 || (prevLesson ? completedIds.has(prevLesson.id) : false);
+      const unitUnlocked = unit.status !== "locked";
+      return {
+        ...lesson,
+        unlocked: unitUnlocked && prevPassed,
+        passed: completedIds.has(lesson.id),
+      };
+    });
+
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: C.surface, paddingBottom: 48 }}>
+        <div style={{ padding: "20px 20px 0" }}>
+          <button
+            onClick={() => setView({ phase: "stage" })}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            {stage.title}
+          </button>
+        </div>
+
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 0" }}>
+          <div style={{ marginBottom: 36, textAlign: "center" }}>
+            <h2 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900, margin: "0 0 6px" }}>{unit.title}</h2>
+            {unit.description && (
+              <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>{unit.description}</p>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {lessons.map((lesson, i) => {
+              const isDone = lesson.passed;
+              const isLocked = !lesson.unlocked;
+              return (
+                <motion.div
+                  key={lesson.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06, duration: 0.25 }}
+                >
+                  <button
+                    onClick={() => !isLocked && setView({ phase: "exercise", unit, lesson })}
+                    disabled={isLocked}
+                    style={{
+                      width: "100%", padding: "14px 18px", borderRadius: 14,
+                      backgroundColor: C.surfaceHigh,
+                      border: `2px solid ${isDone ? C.secondary : isLocked ? C.border : C.border}`,
+                      display: "flex", alignItems: "center", gap: 14,
+                      cursor: isLocked ? "not-allowed" : "pointer",
+                      opacity: isLocked ? 0.45 : 1, textAlign: "left",
+                    }}
+                  >
+                    <div style={{
+                      width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                      backgroundColor: isDone ? C.secondary : isLocked ? "#2a2838" : C.primary,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 20, color: isDone ? C.secondaryDim : "white", fontVariationSettings: isDone ? "'FILL' 1" : "'FILL' 0" }}>
+                        {isDone ? "check" : isLocked ? "lock" : EXERCISE_ICONS[lesson.exerciseType] ?? "music_note"}
+                      </span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: 14, margin: "0 0 2px" }}>{lesson.title}</p>
+                      <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, margin: 0 }}>
+                        {EXERCISE_LABELS[lesson.exerciseType]} · {lesson.xpReward} XP
+                      </p>
+                    </div>
+                    {!isLocked && (
+                      <span className="material-symbols-outlined" style={{ color: C.muted, fontSize: 18 }}>
+                        {isDone ? "replay" : "chevron_right"}
+                      </span>
+                    )}
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Stage view (unit list) ─────────────────
+  const allLessons = stage.units.flatMap((u) => u.lessons);
+  const total = allLessons.length;
+  const done = allLessons.filter((l) => completedIds.has(l.id)).length;
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: C.surface, padding: "0 0 48px" }}>
-      {/* Header */}
+    <div style={{ minHeight: "100vh", backgroundColor: C.surface, paddingBottom: 48 }}>
       <div style={{ padding: "20px 20px 0" }}>
         <a href="/dashboard" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: C.muted, textDecoration: "none", fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
-          Back
+          Dashboard
         </a>
       </div>
 
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "32px 20px 0" }}>
-        {/* Stage title */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 0" }}>
+        {/* Stage header */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>{stage.icon}</div>
-          <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 28, fontWeight: 900, margin: "0 0 8px" }}>
-            {stage.title}
-          </h1>
-          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 15, margin: 0 }}>
-            {stage.description}
-          </p>
-          {allComplete && (
-            <div style={{
-              marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "6px 16px", borderRadius: 20,
-              backgroundColor: C.secondary, color: C.secondaryDim,
-              fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-            }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-              Stage Complete
+          <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 26, fontWeight: 900, margin: "0 0 8px" }}>{stage.title}</h1>
+          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: "0 0 14px" }}>{stage.description}</p>
+
+          {/* Progress bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ flex: 1, height: 7, borderRadius: 4, backgroundColor: C.surfaceHigh, overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 4, backgroundColor: total > 0 && done === total ? C.secondary : C.primary, width: `${total > 0 ? (done / total) * 100 : 0}%`, transition: "width 0.4s ease" }} />
             </div>
-          )}
+            <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+              {done}/{total}
+            </span>
+          </div>
         </div>
 
-        {/* Lesson list */}
+        {/* Unit cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {stage.lessons.map((lesson, i) => {
-            const isDone = completedIds.has(lesson.id);
-            const isUnlocked = lesson.unlocked ?? false;
-            const isLocked = !isUnlocked;
+          {stage.units.map((unit, i) => {
+            const unitLessons = unit.lessons;
+            const unitDone = unitLessons.filter((l) => completedIds.has(l.id)).length;
+            const unitTotal = unitLessons.length;
+            const isComplete = unitDone === unitTotal;
+            const isLocked = unit.status === "locked";
+            const pct = unitTotal > 0 ? (unitDone / unitTotal) * 100 : 0;
 
             return (
               <motion.div
-                key={lesson.id}
-                initial={{ opacity: 0, y: 12 }}
+                key={unit.id}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07, duration: 0.3 }}
               >
                 <button
-                  onClick={() => !isLocked && setActiveLesson(lesson)}
+                  onClick={() => !isLocked && setView({ phase: "unit", unit })}
                   disabled={isLocked}
                   style={{
-                    width: "100%", padding: "16px 20px", borderRadius: 16,
+                    width: "100%", padding: "18px 20px", borderRadius: 16,
                     backgroundColor: C.surfaceHigh,
-                    border: `2px solid ${isDone ? C.secondary : isUnlocked ? C.border : C.border}`,
+                    border: `2px solid ${isComplete ? C.secondary : isLocked ? C.border : C.border}`,
                     display: "flex", alignItems: "center", gap: 16,
                     cursor: isLocked ? "not-allowed" : "pointer",
-                    opacity: isLocked ? 0.5 : 1,
-                    textAlign: "left",
+                    opacity: isLocked ? 0.45 : 1, textAlign: "left",
                   }}
                 >
-                  {/* Icon */}
+                  {/* Circle icon */}
                   <div style={{
-                    width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-                    backgroundColor: isDone ? C.secondary : isUnlocked ? C.primary : "#2a2838",
+                    width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+                    backgroundColor: isComplete ? C.secondary : isLocked ? "#2a2838" : C.primary,
+                    boxShadow: `0 5px 0 0 ${isComplete ? C.secondaryDark : isLocked ? "rgba(0,0,0,0.4)" : C.primaryDark}`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    <span className="material-symbols-outlined" style={{
-                      fontSize: 22, color: isDone ? C.secondaryDim : "white",
-                      fontVariationSettings: isDone ? "'FILL' 1" : "'FILL' 0",
-                    }}>
-                      {isDone ? "check" : isLocked ? "lock" : EXERCISE_ICONS[lesson.exerciseType] ?? "music_note"}
+                    <span className="material-symbols-outlined" style={{ fontSize: 24, color: isComplete ? C.secondaryDim : "white", fontVariationSettings: isComplete ? "'FILL' 1" : "'FILL' 0" }}>
+                      {isComplete ? "check" : isLocked ? "lock" : "auto_stories"}
                     </span>
                   </div>
 
-                  {/* Text */}
-                  <div style={{ flex: 1 }}>
-                    <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: 15, margin: "0 0 2px" }}>
-                      {lesson.title}
-                    </p>
-                    <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, margin: 0 }}>
-                      {EXERCISE_LABELS[lesson.exerciseType]} · {lesson.xpReward} XP
-                    </p>
+                  {/* Text + mini progress */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: 15, margin: "0 0 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{unit.title}</p>
+                    {unit.description && (
+                      <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, margin: "0 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{unit.description}</p>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: "#2a2838", overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 2, backgroundColor: isComplete ? C.secondary : C.primary, width: `${pct}%` }} />
+                      </div>
+                      <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700 }}>{unitDone}/{unitTotal}</span>
+                    </div>
                   </div>
 
-                  {/* Arrow */}
                   {!isLocked && (
-                    <span className="material-symbols-outlined" style={{ color: C.muted, fontSize: 20 }}>
-                      {isDone ? "replay" : "chevron_right"}
-                    </span>
+                    <span className="material-symbols-outlined" style={{ color: C.muted, fontSize: 20, flexShrink: 0 }}>chevron_right</span>
                   )}
                 </button>
               </motion.div>

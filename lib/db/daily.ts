@@ -41,8 +41,13 @@ export async function getTodaysDailyStage(userId: string): Promise<DailyStageDat
     };
   }
 
+  // Count fully-completed stages (all units' lessons passed)
   const [stages, passedRows] = await Promise.all([
-    prisma.stage.findMany({ include: { lessons: { select: { id: true } } } }),
+    prisma.stage.findMany({
+      include: {
+        units: { include: { lessons: { select: { id: true } } } },
+      },
+    }),
     prisma.lessonProgress.findMany({
       where: { userId, passed: true },
       select: { lessonId: true },
@@ -50,7 +55,7 @@ export async function getTodaysDailyStage(userId: string): Promise<DailyStageDat
   ]);
   const passedIds = new Set(passedRows.map((r) => r.lessonId));
   const completedStageCount = stages.filter((s) =>
-    s.lessons.every((l) => passedIds.has(l.id))
+    s.units.every((u) => u.lessons.every((l) => passedIds.has(l.id)))
   ).length;
 
   const difficulty = difficultyFromCompletedStages(completedStageCount);

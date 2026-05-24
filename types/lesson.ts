@@ -2,21 +2,11 @@ import type { ExerciseType, ExerciseConfig } from "./music";
 
 export type StageStatus = "locked" | "available" | "complete";
 
-export interface Stage {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  order: number;
-  icon: string | null;
-  lessons: Lesson[];
-  status?: StageStatus;
-  completedLessons?: number;
-}
+export type { Difficulty } from "@/lib/curriculum/content";
 
 export interface Lesson {
   id: string;
-  stageId: string;
+  unitId: string;
   slug: string;
   title: string;
   order: number;
@@ -29,4 +19,28 @@ export interface Lesson {
   bestScore?: number;
 }
 
-export type { Difficulty } from "@/lib/curriculum/content";
+export interface Unit {
+  id: string;
+  stageId: string;
+  slug: string;
+  title: string;
+  description?: string | null;
+  order: number;
+  lessons: Lesson[];
+  completedLessons?: number;
+  totalLessons?: number;
+  status?: StageStatus;
+}
+
+export interface Stage {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  order: number;
+  icon: string | null;
+  units: Unit[];
+  status?: StageStatus;
+  completedLessons?: number;
+  totalLessons?: number;
+}

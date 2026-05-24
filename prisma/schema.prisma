@@ -61,6 +61,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Section = the big level bucket (Beginner, Elementary, etc.)
 model Stage {
   id          String   @id @default(cuid())
   slug        String   @unique
@@ -70,12 +71,28 @@ model Stage {
   icon        String?
   createdAt   DateTime @default(now())
 
+  units Unit[]
+}
+
+// Unit = a topic cluster within a section (e.g. "Perfect Intervals")
+model Unit {
+  id          String   @id @default(cuid())
+  stageId     String
+  slug        String   @unique
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime @default(now())
+
+  stage   Stage    @relation(fields: [stageId], references: [id])
   lessons Lesson[]
+
+  @@index([stageId, order])
 }
 
 model Lesson {
   id             String       @id @default(cuid())
-  stageId        String
+  unitId         String
   slug           String       @unique
   title          String
   order          Int
@@ -85,10 +102,10 @@ model Lesson {
   xpReward       Int          @default(10)
   createdAt      DateTime     @default(now())
 
-  stage    Stage            @relation(fields: [stageId], references: [id])
+  unit     Unit             @relation(fields: [unitId], references: [id])
   progress LessonProgress[]
 
-  @@index([stageId, order])
+  @@index([unitId, order])
 }
 
 enum ExerciseType {
