@@ -22,6 +22,7 @@ model User {
   progress     LessonProgress[]
   streak       DailyStreak?
   achievements Achievement[]
+  dailyStages  DailyStage[]
 }
 
 model Account {
@@ -145,4 +146,21 @@ enum AchievementType {
   STREAK_30
   STAGE_COMPLETE
   ALL_STAGES
+}
+
+model DailyStage {
+  id         String   @id @default(cuid())
+  userId     String
+  date       DateTime
+  difficulty String
+  exercises  Json
+  completed  Boolean  @default(false)
+  score      Int?
+  xpEarned   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }

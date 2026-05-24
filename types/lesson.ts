@@ -29,4 +29,4 @@ export interface Lesson {
   bestScore?: number;
 }
 
-export type Difficulty = "easy" | "medium" | "hard";
+export type { Difficulty } from "@/lib/curriculum/content";
