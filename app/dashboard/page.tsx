@@ -3,7 +3,9 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getStagesWithProgress } from "@/lib/db/stages";
 import { getStreak } from "@/lib/db/streak";
-import StagePath from "@/components/dashboard/StagePath";
+import { CURRICULUM } from "@/lib/curriculum/config";
+import type { Difficulty } from "@/lib/curriculum/content";
+import DashboardContent from "@/components/dashboard/DashboardContent";
 
 const C = {
   dark: "#0F0F13",
@@ -69,6 +71,10 @@ export default async function DashboardPage() {
   const xpProgress = Math.round((xpInLevel / 500) * 100);
   const completedStages = stages.filter((s) => s.status === "complete").length;
   const totalStages = stages.length;
+
+  const difficulties: Record<string, Difficulty> = Object.fromEntries(
+    CURRICULUM.map((s) => [s.slug, s.difficulty])
+  );
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: C.dark, color: C.text }}>
@@ -353,38 +359,7 @@ export default async function DashboardPage() {
       <main
         className="pt-20 pb-24 md:pb-8 md:ml-64 lg:mr-80 min-h-screen flex flex-col items-center px-6 py-8"
       >
-        {/* Unit banner */}
-        <div
-          className="w-full mb-10 rounded-2xl p-5 flex items-center justify-between"
-          style={{ backgroundColor: C.primary, borderBottom: `4px solid ${C.primaryDark}` }}
-        >
-          <div>
-            <p
-              className="text-xs uppercase tracking-widest mb-1"
-              style={{ color: "rgba(255,255,255,0.6)", fontFamily: "'Nunito', sans-serif" }}
-            >
-              &#8592; Section 1, Unit 1
-            </p>
-            <h2 className="text-xl font-extrabold text-white" style={{ fontFamily: "'Nunito', sans-serif" }}>
-              The Basics of Pitch
-            </h2>
-          </div>
-          <Link href="/practice">
-            <button
-              className="btn-glass flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.15)",
-                border: "2px solid rgba(255,255,255,0.25)",
-                fontFamily: "'Nunito', sans-serif",
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>menu_book</span>
-              Guidebook
-            </button>
-          </Link>
-        </div>
-
-        <StagePath stages={stages} />
+        <DashboardContent stages={stages} difficulties={difficulties} />
       </main>
 
       {/* ── Mobile Bottom Nav ── */}
