@@ -11,7 +11,7 @@ const C = {
 
 const SECTION_ICONS = ["school", "menu_book", "library_music", "piano", "workspace_premium"];
 
-export default function SectionList({ stages }: { stages: Stage[] }) {
+export default function SectionList({ stages, onBack }: { stages: Stage[]; onBack?: () => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 560 }}>
       {stages.map((stage, i) => {
@@ -134,20 +134,19 @@ export default function SectionList({ stages }: { stages: Stage[] }) {
                   Jump to Section {i + 1}
                 </div>
               ) : (
-                <a href={`/stages/${stage.slug}`} style={{ display: "block", textDecoration: "none" }}>
-                  <div
-                    style={{
-                      width: "100%", padding: "12px 0", borderRadius: 14, textAlign: "center",
-                      backgroundColor: isActive ? C.primary : C.secondary,
-                      border: `2px solid ${isActive ? C.primaryDark : C.secondaryDark}`,
-                      color: "white", fontFamily: "'Nunito', sans-serif", fontWeight: 800,
-                      fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {isComplete ? "Review Section" : "Continue"}
-                  </div>
-                </a>
+                <button
+                  onClick={onBack}
+                  style={{
+                    width: "100%", padding: "12px 0", borderRadius: 14, textAlign: "center",
+                    backgroundColor: isActive ? C.primary : C.secondary,
+                    border: `2px solid ${isActive ? C.primaryDark : C.secondaryDark}`,
+                    color: "white", fontFamily: "'Nunito', sans-serif", fontWeight: 800,
+                    fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em",
+                    cursor: "pointer",
+                  }}
+                >
+                  {isComplete ? "Review Section" : "Continue"}
+                </button>
               )}
             </div>
           </motion.div>

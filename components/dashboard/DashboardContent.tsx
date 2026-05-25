@@ -55,7 +55,7 @@ export default function DashboardContent({ stages, difficulties }: Props) {
               All Sections
             </h1>
 
-            <SectionList stages={stages} />
+            <SectionList stages={stages} onBack={() => setShowSections(false)} />
           </motion.div>
         ) : (
           <motion.div
