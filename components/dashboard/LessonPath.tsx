@@ -23,8 +23,6 @@ const BANNER_PALETTES = [
   { bg: "#6b2d7a", border: "#521f5e" }, // violet
 ];
 
-// Professional icon per section index (no emoji)
-const SECTION_ICONS = ["school", "menu_book", "library_music", "piano", "workspace_premium"];
 
 const EXERCISE_ICONS: Record<string, string> = {
   EAR_SINGLE: "hearing", EAR_MULTI: "queue_music",
@@ -227,73 +225,9 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
         {(() => {
           const stage = currentStage;
           const si = currentStageIndex;
-          const stageTotal = stage.units.flatMap((u) => u.lessons).length;
-          const stageDone = stage.units
-            .flatMap((u) => u.lessons)
-            .filter((l) => completedIds.has(l.id)).length;
 
           return (
             <div key={stage.id} style={{ width: "100%" }}>
-              {/* Section header */}
-              <div
-                style={{
-                  borderRadius: 16,
-                  backgroundColor: "rgba(87,78,177,0.12)",
-                  border: "2px solid rgba(87,78,177,0.35)",
-                  padding: "14px 18px",
-                  marginBottom: 24,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div
-                    style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      backgroundColor: C.primary,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: 22, color: "white", fontVariationSettings: "'FILL' 1" }}
-                    >
-                      {SECTION_ICONS[si % SECTION_ICONS.length]}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        color: C.primaryDim, fontFamily: "'Nunito', sans-serif",
-                        fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-                        letterSpacing: "0.08em", margin: "0 0 2px",
-                      }}
-                    >
-                      Section {si + 1}
-                    </p>
-                    <h3
-                      style={{
-                        color: C.text, fontFamily: "'Nunito', sans-serif",
-                        fontSize: 15, fontWeight: 900, margin: 0,
-                      }}
-                    >
-                      {stage.title}
-                    </h3>
-                  </div>
-                  <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700 }}>
-                    {stageDone}/{stageTotal}
-                  </span>
-                </div>
-                <div style={{ marginTop: 10, height: 5, borderRadius: 3, backgroundColor: "#2a2838", overflow: "hidden" }}>
-                  <div
-                    style={{
-                      height: "100%", borderRadius: 3,
-                      backgroundColor: stageDone === stageTotal ? C.secondary : C.primary,
-                      width: `${stageTotal > 0 ? (stageDone / stageTotal) * 100 : 0}%`,
-                      transition: "width 0.4s ease",
-                    }}
-                  />
-                </div>
-              </div>
-
               {/* Units */}
               {stage.units.map((unit, ui) => {
                 const unitLocked = unit.status === "locked";
