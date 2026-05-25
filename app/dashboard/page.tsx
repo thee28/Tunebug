@@ -27,7 +27,6 @@ const navItems = [
   { icon: "school", label: "Learn", href: "/dashboard", active: true },
   { icon: "music_note", label: "Free Practice", href: "/practice", active: false },
   { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
-  { icon: "trending_up", label: "Progress", href: "#", active: false },
   { icon: "workspace_premium", label: "Achievements", href: "#", active: false },
   { icon: "person", label: "Profile", href: "#", active: false },
   { icon: "settings", label: "Settings", href: "#", active: false },
