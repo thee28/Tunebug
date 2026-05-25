@@ -15,6 +15,14 @@ const C = {
 
 const OFFSETS = [70, -70, 110, -40, 50, -100, 90, -55];
 
+const BANNER_PALETTES = [
+  { bg: "#574eb1", border: "#41379b" }, // purple
+  { bg: "#006c4e", border: "#00513a" }, // green
+  { bg: "#7b3f00", border: "#5c2f00" }, // amber-brown
+  { bg: "#1a5c8a", border: "#134466" }, // blue
+  { bg: "#6b2d7a", border: "#521f5e" }, // violet
+];
+
 // Professional icon per section index (no emoji)
 const SECTION_ICONS = ["school", "menu_book", "library_music", "piano", "workspace_premium"];
 
@@ -157,10 +165,11 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
         <div
           style={{
             borderRadius: 16,
-            backgroundColor: C.primary,
-            borderBottom: `4px solid ${C.primaryDark}`,
+            backgroundColor: BANNER_PALETTES[(bannerInfo.unit - 1) % BANNER_PALETTES.length].bg,
+            borderBottom: `4px solid ${BANNER_PALETTES[(bannerInfo.unit - 1) % BANNER_PALETTES.length].border}`,
             padding: "14px 18px",
             display: "flex", alignItems: "center", justifyContent: "space-between",
+            transition: "background-color 0.4s ease, border-color 0.4s ease",
           }}
         >
           {/* Left: clickable section/unit label → opens sections view */}
