@@ -101,6 +101,18 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
     return null;
   }, [stages, completedIds]);
 
+  // Only show the section the user is currently in
+  const currentStageIndex = useMemo(() => {
+    for (let i = 0; i < stages.length; i++) {
+      const allLessons = stages[i].units.flatMap((u) => u.lessons);
+      if (!allLessons.every((l) => completedIds.has(l.id))) return i;
+    }
+    return stages.length - 1;
+  }, [stages, completedIds]);
+
+  const currentStage = stages[currentStageIndex];
+  const nextStage = stages[currentStageIndex + 1] ?? null;
+
   let globalIdx = 0;
 
   return (
@@ -201,10 +213,11 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
         </div>
       </div>
 
-      {/* Lesson path */}
+      {/* Lesson path — current section only */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", paddingBottom: 80 }}>
-        {stages.map((stage, si) => {
-          const stageLocked = stage.status === "locked";
+        {(() => {
+          const stage = currentStage;
+          const si = currentStageIndex;
           const stageTotal = stage.units.flatMap((u) => u.lessons).length;
           const stageDone = stage.units
             .flatMap((u) => u.lessons)
@@ -212,38 +225,31 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
 
           return (
             <div key={stage.id} style={{ width: "100%" }}>
-              {/* Section header — Material Symbol, no emoji */}
+              {/* Section header */}
               <div
                 style={{
                   borderRadius: 16,
-                  backgroundColor: stageLocked ? C.surfaceHigh : "rgba(87,78,177,0.12)",
-                  border: `2px solid ${stageLocked ? C.border : "rgba(87,78,177,0.35)"}`,
+                  backgroundColor: "rgba(87,78,177,0.12)",
+                  border: "2px solid rgba(87,78,177,0.35)",
                   padding: "14px 18px",
                   marginBottom: 24,
-                  opacity: stageLocked ? 0.5 : 1,
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  {/* Icon — uniform Material Symbol */}
                   <div
                     style={{
                       width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      backgroundColor: stageLocked ? "#2a2838" : C.primary,
+                      backgroundColor: C.primary,
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}
                   >
                     <span
                       className="material-symbols-outlined"
-                      style={{
-                        fontSize: 22,
-                        color: stageLocked ? C.muted : "white",
-                        fontVariationSettings: "'FILL' 1",
-                      }}
+                      style={{ fontSize: 22, color: "white", fontVariationSettings: "'FILL' 1" }}
                     >
-                      {stageLocked ? "lock" : SECTION_ICONS[si % SECTION_ICONS.length]}
+                      {SECTION_ICONS[si % SECTION_ICONS.length]}
                     </span>
                   </div>
-
                   <div style={{ flex: 1 }}>
                     <p
                       style={{
@@ -263,34 +269,20 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                       {stage.title}
                     </h3>
                   </div>
-
-                  <span
-                    style={{
-                      color: C.muted, fontFamily: "'Nunito', sans-serif",
-                      fontSize: 12, fontWeight: 700,
-                    }}
-                  >
+                  <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700 }}>
                     {stageDone}/{stageTotal}
                   </span>
                 </div>
-
-                {!stageLocked && (
+                <div style={{ marginTop: 10, height: 5, borderRadius: 3, backgroundColor: "#2a2838", overflow: "hidden" }}>
                   <div
                     style={{
-                      marginTop: 10, height: 5, borderRadius: 3,
-                      backgroundColor: "#2a2838", overflow: "hidden",
+                      height: "100%", borderRadius: 3,
+                      backgroundColor: stageDone === stageTotal ? C.secondary : C.primary,
+                      width: `${stageTotal > 0 ? (stageDone / stageTotal) * 100 : 0}%`,
+                      transition: "width 0.4s ease",
                     }}
-                  >
-                    <div
-                      style={{
-                        height: "100%", borderRadius: 3,
-                        backgroundColor: stageDone === stageTotal ? C.secondary : C.primary,
-                        width: `${stageTotal > 0 ? (stageDone / stageTotal) * 100 : 0}%`,
-                        transition: "width 0.4s ease",
-                      }}
-                    />
-                  </div>
-                )}
+                  />
+                </div>
               </div>
 
               {/* Units */}
@@ -353,13 +345,13 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                             initial={{ opacity: 0, scale: 0.75 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{
-                              delay: si * 0.015 + ui * 0.01 + li * 0.04,
+                              delay: ui * 0.01 + li * 0.04,
                               duration: 0.3,
                               ease: [0.22, 1, 0.36, 1],
                             }}
                             style={{ position: "relative", transform: `translateX(${offset}px)` }}
                           >
-                            {/* START badge — right side of node */}
+                            {/* START badge */}
                             {isActive && (
                               <div
                                 style={{
@@ -434,7 +426,77 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
               })}
             </div>
           );
-        })}
+        })()}
+
+        {/* UP NEXT card */}
+        {nextStage && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            style={{
+              width: "100%", marginTop: 16,
+              borderRadius: 20,
+              backgroundColor: C.surfaceHigh,
+              border: `2px solid ${C.border}`,
+              padding: "28px 24px 24px",
+              textAlign: "center",
+            }}
+          >
+            {/* "UP NEXT" chip */}
+            <div style={{ marginBottom: 14 }}>
+              <span
+                style={{
+                  backgroundColor: "#2a2838",
+                  color: C.muted, fontFamily: "'Nunito', sans-serif",
+                  fontSize: 10, fontWeight: 800,
+                  textTransform: "uppercase", letterSpacing: "0.12em",
+                  padding: "4px 12px", borderRadius: 6,
+                }}
+              >
+                Up Next
+              </span>
+            </div>
+
+            {/* Next section name */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 20, color: C.muted }}>lock</span>
+              <h3
+                style={{
+                  color: C.text, fontFamily: "'Nunito', sans-serif",
+                  fontSize: 20, fontWeight: 900, margin: 0,
+                }}
+              >
+                Section {currentStageIndex + 2}: {nextStage.title}
+              </h3>
+            </div>
+
+            <p
+              style={{
+                color: C.muted, fontFamily: "'Nunito', sans-serif",
+                fontSize: 13, margin: "0 auto 20px",
+                maxWidth: 300, lineHeight: 1.5,
+              }}
+            >
+              {nextStage.description}
+            </p>
+
+            <button
+              onClick={onShowSections}
+              style={{
+                width: "100%", padding: "13px 0", borderRadius: 14,
+                backgroundColor: "transparent",
+                border: `2px solid ${C.border}`,
+                color: C.muted, fontFamily: "'Nunito', sans-serif",
+                fontWeight: 800, fontSize: 13,
+                textTransform: "uppercase", letterSpacing: "0.08em",
+                cursor: "pointer",
+              }}
+            >
+              Jump Here?
+            </button>
+          </motion.div>
+        )}
       </div>
     </>
   );
