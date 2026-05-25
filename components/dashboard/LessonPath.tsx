@@ -299,7 +299,7 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                 const sentinelKey = `${si},${ui}`;
 
                 return (
-                  <div key={unit.id}>
+                  <div key={unit.id} style={{ display: "flex", flexDirection: "column" }}>
                     {/* Scroll sentinel */}
                     <div
                       ref={(el) => {
@@ -343,7 +343,11 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                       return (
                         <div
                           key={lesson.id}
-                          style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}
+                          style={{
+                            display: "flex", justifyContent: "center",
+                            marginBottom: isActive ? 34 : 22,
+                            marginTop: isActive ? 10 : 0,
+                          }}
                         >
                           <motion.div
                             initial={{ opacity: 0, scale: 0.75 }}
