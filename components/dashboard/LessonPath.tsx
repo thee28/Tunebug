@@ -355,17 +355,19 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                             }}
                             style={{ position: "relative", transform: `translateX(${offset}px)` }}
                           >
-                            {/* START badge */}
+                            {/* START badge — right side of node */}
                             {isActive && (
                               <div
                                 style={{
-                                  position: "absolute", top: -26, left: "50%",
-                                  transform: "translateX(-50%)",
+                                  position: "absolute",
+                                  left: "calc(100% + 14px)",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
                                   backgroundColor: C.border,
                                   color: C.text, fontFamily: "'Nunito', sans-serif",
                                   fontSize: 11, fontWeight: 800,
                                   textTransform: "uppercase", letterSpacing: "0.08em",
-                                  padding: "3px 10px", borderRadius: 6,
+                                  padding: "5px 12px", borderRadius: 8,
                                   whiteSpace: "nowrap",
                                 }}
                               >
@@ -387,15 +389,17 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                                 width: size, height: size,
                                 borderRadius: "50%",
                                 backgroundColor: isDone ? C.secondary : isLocked ? "#2a2838" : C.primary,
-                                boxShadow: `0 ${isActive ? 8 : 6}px 0 0 ${
-                                  isDone ? C.secondaryDark : isLocked ? "rgba(0,0,0,0.4)" : C.primaryDark
-                                }`,
+                                boxShadow: isActive
+                                  ? `0 8px 0 0 ${C.primaryDark}, 0 0 0 10px #2a2838, 0 8px 0 10px #2a2838`
+                                  : isDone
+                                  ? `0 6px 0 0 ${C.secondaryDark}`
+                                  : isLocked
+                                  ? `0 6px 0 0 rgba(0,0,0,0.4)`
+                                  : `0 6px 0 0 ${C.primaryDark}`,
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 opacity: isLocked ? 0.38 : 1,
                                 cursor: isLocked ? "not-allowed" : "pointer",
                                 border: "none",
-                                outline: isActive ? `3px solid rgba(197,192,255,0.35)` : "none",
-                                outlineOffset: 5,
                               }}
                             >
                               <span
