@@ -356,7 +356,7 @@ export default async function DashboardPage() {
 
       {/* ── Main content — inset by sidebar widths ── */}
       <main
-        className="pt-20 pb-24 md:pb-8 md:ml-64 lg:mr-80 min-h-screen flex flex-col items-center px-6 py-8"
+        className="pt-14 pb-24 md:pb-8 md:ml-64 lg:mr-80 min-h-screen flex flex-col items-center px-6"
       >
         <DashboardContent stages={stages} difficulties={difficulties} />
       </main>

@@ -159,7 +159,7 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
       </AnimatePresence>
 
       {/* Sticky banner — clicking shows sections inline */}
-      <div style={{ position: "sticky", top: 56, zIndex: 10, width: "100%", marginBottom: 20 }}>
+      <div style={{ position: "sticky", top: 56, zIndex: 10, width: "100%", marginBottom: 20, backgroundColor: "#0F0F13", paddingTop: 20 }}>
         <div
           style={{
             borderRadius: 16,
