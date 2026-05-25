@@ -296,21 +296,28 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
                           >
                             {/* START badge */}
                             {isActive && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  left: "calc(100% + 14px)",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  backgroundColor: C.border,
-                                  color: C.text, fontFamily: "'Nunito', sans-serif",
-                                  fontSize: 11, fontWeight: 800,
-                                  textTransform: "uppercase", letterSpacing: "0.08em",
-                                  padding: "5px 12px", borderRadius: 8,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                START
+                              <div style={{
+                                position: "absolute",
+                                left: "calc(100% + 14px)",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                              }}>
+                                <div
+                                  className="start-badge-bounce"
+                                  style={{
+                                    backgroundColor: C.border,
+                                    color: C.text,
+                                    fontFamily: "'Nunito', sans-serif",
+                                    fontSize: 11, fontWeight: 800,
+                                    textTransform: "uppercase", letterSpacing: "0.08em",
+                                    padding: "6px 14px 6px 26px",
+                                    borderRadius: 8,
+                                    whiteSpace: "nowrap",
+                                    clipPath: "polygon(20px 0%, 100% 0%, 100% 100%, 20px 100%, 0% 50%)",
+                                  }}
+                                >
+                                  START
+                                </div>
                               </div>
                             )}
 
