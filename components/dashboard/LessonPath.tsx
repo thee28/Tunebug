@@ -40,15 +40,17 @@ interface BannerInfo {
   section: number;
   unit: number;
   unitTitle: string;
+  unitSlug: string;
 }
 
 interface Props {
   stages: Stage[];
   difficulties: Record<string, Difficulty>;
   onShowSections: () => void;
+  onShowGuidebook: (unitSlug: string, unitTitle: string) => void;
 }
 
-export default function LessonPath({ stages, difficulties, onShowSections }: Props) {
+export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     () =>
       new Set(
@@ -65,11 +67,12 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
       for (let ui = 0; ui < stages[si].units.length; ui++) {
         const unit = stages[si].units[ui];
         if (unit.status !== "locked") {
-          return { section: si + 1, unit: ui + 1, unitTitle: unit.title };
+          return { section: si + 1, unit: ui + 1, unitTitle: unit.title, unitSlug: unit.slug };
         }
       }
     }
-    return { section: 1, unit: 1, unitTitle: stages[0]?.units[0]?.title ?? "" };
+    const u0 = stages[0]?.units[0];
+    return { section: 1, unit: 1, unitTitle: u0?.title ?? "", unitSlug: u0?.slug ?? "" };
   });
 
   const sentinelRefs = useRef<Map<string, Element>>(new Map());
@@ -83,7 +86,7 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
       const obs = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting)
-            setBannerInfo({ section: si + 1, unit: ui + 1, unitTitle: unit.title });
+            setBannerInfo({ section: si + 1, unit: ui + 1, unitTitle: unit.title, unitSlug: unit.slug });
         },
         { rootMargin: "-10% 0px -65% 0px", threshold: 0 }
       );
@@ -200,23 +203,23 @@ export default function LessonPath({ stages, difficulties, onShowSections }: Pro
             </h2>
           </button>
 
-          {/* Right: guidebook link */}
-          <a
-            href="/practice"
+          {/* Right: guidebook button */}
+          <button
+            onClick={() => onShowGuidebook(bannerInfo.unitSlug, bannerInfo.unitTitle)}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "8px 14px", borderRadius: 10,
               backgroundColor: "rgba(255,255,255,0.15)",
               border: "2px solid rgba(255,255,255,0.25)",
-              color: "white", textDecoration: "none",
+              color: "white",
               fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 800,
               textTransform: "uppercase", letterSpacing: "0.06em",
-              flexShrink: 0, marginLeft: 12,
+              flexShrink: 0, marginLeft: 12, cursor: "pointer",
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>menu_book</span>
             Guidebook
-          </a>
+          </button>
         </div>
       </div>
 

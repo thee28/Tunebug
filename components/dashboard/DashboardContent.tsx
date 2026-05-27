@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LessonPath from "./LessonPath";
 import SectionList from "./SectionList";
+import Guidebook from "./Guidebook";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 
@@ -17,15 +18,48 @@ const C = {
 interface Props {
   stages: Stage[];
   difficulties: Record<string, Difficulty>;
+  stageTitle: string;
 }
 
-export default function DashboardContent({ stages, difficulties }: Props) {
-  const [showSections, setShowSections] = useState(false);
+type View = "path" | "sections" | "guidebook";
+
+export default function DashboardContent({ stages, difficulties, stageTitle }: Props) {
+  const [view, setView] = useState<View>("path");
+  const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
+
+  function openGuidebook(unitSlug: string, unitTitle: string) {
+    setGuidebookUnit({ slug: unitSlug, title: unitTitle });
+    setView("guidebook");
+  }
+
+  const stickyBack = (label: string, onClick: () => void) => (
+    <div style={{
+      position: "sticky", top: 56, zIndex: 10,
+      backgroundColor: C.dark,
+      paddingTop: 20, marginBottom: 20,
+    }}>
+      <button
+        onClick={onClick}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: C.muted, fontFamily: "'Nunito', sans-serif",
+          fontSize: 14, fontWeight: 700,
+          padding: "0 0 14px",
+          width: "100%",
+        }}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
+        {label}
+      </button>
+      <div style={{ height: 1, backgroundColor: C.border }} />
+    </div>
+  );
 
   return (
     <div style={{ width: "100%", maxWidth: 560 }}>
       <AnimatePresence mode="wait" initial={false}>
-        {showSections ? (
+        {view === "sections" && (
           <motion.div
             key="sections"
             initial={{ opacity: 0, x: 24 }}
@@ -33,42 +67,32 @@ export default function DashboardContent({ stages, difficulties }: Props) {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            {/* Sticky back button */}
-            <div style={{
-              position: "sticky", top: 56, zIndex: 10,
-              backgroundColor: C.dark,
-              paddingTop: 20, paddingBottom: 0,
-              marginBottom: 20,
-            }}>
-              <button
-                onClick={() => setShowSections(false)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: "none", border: "none", cursor: "pointer",
-                  color: C.muted, fontFamily: "'Nunito', sans-serif",
-                  fontSize: 14, fontWeight: 700,
-                  padding: "0 0 14px",
-                  width: "100%",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
-                Back
-              </button>
-              <div style={{ height: 1, backgroundColor: C.border }} />
-            </div>
-
-            <h1
-              style={{
-                color: C.text, fontFamily: "'Nunito', sans-serif",
-                fontSize: 20, fontWeight: 900, margin: "0 0 16px",
-              }}
-            >
+            {stickyBack("Back", () => setView("path"))}
+            <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 20, fontWeight: 900, margin: "0 0 16px" }}>
               All Sections
             </h1>
-
-            <SectionList stages={stages} onBack={() => setShowSections(false)} />
+            <SectionList stages={stages} onBack={() => setView("path")} />
           </motion.div>
-        ) : (
+        )}
+
+        {view === "guidebook" && guidebookUnit && (
+          <motion.div
+            key="guidebook"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.18 }}
+          >
+            {stickyBack("Back", () => setView("path"))}
+            <Guidebook
+              unitSlug={guidebookUnit.slug}
+              unitTitle={guidebookUnit.title}
+              stageTitle={stageTitle}
+            />
+          </motion.div>
+        )}
+
+        {view === "path" && (
           <motion.div
             key="path"
             initial={{ opacity: 0 }}
@@ -80,7 +104,8 @@ export default function DashboardContent({ stages, difficulties }: Props) {
             <LessonPath
               stages={stages}
               difficulties={difficulties}
-              onShowSections={() => setShowSections(true)}
+              onShowSections={() => setView("sections")}
+              onShowGuidebook={openGuidebook}
             />
           </motion.div>
         )}

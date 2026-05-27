@@ -358,7 +358,11 @@ export default async function DashboardPage() {
       <main
         className="pt-14 pb-24 md:pb-8 md:ml-64 lg:mr-80 min-h-screen flex flex-col items-center px-6"
       >
-        <DashboardContent stages={stages} difficulties={difficulties} />
+        <DashboardContent
+          stages={stages}
+          difficulties={difficulties}
+          stageTitle={stages.find((s) => s.status !== "complete")?.title ?? stages[0]?.title ?? ""}
+        />
       </main>
 
       {/* ── Mobile Bottom Nav ── */}
