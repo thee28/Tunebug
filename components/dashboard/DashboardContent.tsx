@@ -10,6 +10,8 @@ import type { Difficulty } from "@/lib/curriculum/content";
 const C = {
   muted: "#938F99",
   text: "#f3eff5",
+  dark: "#0F0F13",
+  border: "#33313D",
 };
 
 interface Props {
@@ -31,20 +33,29 @@ export default function DashboardContent({ stages, difficulties }: Props) {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            {/* Back button */}
-            <button
-              onClick={() => setShowSections(false)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: "none", border: "none", cursor: "pointer",
-                color: C.muted, fontFamily: "'Nunito', sans-serif",
-                fontSize: 14, fontWeight: 700,
-                padding: "0 0 18px",
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
-              Back
-            </button>
+            {/* Sticky back button */}
+            <div style={{
+              position: "sticky", top: 56, zIndex: 10,
+              backgroundColor: C.dark,
+              paddingTop: 20, paddingBottom: 0,
+              marginBottom: 20,
+            }}>
+              <button
+                onClick={() => setShowSections(false)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "none", border: "none", cursor: "pointer",
+                  color: C.muted, fontFamily: "'Nunito', sans-serif",
+                  fontSize: 14, fontWeight: 700,
+                  padding: "0 0 14px",
+                  width: "100%",
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
+                Back
+              </button>
+              <div style={{ height: 1, backgroundColor: C.border }} />
+            </div>
 
             <h1
               style={{
