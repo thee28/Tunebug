@@ -48,9 +48,10 @@ interface Props {
   difficulties: Record<string, Difficulty>;
   onShowSections: () => void;
   onShowGuidebook: (unitSlug: string, unitTitle: string) => void;
+  scrollToUnitSlug?: string;
 }
 
-export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook }: Props) {
+export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, scrollToUnitSlug }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     () =>
       new Set(
@@ -95,6 +96,30 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
     });
     return () => observers.forEach((o) => o.disconnect());
   }, [stages]);
+
+  useEffect(() => {
+    if (!scrollToUnitSlug) return;
+    const timer = setTimeout(() => {
+      for (let si = 0; si < stages.length; si++) {
+        for (let ui = 0; ui < stages[si].units.length; ui++) {
+          if (stages[si].units[ui].slug === scrollToUnitSlug) {
+            if (ui === 0) {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              return;
+            }
+            const el = sentinelRefs.current.get(`${si},${ui}`);
+            if (el) {
+              // 56 header + 20 pad + ~68 banner + 20 margin + 16 breathing room
+              const y = el.getBoundingClientRect().top + window.scrollY - 200;
+              window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+            }
+            return;
+          }
+        }
+      }
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [scrollToUnitSlug, stages]);
 
   const firstActiveLessonId = useMemo(() => {
     for (const stage of stages) {

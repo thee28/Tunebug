@@ -26,10 +26,16 @@ type View = "path" | "sections" | "guidebook";
 export default function DashboardContent({ stages, difficulties, stageTitle }: Props) {
   const [view, setView] = useState<View>("path");
   const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
+  const [scrollToUnit, setScrollToUnit] = useState<string | undefined>();
 
   function openGuidebook(unitSlug: string, unitTitle: string) {
     setGuidebookUnit({ slug: unitSlug, title: unitTitle });
     setView("guidebook");
+  }
+
+  function backFromGuidebook() {
+    setScrollToUnit(guidebookUnit?.slug);
+    setView("path");
   }
 
   const stickyBack = (label: string, onClick: () => void) => (
@@ -83,7 +89,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            {stickyBack("Back", () => setView("path"))}
+            {stickyBack("Back", backFromGuidebook)}
             <Guidebook
               unitSlug={guidebookUnit.slug}
               unitTitle={guidebookUnit.title}
@@ -106,6 +112,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
               difficulties={difficulties}
               onShowSections={() => setView("sections")}
               onShowGuidebook={openGuidebook}
+              scrollToUnitSlug={scrollToUnit}
             />
           </motion.div>
         )}
