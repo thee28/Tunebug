@@ -55,10 +55,9 @@ export function IntervalIdExercise({ config, difficulty, submitted, onAnswerChan
   };
 
   useEffect(() => {
-    if (submitted && selected !== null) {
-      const passed = selected === config.correctAnswer;
-      onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.correctAnswer });
-    }
+    if (!submitted) return;
+    const passed = selected === config.correctAnswer;
+    onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.correctAnswer });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
@@ -94,9 +93,8 @@ export function IntervalIdExercise({ config, difficulty, submitted, onAnswerChan
           const isCorrect = choice === config.correctAnswer;
           const isSelected = choice === selected;
           let bg = C.surfaceHigh, border = C.border;
-          if (submitted) {
-            if (isCorrect) { bg = C.success; border = C.success; }
-            else if (isSelected) { bg = C.error; border = C.error; }
+          if (submitted && isSelected) {
+            bg = C.selected; border = C.primary;
           } else if (isSelected) {
             bg = C.selected; border = C.primary;
           }
@@ -113,12 +111,6 @@ export function IntervalIdExercise({ config, difficulty, submitted, onAnswerChan
               }}
             >
               {choice}
-              {submitted && isCorrect && (
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
-              )}
-              {submitted && isSelected && !isCorrect && (
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
-              )}
             </button>
           );
         })}

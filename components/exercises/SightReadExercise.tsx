@@ -56,10 +56,9 @@ export function SightReadExercise({ config, submitted, onAnswerChange, onComplet
   };
 
   useEffect(() => {
-    if (submitted && selected !== null) {
-      const passed = selected === config.targetNote;
-      onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.targetNote });
-    }
+    if (!submitted) return;
+    const passed = selected === config.targetNote;
+    onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.targetNote });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
@@ -88,9 +87,8 @@ export function SightReadExercise({ config, submitted, onAnswerChange, onComplet
           const isTarget = note === config.targetNote;
           const isSelected = note === selected;
           let bg = "white", border = "#ccc";
-          if (submitted) {
-            if (isTarget) { bg = "#4ade80"; border = "#22c55e"; }
-            else if (isSelected && !isTarget) { bg = "#fca5a5"; border = "#ef4444"; }
+          if (submitted && isSelected) {
+            bg = "#a5b4fc"; border = C.primary;
           } else if (isSelected) {
             bg = "#a5b4fc"; border = C.primary;
           }

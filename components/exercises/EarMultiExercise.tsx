@@ -54,13 +54,12 @@ export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange
   };
 
   useEffect(() => {
-    if (submitted && selected.size > 0) {
-      const correct = config.correctAnswers;
-      const sel = [...selected];
-      const hits = sel.filter((s) => correct.includes(s)).length;
-      const score = Math.round((hits / correct.length) * 100);
-      onComplete({ score, passed: score >= 70, correctAnswerText: correct.join(", ") });
-    }
+    if (!submitted) return;
+    const correct = config.correctAnswers;
+    const sel = [...selected];
+    const hits = sel.filter((s) => correct.includes(s)).length;
+    const score = sel.length === 0 ? 0 : Math.round((hits / correct.length) * 100);
+    onComplete({ score, passed: score >= 70, correctAnswerText: correct.join(", ") });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
@@ -93,10 +92,8 @@ export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange
           const isCorrect = config.correctAnswers.includes(choice);
           const isSelected = selected.has(choice);
           let bg = C.surfaceHigh, border = C.border;
-          if (submitted) {
-            if (isCorrect && isSelected) { bg = C.success; border = C.success; }
-            else if (!isCorrect && isSelected) { bg = C.error; border = C.error; }
-            else if (isCorrect && !isSelected) { border = C.success; }
+          if (submitted && isSelected) {
+            bg = C.selected; border = C.primary;
           } else if (isSelected) {
             bg = C.selected; border = C.primary;
           }

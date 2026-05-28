@@ -49,10 +49,9 @@ export function EarSingleExercise({ config, difficulty, submitted, onAnswerChang
   };
 
   useEffect(() => {
-    if (submitted && selected !== null) {
-      const passed = selected === config.correctAnswer;
-      onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.correctAnswer });
-    }
+    if (!submitted) return;
+    const passed = selected === config.correctAnswer;
+    onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.correctAnswer });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
@@ -86,9 +85,8 @@ export function EarSingleExercise({ config, difficulty, submitted, onAnswerChang
           const isCorrect = choice === config.correctAnswer;
           const isSelected = choice === selected;
           let bg = C.surfaceHigh, border = C.border, color = C.text;
-          if (submitted) {
-            if (isCorrect) { bg = C.success; border = C.success; }
-            else if (isSelected) { bg = C.error; border = C.error; }
+          if (submitted && isSelected) {
+            bg = C.selected; border = C.primary;
           } else if (isSelected) {
             bg = C.selected; border = C.primary;
           }
@@ -105,12 +103,6 @@ export function EarSingleExercise({ config, difficulty, submitted, onAnswerChang
               }}
             >
               {choice}
-              {submitted && isCorrect && (
-                <span className="material-symbols-outlined" style={{ fontSize: 16, marginLeft: 6, verticalAlign: "middle" }}>check</span>
-              )}
-              {submitted && isSelected && !isCorrect && (
-                <span className="material-symbols-outlined" style={{ fontSize: 16, marginLeft: 6, verticalAlign: "middle" }}>close</span>
-              )}
             </button>
           );
         })}

@@ -70,6 +70,10 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
     setSubmitted(true);
   };
 
+  const handleSkip = () => {
+    setSubmitted(true);
+  };
+
   const progressPct = ((phase === "result" ? exercises.length : index) / exercises.length) * 100;
   const isCorrect = pendingResult?.passed ?? false;
 
@@ -224,7 +228,20 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
               </div>
             </div>
           ) : (
-            <div />
+            <button
+              onClick={handleSkip}
+              style={{
+                padding: "16px 40px", borderRadius: 14,
+                backgroundColor: "transparent",
+                border: `2px solid ${C.border}`,
+                color: C.muted,
+                fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 800,
+                textTransform: "uppercase", letterSpacing: "0.06em",
+                cursor: "pointer",
+              }}
+            >
+              Skip
+            </button>
           )}
 
           {/* Right: CHECK or CONTINUE button */}
