@@ -21,7 +21,7 @@ interface Props {
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
-  surface: "#141321", surfaceHigh: "#211F26",
+  surface: "#0F0F13", surfaceHigh: "#211F26",
   border: "#33313D", muted: "#938F99",
   success: "#006c4e", successDim: "#83f5c6",
   error: "#8b2828", errorDim: "#ffb4ab",
@@ -78,8 +78,8 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
 
       {/* ── Top bar ── */}
       <div style={{
-        display: "flex", alignItems: "center", padding: "0 20px",
-        height: 64, gap: 16, flexShrink: 0,
+        display: "flex", alignItems: "center", padding: "0 72px",
+        height: 64, gap: 8, flexShrink: 0,
       }}>
         <button
           onClick={onExit}
@@ -87,13 +87,14 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
             width: 36, height: 36, borderRadius: "50%",
             background: "none", border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
+            marginTop: 8,
           }}
         >
           <span className="material-symbols-outlined" style={{ color: C.muted, fontSize: 26 }}>close</span>
         </button>
 
         {/* Progress bar */}
-        <div style={{ flex: 1, height: 14, borderRadius: 7, backgroundColor: C.surfaceHigh, overflow: "hidden" }}>
+        <div style={{ flex: 1, height: 14, borderRadius: 7, backgroundColor: C.surfaceHigh, overflow: "hidden", marginTop: 8 }}>
           <div style={{
             height: "100%", borderRadius: 7,
             backgroundColor: C.primary,
@@ -103,9 +104,9 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
         </div>
 
         {/* Hearts */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 22, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}>favorite</span>
-          <span style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700 }}>∞</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 28, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}>favorite</span>
+          <span style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 18, fontWeight: 700 }}>∞</span>
         </div>
       </div>
 
@@ -198,7 +199,7 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
           borderTop: pendingResult
             ? `2px solid ${isCorrect ? C.success : C.error}`
             : `2px solid ${C.border}`,
-          padding: "16px 24px",
+          padding: "24px 80px",
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
           transition: "background-color 0.2s, border-color 0.2s",
         }}>
@@ -231,11 +232,11 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
             <button
               onClick={handleContinue}
               style={{
-                padding: "14px 40px", borderRadius: 14,
+                padding: "16px 56px", borderRadius: 14,
                 backgroundColor: isCorrect ? C.success : C.error,
                 boxShadow: `0 4px 0 0 ${isCorrect ? "#00513a" : "#6b1c1c"}`,
                 color: "white", border: "none",
-                fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 800,
+                fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 800,
                 textTransform: "uppercase", letterSpacing: "0.06em",
                 cursor: "pointer",
               }}
@@ -247,12 +248,12 @@ export function LessonRunner({ title, exercises, difficulty, xpReward, onComplet
               onClick={handleCheck}
               disabled={!hasAnswer}
               style={{
-                padding: "14px 40px", borderRadius: 14,
+                padding: "16px 56px", borderRadius: 14,
                 backgroundColor: hasAnswer ? C.primary : C.surfaceHigh,
                 boxShadow: hasAnswer ? `0 4px 0 0 ${C.primaryDark}` : "none",
                 color: hasAnswer ? "white" : C.muted,
                 border: hasAnswer ? "none" : `2px solid ${C.border}`,
-                fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 800,
+                fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 800,
                 textTransform: "uppercase", letterSpacing: "0.06em",
                 cursor: hasAnswer ? "pointer" : "not-allowed",
                 transition: "background-color 0.15s, box-shadow 0.15s",
