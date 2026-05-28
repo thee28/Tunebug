@@ -63,6 +63,9 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
   );
   const [exercise, setExercise] = useState<ExerciseState | null>(null);
 
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [pressedId, setPressedId] = useState<string | null>(null);
+
   const [bannerInfo, setBannerInfo] = useState<BannerInfo>(() => {
     for (let si = 0; si < stages.length; si++) {
       for (let ui = 0; ui < stages[si].units.length; ui++) {
@@ -350,6 +353,19 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                             )}
 
                             {/* Node */}
+                            {(() => {
+                              const isHovered = !isLocked && hoveredId === lesson.id;
+                              const isPressed = !isLocked && pressedId === lesson.id;
+                              const dy = isPressed ? 6 : isHovered ? 3 : 0;
+                              const baseV = isActive ? 8 : 6;
+                              const shadow = isActive
+                                ? `0 ${Math.max(baseV - dy, 2)}px 0 0 ${C.primaryDark}, 0 0 0 10px #2a2838, 0 ${Math.max(baseV - dy, 2)}px 0 10px #2a2838`
+                                : isDone
+                                ? `0 ${Math.max(6 - dy, 0)}px 0 0 ${C.secondaryDark}`
+                                : isLocked
+                                ? `0 6px 0 0 rgba(0,0,0,0.4)`
+                                : `0 ${Math.max(6 - dy, 0)}px 0 0 ${C.primaryDark}`;
+                              return (
                             <button
                               onClick={() =>
                                 !isLocked &&
@@ -358,24 +374,25 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                                   difficulty: difficulties[stage.slug] ?? "beginner",
                                 })
                               }
+                              onMouseEnter={() => !isLocked && setHoveredId(lesson.id)}
+                              onMouseLeave={() => { setHoveredId(null); setPressedId(null); }}
+                              onMouseDown={() => !isLocked && setPressedId(lesson.id)}
+                              onMouseUp={() => setPressedId(null)}
                               disabled={isLocked}
                               style={{
                                 width: size, height: size,
                                 borderRadius: "50%",
                                 backgroundColor: isDone ? C.secondary : isLocked ? "#2a2838" : C.primary,
-                                boxShadow: isActive
-                                  ? `0 8px 0 0 ${C.primaryDark}, 0 0 0 10px #2a2838, 0 8px 0 10px #2a2838`
-                                  : isDone
-                                  ? `0 6px 0 0 ${C.secondaryDark}`
-                                  : isLocked
-                                  ? `0 6px 0 0 rgba(0,0,0,0.4)`
-                                  : `0 6px 0 0 ${C.primaryDark}`,
+                                boxShadow: shadow,
+                                transform: `translateY(${dy}px)`,
+                                transition: "transform 0.08s ease, box-shadow 0.08s ease",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 opacity: isLocked ? 0.38 : 1,
                                 cursor: isLocked ? "not-allowed" : "pointer",
                                 border: "none",
                               }}
                             >
+
                               <span
                                 className="material-symbols-outlined"
                                 style={{
@@ -393,6 +410,8 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                                   : EXERCISE_ICONS[lesson.exerciseType] ?? "music_note"}
                               </span>
                             </button>
+                              );
+                            })()}
                           </motion.div>
                         </div>
                       );
