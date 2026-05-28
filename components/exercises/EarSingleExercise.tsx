@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { EarSingleConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -8,25 +8,20 @@ import type { ExerciseResult } from "./ExerciseEngine";
 interface Props {
   config: EarSingleConfig;
   difficulty: Difficulty;
+  submitted: boolean;
+  onAnswerChange: (hasAnswer: boolean) => void;
   onComplete: (result: ExerciseResult) => void;
 }
 
 const C = {
-  primary: "#574eb1",
-  primaryDark: "#41379b",
-  surfaceHigh: "#211F26",
-  border: "#33313D",
-  muted: "#938F99",
-  success: "#006c4e",
-  successDark: "#00513a",
-  error: "#8b2828",
-  errorDark: "#6b1c1c",
-  text: "#f3eff5",
+  primary: "#574eb1", primaryDark: "#41379b",
+  surfaceHigh: "#211F26", border: "#33313D", muted: "#938F99",
+  success: "#006c4e", error: "#8b2828", text: "#f3eff5",
+  selected: "#3d3580",
 };
 
-export function EarSingleExercise({ config, difficulty, onComplete }: Props) {
+export function EarSingleExercise({ config, difficulty, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
@@ -48,21 +43,25 @@ export function EarSingleExercise({ config, difficulty, onComplete }: Props) {
   }, [config.targetNote, playing]);
 
   const handleSelect = (choice: string) => {
-    if (revealed) return;
+    if (submitted) return;
     setSelected(choice);
-    setRevealed(true);
+    onAnswerChange(true);
   };
 
-  const handleContinue = () => {
-    onComplete({ score: selected === config.correctAnswer ? 100 : 0, passed: selected === config.correctAnswer });
-  };
+  useEffect(() => {
+    if (submitted && selected !== null) {
+      const passed = selected === config.correctAnswer;
+      onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.correctAnswer });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted]);
 
   const cols = config.choices.length <= 4 ? 2 : 3;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
-      <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
-        {difficulty === "beginner" ? "Listen to the note, then pick the correct name." : "Identify the note."}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
+      <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
+        {difficulty === "beginner" ? "What note do you hear?" : "Identify the note."}
       </p>
 
       <button
@@ -87,9 +86,11 @@ export function EarSingleExercise({ config, difficulty, onComplete }: Props) {
           const isCorrect = choice === config.correctAnswer;
           const isSelected = choice === selected;
           let bg = C.surfaceHigh, border = C.border, color = C.text;
-          if (revealed) {
+          if (submitted) {
             if (isCorrect) { bg = C.success; border = C.success; }
             else if (isSelected) { bg = C.error; border = C.error; }
+          } else if (isSelected) {
+            bg = C.selected; border = C.primary;
           }
           return (
             <button
@@ -99,40 +100,21 @@ export function EarSingleExercise({ config, difficulty, onComplete }: Props) {
                 padding: "18px 0", borderRadius: 14,
                 backgroundColor: bg, border: `2px solid ${border}`, color,
                 fontFamily: "'Nunito', sans-serif", fontSize: 20, fontWeight: 700,
-                cursor: revealed ? "default" : "pointer",
+                cursor: submitted ? "default" : "pointer",
                 transition: "background-color 0.15s",
               }}
             >
               {choice}
-              {revealed && isCorrect && (
+              {submitted && isCorrect && (
                 <span className="material-symbols-outlined" style={{ fontSize: 16, marginLeft: 6, verticalAlign: "middle" }}>check</span>
               )}
-              {revealed && isSelected && !isCorrect && (
+              {submitted && isSelected && !isCorrect && (
                 <span className="material-symbols-outlined" style={{ fontSize: 16, marginLeft: 6, verticalAlign: "middle" }}>close</span>
               )}
             </button>
           );
         })}
       </div>
-
-      {revealed && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <p style={{ color: selected === config.correctAnswer ? "#4ade80" : "#f87171", fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: 15, margin: 0 }}>
-            {selected === config.correctAnswer ? "Correct!" : `It was ${config.correctAnswer}`}
-          </p>
-          <button
-            onClick={handleContinue}
-            style={{
-              padding: "14px 48px", borderRadius: 14,
-              backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
-              color: "white", border: "none",
-              fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            Continue
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ import { DIFFICULTY_SETTINGS } from "@/lib/curriculum/content";
 interface Props {
   config: PitchMatchConfig;
   difficulty: Difficulty;
+  submitted: boolean;
+  onAnswerChange: (hasAnswer: boolean) => void;
   onComplete: (result: ExerciseResult) => void;
 }
 

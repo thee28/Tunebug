@@ -53,20 +53,39 @@ export default function PracticePage() {
   const [mode, setMode] = useState<"config" | "exercise">("config");
   const [lastResult, setLastResult] = useState<ExerciseResult | null>(null);
 
+  // Free-practice submit flow (mirrors LessonRunner pattern)
+  const [submitted, setSubmitted] = useState(false);
+  const [hasAnswer, setHasAnswer] = useState(false);
+  const [pendingResult, setPendingResult] = useState<ExerciseResult | null>(null);
+
   const notePool = NOTE_POOLS[difficulty];
 
   const handleStart = () => {
     setLastResult(null);
+    setSubmitted(false);
+    setHasAnswer(false);
+    setPendingResult(null);
     setMode("exercise");
   };
 
-  const handleComplete = (result: ExerciseResult) => {
-    setLastResult(result);
+  const handleExerciseComplete = (result: ExerciseResult) => {
+    setPendingResult(result);
+  };
+
+  const handleCheck = () => {
+    if (!hasAnswer) return;
+    setSubmitted(true);
+  };
+
+  const handleContinue = () => {
+    if (!pendingResult) return;
+    setLastResult(pendingResult);
     setMode("config");
   };
 
   if (mode === "exercise") {
     const config = buildFreeExercise(exerciseType, selectedNote, difficulty);
+    const isCorrect = pendingResult?.passed ?? false;
     return (
       <div style={{ minHeight: "100vh", backgroundColor: C.surface, display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
@@ -75,10 +94,87 @@ export default function PracticePage() {
           </button>
           <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>Free Practice</span>
         </div>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px 120px" }}>
           <div style={{ width: "100%", maxWidth: 480 }}>
-            <ExerciseEngine type={exerciseType} config={config} difficulty={difficulty} onComplete={handleComplete} />
+            <ExerciseEngine
+              type={exerciseType}
+              config={config}
+              difficulty={difficulty}
+              submitted={submitted}
+              onAnswerChange={setHasAnswer}
+              onComplete={handleExerciseComplete}
+            />
           </div>
+        </div>
+        {/* Bottom action bar */}
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+          backgroundColor: pendingResult
+            ? isCorrect ? "rgba(0,108,78,0.2)" : "rgba(139,40,40,0.2)"
+            : C.surface,
+          borderTop: pendingResult
+            ? `2px solid ${isCorrect ? C.secondary : "#8b2828"}`
+            : `2px solid ${C.border}`,
+          padding: "16px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+          transition: "background-color 0.2s, border-color 0.2s",
+        }}>
+          {pendingResult ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: 28, color: isCorrect ? "#83f5c6" : "#ffb4ab", fontVariationSettings: "'FILL' 1" }}
+              >
+                {isCorrect ? "check_circle" : "cancel"}
+              </span>
+              <div>
+                <p style={{ color: isCorrect ? "#83f5c6" : "#ffb4ab", fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: 16, margin: 0 }}>
+                  {isCorrect ? "Correct!" : "Incorrect"}
+                </p>
+                {!isCorrect && pendingResult.correctAnswerText && (
+                  <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: 0 }}>
+                    Answer: {pendingResult.correctAnswerText}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
+          {pendingResult ? (
+            <button
+              onClick={handleContinue}
+              style={{
+                padding: "14px 40px", borderRadius: 14,
+                backgroundColor: isCorrect ? C.secondary : "#8b2828",
+                boxShadow: `0 4px 0 0 ${isCorrect ? "#00513a" : "#6b1c1c"}`,
+                color: "white", border: "none",
+                fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 800,
+                textTransform: "uppercase" as const, letterSpacing: "0.06em",
+                cursor: "pointer",
+              }}
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              onClick={handleCheck}
+              disabled={!hasAnswer}
+              style={{
+                padding: "14px 40px", borderRadius: 14,
+                backgroundColor: hasAnswer ? C.primary : C.surfaceHigh,
+                boxShadow: hasAnswer ? `0 4px 0 0 ${C.primaryDark}` : "none",
+                color: hasAnswer ? "white" : C.muted,
+                border: hasAnswer ? "none" : `2px solid ${C.border}`,
+                fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 800,
+                textTransform: "uppercase" as const, letterSpacing: "0.06em",
+                cursor: hasAnswer ? "pointer" : "not-allowed",
+                transition: "background-color 0.15s, box-shadow 0.15s",
+              }}
+            >
+              Check
+            </button>
+          )}
         </div>
       </div>
     );

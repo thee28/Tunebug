@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { IntervalIdConfig, IntervalName } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -8,6 +8,8 @@ import type { ExerciseResult } from "./ExerciseEngine";
 interface Props {
   config: IntervalIdConfig;
   difficulty: Difficulty;
+  submitted: boolean;
+  onAnswerChange: (hasAnswer: boolean) => void;
   onComplete: (result: ExerciseResult) => void;
 }
 
@@ -15,11 +17,11 @@ const C = {
   primary: "#574eb1", primaryDark: "#41379b",
   surfaceHigh: "#211F26", border: "#33313D", muted: "#938F99",
   success: "#006c4e", error: "#8b2828", text: "#f3eff5",
+  selected: "#3d3580",
 };
 
-export function IntervalIdExercise({ config, difficulty, onComplete }: Props) {
+export function IntervalIdExercise({ config, difficulty, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<IntervalName | null>(null);
-  const [revealed, setRevealed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
@@ -33,7 +35,6 @@ export function IntervalIdExercise({ config, difficulty, onComplete }: Props) {
         synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
       }
       const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
-      // Play noteA → noteB → both
       const now = Tone.now();
       synth.triggerAttackRelease(config.noteA, "0.4", now);
       synth.triggerAttackRelease(config.noteB, "0.4", now + 0.5);
@@ -48,22 +49,26 @@ export function IntervalIdExercise({ config, difficulty, onComplete }: Props) {
   }, [config.noteA, config.noteB, playing]);
 
   const handleSelect = (choice: IntervalName) => {
-    if (revealed) return;
+    if (submitted) return;
     setSelected(choice);
-    setRevealed(true);
+    onAnswerChange(true);
   };
 
-  const handleContinue = () => {
-    onComplete({ score: selected === config.correctAnswer ? 100 : 0, passed: selected === config.correctAnswer });
-  };
+  useEffect(() => {
+    if (submitted && selected !== null) {
+      const passed = selected === config.correctAnswer;
+      onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.correctAnswer });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
-          {difficulty === "beginner" ? "Listen to the two notes and name the interval." : "Identify the interval."}
+        <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
+          {difficulty === "beginner" ? "Name this interval" : "Identify the interval"}
         </p>
-        <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: 0, opacity: 0.6 }}>
+        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: 0, opacity: 0.7 }}>
           {config.noteA} → {config.noteB}
         </p>
       </div>
@@ -89,9 +94,11 @@ export function IntervalIdExercise({ config, difficulty, onComplete }: Props) {
           const isCorrect = choice === config.correctAnswer;
           const isSelected = choice === selected;
           let bg = C.surfaceHigh, border = C.border;
-          if (revealed) {
+          if (submitted) {
             if (isCorrect) { bg = C.success; border = C.success; }
             else if (isSelected) { bg = C.error; border = C.error; }
+          } else if (isSelected) {
+            bg = C.selected; border = C.primary;
           }
           return (
             <button
@@ -101,40 +108,21 @@ export function IntervalIdExercise({ config, difficulty, onComplete }: Props) {
                 padding: "14px 20px", borderRadius: 12, textAlign: "left",
                 backgroundColor: bg, border: `2px solid ${border}`, color: C.text,
                 fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 600,
-                cursor: revealed ? "default" : "pointer",
+                cursor: submitted ? "default" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
               }}
             >
               {choice}
-              {revealed && isCorrect && (
+              {submitted && isCorrect && (
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
               )}
-              {revealed && isSelected && !isCorrect && (
+              {submitted && isSelected && !isCorrect && (
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
               )}
             </button>
           );
         })}
       </div>
-
-      {revealed && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <p style={{ color: selected === config.correctAnswer ? "#4ade80" : "#f87171", fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: 15, margin: 0 }}>
-            {selected === config.correctAnswer ? "Correct!" : `It was ${config.correctAnswer}`}
-          </p>
-          <button
-            onClick={handleContinue}
-            style={{
-              padding: "14px 48px", borderRadius: 14,
-              backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
-              color: "white", border: "none",
-              fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            Continue
-          </button>
-        </div>
-      )}
     </div>
   );
 }

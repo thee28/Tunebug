@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { EarMultiConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -8,6 +8,8 @@ import type { ExerciseResult } from "./ExerciseEngine";
 interface Props {
   config: EarMultiConfig;
   difficulty: Difficulty;
+  submitted: boolean;
+  onAnswerChange: (hasAnswer: boolean) => void;
   onComplete: (result: ExerciseResult) => void;
 }
 
@@ -18,9 +20,8 @@ const C = {
   selected: "#3d3580",
 };
 
-export function EarMultiExercise({ config, difficulty, onComplete }: Props) {
+export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [submitted, setSubmitted] = useState(false);
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
@@ -46,30 +47,29 @@ export function EarMultiExercise({ config, difficulty, onComplete }: Props) {
     setSelected((prev) => {
       const next = new Set(prev);
       next.has(choice) ? next.delete(choice) : next.add(choice);
+      const hasAnswer = next.size > 0;
+      onAnswerChange(hasAnswer);
       return next;
     });
   };
 
-  const handleSubmit = () => {
-    if (selected.size === 0 || submitted) return;
-    setSubmitted(true);
-  };
-
-  const handleContinue = () => {
-    const correct = config.correctAnswers;
-    const sel = [...selected];
-    const hits = sel.filter((s) => correct.includes(s)).length;
-    const total = correct.length;
-    const score = Math.round((hits / total) * 100);
-    onComplete({ score, passed: score >= 70 });
-  };
+  useEffect(() => {
+    if (submitted && selected.size > 0) {
+      const correct = config.correctAnswers;
+      const sel = [...selected];
+      const hits = sel.filter((s) => correct.includes(s)).length;
+      const score = Math.round((hits / correct.length) * 100);
+      onComplete({ score, passed: score >= 70, correctAnswerText: correct.join(", ") });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
-      <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
+      <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
         {difficulty === "beginner"
-          ? `Listen to the chord and select all ${config.correctAnswers.length} notes you hear.`
-          : `Select all notes in the chord (${config.correctAnswers.length} notes).`}
+          ? `Select all ${config.correctAnswers.length} notes you hear`
+          : `Identify the ${config.correctAnswers.length} notes`}
       </p>
 
       <button
@@ -116,41 +116,6 @@ export function EarMultiExercise({ config, difficulty, onComplete }: Props) {
           );
         })}
       </div>
-
-      {!submitted ? (
-        <button
-          onClick={handleSubmit}
-          disabled={selected.size === 0}
-          style={{
-            padding: "14px 48px", borderRadius: 14,
-            backgroundColor: selected.size === 0 ? C.surfaceHigh : C.primary,
-            boxShadow: selected.size === 0 ? "none" : `0 4px 0 0 ${C.primaryDark}`,
-            color: selected.size === 0 ? C.muted : "white",
-            border: `2px solid ${selected.size === 0 ? C.border : "transparent"}`,
-            fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700,
-            cursor: selected.size === 0 ? "not-allowed" : "pointer",
-          }}
-        >
-          Check
-        </button>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
-            Correct notes: {config.correctAnswers.join(", ")}
-          </p>
-          <button
-            onClick={handleContinue}
-            style={{
-              padding: "14px 48px", borderRadius: 14,
-              backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
-              color: "white", border: "none",
-              fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            Continue
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -17,19 +17,22 @@ import { PitchMatchExercise } from "./PitchMatchExercise";
 import { SightReadExercise } from "./SightReadExercise";
 
 export interface ExerciseResult {
-  score: number;   // 0–100
+  score: number;
   passed: boolean;
+  correctAnswerText?: string;
 }
 
 interface Props {
   type: ExerciseType;
   config: ExerciseConfig;
   difficulty: Difficulty;
+  submitted: boolean;
+  onAnswerChange: (hasAnswer: boolean) => void;
   onComplete: (result: ExerciseResult) => void;
 }
 
-export function ExerciseEngine({ type, config, difficulty, onComplete }: Props) {
-  const shared = { difficulty, onComplete };
+export function ExerciseEngine({ type, config, difficulty, submitted, onAnswerChange, onComplete }: Props) {
+  const shared = { difficulty, submitted, onAnswerChange, onComplete };
 
   switch (type) {
     case "EAR_SINGLE":

@@ -4,7 +4,7 @@
 // API: import { Renderer, Stave, StaveNote, Voice, Formatter } from "vexflow"
 // Mount into a div ref, create Renderer with SVG backend, draw treble clef + note
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { SightReadPianoConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -12,6 +12,8 @@ import type { ExerciseResult } from "./ExerciseEngine";
 interface Props {
   config: SightReadPianoConfig;
   difficulty: Difficulty;
+  submitted: boolean;
+  onAnswerChange: (hasAnswer: boolean) => void;
   onComplete: (result: ExerciseResult) => void;
 }
 
@@ -39,29 +41,31 @@ function buildKeyboard(octaveRange: [number, number]): { note: string; isBlack: 
   return keys;
 }
 
-export function SightReadExercise({ config, difficulty, onComplete }: Props) {
+export function SightReadExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(false);
 
-  const targetMidi = noteStrToMidi(config.targetNote);
   const targetName = config.targetNote.replace(/\d$/, "");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _targetMidi = noteStrToMidi(config.targetNote);
+  const whiteKeys = buildKeyboard(config.octaveRange);
 
   const handleSelect = (note: string) => {
-    if (revealed) return;
+    if (submitted) return;
     setSelected(note);
-    setRevealed(true);
+    onAnswerChange(true);
   };
 
-  const handleContinue = () => {
-    onComplete({ score: selected === config.targetNote ? 100 : 0, passed: selected === config.targetNote });
-  };
-
-  // Simple piano key row (white keys only for now)
-  const whiteKeys = buildKeyboard(config.octaveRange);
+  useEffect(() => {
+    if (submitted && selected !== null) {
+      const passed = selected === config.targetNote;
+      onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: config.targetNote });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-      <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
+      <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
         Find this note on the keyboard
       </p>
 
@@ -73,15 +77,9 @@ export function SightReadExercise({ config, difficulty, onComplete }: Props) {
         display: "flex", alignItems: "center", justifyContent: "center",
         flexDirection: "column", gap: 4,
       }}>
-        <span style={{ color: C.muted, fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>
-          Staff (VexFlow)
-        </span>
-        <span style={{ color: C.text, fontSize: 28, fontWeight: 900, fontFamily: "'Nunito', sans-serif" }}>
-          {targetName}
-        </span>
-        <span style={{ color: C.muted, fontSize: 11, fontFamily: "'Nunito', sans-serif" }}>
-          {config.vexKey}
-        </span>
+        <span style={{ color: C.muted, fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>Staff (VexFlow)</span>
+        <span style={{ color: C.text, fontSize: 28, fontWeight: 900, fontFamily: "'Nunito', sans-serif" }}>{targetName}</span>
+        <span style={{ color: C.muted, fontSize: 11, fontFamily: "'Nunito', sans-serif" }}>{config.vexKey}</span>
       </div>
 
       {/* Piano keyboard — white keys only */}
@@ -90,7 +88,7 @@ export function SightReadExercise({ config, difficulty, onComplete }: Props) {
           const isTarget = note === config.targetNote;
           const isSelected = note === selected;
           let bg = "white", border = "#ccc";
-          if (revealed) {
+          if (submitted) {
             if (isTarget) { bg = "#4ade80"; border = "#22c55e"; }
             else if (isSelected && !isTarget) { bg = "#fca5a5"; border = "#ef4444"; }
           } else if (isSelected) {
@@ -103,7 +101,7 @@ export function SightReadExercise({ config, difficulty, onComplete }: Props) {
               style={{
                 width: 36, height: 80, borderRadius: "0 0 6px 6px",
                 backgroundColor: bg, border: `2px solid ${border}`,
-                cursor: revealed ? "default" : "pointer", flexShrink: 0,
+                cursor: submitted ? "default" : "pointer", flexShrink: 0,
                 display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 4,
               }}
             >
@@ -114,28 +112,6 @@ export function SightReadExercise({ config, difficulty, onComplete }: Props) {
           );
         })}
       </div>
-
-      {revealed && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <p style={{
-            color: selected === config.targetNote ? "#4ade80" : "#f87171",
-            fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: 15, margin: 0,
-          }}>
-            {selected === config.targetNote ? "Correct!" : `It was ${config.targetNote}`}
-          </p>
-          <button
-            onClick={handleContinue}
-            style={{
-              padding: "14px 48px", borderRadius: 14,
-              backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
-              color: "white", border: "none",
-              fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            Continue
-          </button>
-        </div>
-      )}
     </div>
   );
 }
