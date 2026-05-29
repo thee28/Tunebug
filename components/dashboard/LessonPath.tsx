@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "@/components/exercises/LessonRunner";
+import { generateLessonSteps } from "@/lib/curriculum/generator";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
@@ -171,7 +172,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
           >
             <LessonRunner
               title={`${exercise.stage.title} · ${exercise.unit.title}`}
-              exercises={[{ type: exercise.lesson.exerciseType, config: exercise.lesson.exerciseConfig }]}
+              steps={generateLessonSteps(exercise.lesson.slug, exercise.lesson.exerciseType, exercise.lesson.exerciseConfig, exercise.difficulty)}
               difficulty={exercise.difficulty}
               xpReward={exercise.lesson.xpReward}
               onComplete={async (score) => {

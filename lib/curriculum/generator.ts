@@ -1,4 +1,14 @@
-import type { ExerciseConfig, ExerciseType, IntervalName } from "@/types/music";
+import type {
+  ExerciseConfig,
+  ExerciseType,
+  IntervalName,
+  EarSingleConfig,
+  PitchMatchConfig,
+  SightReadPianoConfig,
+  EarMultiConfig,
+  IntervalIdConfig,
+} from "@/types/music";
+import type { LessonStep, TeachStep, ExerciseStep } from "@/types/lesson";
 import {
   NOTE_POOLS,
   INTERVAL_POOLS,
@@ -133,6 +143,75 @@ function generateOne(type: ExerciseType, difficulty: Difficulty, rng: () => numb
   }
 }
 
+// Generates a single exercise locked to the lesson's primary concept.
+// EAR_SINGLE/PITCH_MATCH/SIGHT_READ_PIANO: same target note, randomized distractors.
+// INTERVAL_ID: same interval type, randomized root note (hears the interval from different starting pitches).
+// EAR_MULTI: same target chord, shuffled choice order.
+function generateLockedExercise(
+  type: ExerciseType,
+  baseConfig: ExerciseConfig,
+  difficulty: Difficulty,
+  rng: () => number
+): ExerciseStep {
+  const s = DIFFICULTY_SETTINGS[difficulty];
+  const notePool = NOTE_POOLS[difficulty];
+  const intervalPool = INTERVAL_POOLS[difficulty];
+  const simpleNames = NOTE_NAMES_BY_DIFFICULTY[difficulty];
+
+  switch (type) {
+    case "EAR_SINGLE": {
+      const cfg = baseConfig as EarSingleConfig;
+      const correct = noteToDisplayName(cfg.targetNote);
+      const distractors = shuffled(simpleNames.filter((n) => n !== correct), rng).slice(0, s.choiceCount - 1);
+      return {
+        kind: "exercise",
+        type,
+        config: {
+          targetNote: cfg.targetNote,
+          choices: shuffled([correct, ...distractors], rng),
+          correctAnswer: correct,
+        },
+      };
+    }
+    case "PITCH_MATCH": {
+      return { kind: "exercise", type, config: baseConfig };
+    }
+    case "SIGHT_READ_PIANO": {
+      return { kind: "exercise", type, config: baseConfig };
+    }
+    case "INTERVAL_ID": {
+      const cfg = baseConfig as IntervalIdConfig;
+      const interval = cfg.correctAnswer;
+      const semitones = INTERVALS.find((i) => i.name === interval)!.semitones;
+      const safePool = notePool.filter((n) => noteStrToMidi(n) + semitones <= 84);
+      const noteA = pick(safePool.length ? safePool : notePool, rng);
+      const noteB = midiToNoteStr(noteStrToMidi(noteA) + semitones);
+      const distractors = shuffled(
+        (intervalPool as IntervalName[]).filter((i) => i !== interval),
+        rng
+      ).slice(0, s.choiceCount - 1) as IntervalName[];
+      return {
+        kind: "exercise",
+        type,
+        config: {
+          noteA,
+          noteB,
+          choices: shuffled([interval, ...distractors], rng) as IntervalName[],
+          correctAnswer: interval,
+        },
+      };
+    }
+    case "EAR_MULTI": {
+      const cfg = baseConfig as EarMultiConfig;
+      return {
+        kind: "exercise",
+        type,
+        config: { ...cfg, choices: shuffled(cfg.choices, rng) },
+      };
+    }
+  }
+}
+
 const TYPE_POOLS: Record<Difficulty, ExerciseType[]> = {
   beginner: ["EAR_SINGLE", "EAR_SINGLE", "PITCH_MATCH", "SIGHT_READ_PIANO"],
   intermediate: ["EAR_SINGLE", "EAR_MULTI", "INTERVAL_ID", "PITCH_MATCH", "SIGHT_READ_PIANO"],
@@ -160,4 +239,149 @@ export function difficultyFromCompletedStages(completedStageCount: number): Diff
   if (completedStageCount >= 4) return "advanced";
   if (completedStageCount >= 2) return "intermediate";
   return "beginner";
+}
+
+// FNV-1a hash — converts a lesson slug to a deterministic seed
+function slugToSeed(slug: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < slug.length; i++) {
+    h ^= slug.charCodeAt(i);
+    h = (Math.imul(h, 0x01000193)) >>> 0;
+  }
+  return h;
+}
+
+function buildTeachSlide(
+  exerciseType: ExerciseType,
+  exerciseConfig: ExerciseConfig,
+  position: "intro" | "mid" | "challenge"
+): TeachStep {
+  if (position === "mid") {
+    const tips: Record<ExerciseType, string> = {
+      EAR_SINGLE: "Tip: Before answering, hum the note quietly to yourself. It helps lock the sound in memory.",
+      EAR_MULTI: "Tip: Listen for each note individually. Let the chord fade, then pick out the highest and lowest pitch first.",
+      INTERVAL_ID: "Tip: Each interval has a unique personality. A perfect 5th sounds stable and powerful while a tritone sounds tense and unsettled.",
+      PITCH_MATCH: "Tip: If you miss, listen again before your next attempt. Ear feedback is more useful than guessing.",
+      SIGHT_READ_PIANO: "Tip: Use landmarks. C4 (middle C) sits just below the staff on a small ledger line. Build out from there.",
+    };
+    return {
+      kind: "teach",
+      icon: "tips_and_updates",
+      title: "Halfway There",
+      body: tips[exerciseType],
+    };
+  }
+
+  if (position === "challenge") {
+    return {
+      kind: "teach",
+      icon: "emoji_events",
+      title: "Final Stretch",
+      body: "Last set of exercises. You've been building this skill and now it's time to prove it. Stay focused and trust your ears.",
+    };
+  }
+
+  // intro — explain the concept; depth depends on what needs introduction
+  switch (exerciseType) {
+    case "EAR_SINGLE": {
+      const cfg = exerciseConfig as EarSingleConfig;
+      const noteName = noteToDisplayName(cfg.targetNote);
+      const isC = noteName === "C";
+      const isNatural = !noteName.includes("#");
+      return {
+        kind: "teach",
+        icon: "hearing",
+        title: `Meet Note ${noteName}`,
+        body: isC
+          ? `Music uses 7 letter names: C D E F G A B, and then it repeats. C is the first and most important of these. Press play and listen carefully, trying to memorize that exact sound.`
+          : isNatural
+          ? `Note ${noteName} is a natural note, one of the 7 letters in the musical alphabet. It has its own distinct pitch. Press play and listen. Your goal is to recognize it by ear alone.`
+          : `Note ${noteName} is a chromatic note that sits between two natural notes, like a black key on a piano. Press play and listen closely. Notice the subtle difference from the natural notes around it.`,
+        playNote: cfg.targetNote,
+      };
+    }
+    case "PITCH_MATCH": {
+      const cfg = exerciseConfig as PitchMatchConfig;
+      const isC = cfg.displayNote === "C";
+      return {
+        kind: "teach",
+        icon: "mic",
+        title: `Sing Note ${cfg.displayNote}`,
+        body: isC
+          ? `Time to use your own voice. Press play to hear note C, then hum or sing along. Your microphone measures how close your pitch is. You don't need to be a singer because even humming quietly works.`
+          : `Press play to hear note ${cfg.displayNote}, then match it with your voice. Hum, sing, or whistle. Any pitch counts and your mic will track how well you match.`,
+        playNote: cfg.targetNote,
+      };
+    }
+    case "INTERVAL_ID": {
+      const cfg = exerciseConfig as IntervalIdConfig;
+      const intervalInfo = INTERVALS.find((i) => i.name === cfg.correctAnswer);
+      const semitones = intervalInfo?.semitones ?? 0;
+      const isFirst = cfg.correctAnswer === "Octave";
+      return {
+        kind: "teach",
+        icon: "piano",
+        title: `The ${cfg.correctAnswer}`,
+        body: isFirst
+          ? `An interval is the distance between two notes. The Octave is the most fundamental of them all. It's the same note name at a higher or lower pitch, spanning 12 semitones. Press play to hear both notes.`
+          : `A ${cfg.correctAnswer} spans ${semitones} semitone${semitones !== 1 ? "s" : ""}. Every interval has its own character, so learn to recognize this one's sound. Press play.`,
+        playInterval: [cfg.noteA, cfg.noteB],
+      };
+    }
+    case "SIGHT_READ_PIANO": {
+      const cfg = exerciseConfig as SightReadPianoConfig;
+      const noteName = noteToDisplayName(cfg.targetNote);
+      const isC = noteName === "C";
+      return {
+        kind: "teach",
+        icon: "music_note",
+        title: `Reading ${noteName} on the Staff`,
+        body: isC
+          ? `Sheet music places notes on a staff with 5 lines and 4 spaces. Each position is a different note. Middle C (C4) sits on a small ledger line just below the staff. You'll see a note displayed and your job is to click the matching piano key.`
+          : `Find note ${noteName} on the staff below. Each line and space represents a specific note, so use middle C as your anchor and count up or down from there. Then click the matching key on the piano.`,
+      };
+    }
+    case "EAR_MULTI": {
+      const cfg = exerciseConfig as EarMultiConfig;
+      const noteNames = cfg.correctAnswers.join(" + ");
+      const isFirst = cfg.targetNotes.length === 2;
+      return {
+        kind: "teach",
+        icon: "queue_music",
+        title: `Chord: ${noteNames}`,
+        body: isFirst
+          ? `A chord is multiple notes played at the exact same time. Instead of a single pitch, you hear them all blend together. Press play to hear this ${cfg.targetNotes.length}-note chord and try to pick out each note inside it.`
+          : `You'll hear ${cfg.targetNotes.length} notes at once. Listen for each pitch individually as the chord fades. Press play, then identify all the notes.`,
+        playNotes: cfg.targetNotes,
+      };
+    }
+  }
+}
+
+// Generates 15 lesson steps: 3 teach slides + 12 exercises
+// Structure: [teach, ex×4, teach, ex×5, teach, ex×3]
+export function generateLessonSteps(
+  lessonSlug: string,
+  exerciseType: ExerciseType,
+  exerciseConfig: ExerciseConfig,
+  difficulty: Difficulty
+): LessonStep[] {
+  const seed = slugToSeed(lessonSlug);
+  const rng = createRng(seed);
+
+  // First exercise uses exact lesson config; the rest lock to the same concept with varied presentation
+  const firstExercise: ExerciseStep = { kind: "exercise", type: exerciseType, config: exerciseConfig };
+  const generated: ExerciseStep[] = Array.from({ length: 11 }, () =>
+    generateLockedExercise(exerciseType, exerciseConfig, difficulty, rng)
+  );
+  const allExercises = [firstExercise, ...generated];
+
+  return [
+    buildTeachSlide(exerciseType, exerciseConfig, "intro"),
+    ...allExercises.slice(0, 4),
+    buildTeachSlide(exerciseType, exerciseConfig, "mid"),
+    ...allExercises.slice(4, 9),
+    buildTeachSlide(exerciseType, exerciseConfig, "challenge"),
+    ...allExercises.slice(9, 12),
+  ];
 }

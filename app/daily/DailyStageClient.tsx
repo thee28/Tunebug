@@ -46,7 +46,7 @@ export function DailyStageClient({ stage }: Props) {
     return (
       <LessonRunner
         title="Daily Challenge"
-        exercises={stage.exercises}
+        steps={stage.exercises.map(e => ({ kind: "exercise" as const, type: e.type, config: e.config }))}
         difficulty={stage.difficulty}
         xpReward={25}
         onComplete={handleComplete}

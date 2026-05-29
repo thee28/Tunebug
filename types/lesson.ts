@@ -4,6 +4,24 @@ export type StageStatus = "locked" | "available" | "complete";
 
 export type { Difficulty } from "@/lib/curriculum/content";
 
+export interface TeachStep {
+  kind: "teach";
+  icon: string;
+  title: string;
+  body: string;
+  playNote?: string;
+  playNotes?: string[];
+  playInterval?: [string, string];
+}
+
+export interface ExerciseStep {
+  kind: "exercise";
+  type: ExerciseType;
+  config: ExerciseConfig;
+}
+
+export type LessonStep = TeachStep | ExerciseStep;
+
 export interface Lesson {
   id: string;
   unitId: string;

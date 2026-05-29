@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "./LessonRunner";
+import { generateLessonSteps } from "@/lib/curriculum/generator";
 
 interface Props {
   stage: Stage;
@@ -68,7 +69,7 @@ export function StageRunner({ stage, difficulty }: Props) {
     return (
       <LessonRunner
         title={`${stage.title} · ${unit.title}`}
-        exercises={[{ type: lesson.exerciseType, config: lesson.exerciseConfig }]}
+        steps={generateLessonSteps(lesson.slug, lesson.exerciseType, lesson.exerciseConfig, difficulty)}
         difficulty={difficulty}
         xpReward={lesson.xpReward}
         onComplete={async (score) => {
