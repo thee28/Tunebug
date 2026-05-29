@@ -65,6 +65,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pressedId, setPressedId] = useState<string | null>(null);
+  const [guidebookHovered, setGuidebookHovered] = useState(false);
 
   const [bannerInfo, setBannerInfo] = useState<BannerInfo>(() => {
     for (let si = 0; si < stages.length; si++) {
@@ -234,15 +235,19 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
           {/* Right: guidebook button */}
           <button
             onClick={() => onShowGuidebook(bannerInfo.unitSlug, bannerInfo.unitTitle)}
+            onMouseEnter={() => setGuidebookHovered(true)}
+            onMouseLeave={() => setGuidebookHovered(false)}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "8px 14px", borderRadius: 10,
-              backgroundColor: "rgba(255,255,255,0.15)",
-              border: "2px solid rgba(255,255,255,0.25)",
+              backgroundColor: guidebookHovered ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.15)",
+              border: `2px solid ${guidebookHovered ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)"}`,
               color: "white",
               fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 800,
               textTransform: "uppercase", letterSpacing: "0.06em",
               flexShrink: 0, marginLeft: 12, cursor: "pointer",
+              transform: guidebookHovered ? "translateY(-1px)" : "none",
+              transition: "background-color 0.15s, border-color 0.15s, transform 0.15s",
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>menu_book</span>
