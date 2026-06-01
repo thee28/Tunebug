@@ -209,6 +209,7 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
         ) : phase === "exercise" ? (
           <div style={{ width: "100%", maxWidth: 480 }}>
             <ExerciseEngine
+              key={index}
               type={(currentStep as Extract<typeof currentStep, { kind: "exercise" }>).type}
               config={(currentStep as Extract<typeof currentStep, { kind: "exercise" }>).config}
               difficulty={difficulty}
