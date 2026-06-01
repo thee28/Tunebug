@@ -212,6 +212,85 @@ function generateLockedExercise(
   }
 }
 
+// Like generateLockedExercise but for the mix phase of a two-phase lesson.
+// For EAR_SINGLE/INTERVAL_ID: guarantees both lesson concepts appear in the choices so
+// the learner must actively distinguish between them, not guess from unrelated distractors.
+function generateMixExercise(
+  type: ExerciseType,
+  configA: ExerciseConfig,
+  configB: ExerciseConfig,
+  difficulty: Difficulty,
+  rng: () => number
+): ExerciseStep {
+  const s = DIFFICULTY_SETTINGS[difficulty];
+  const simpleNames = NOTE_NAMES_BY_DIFFICULTY[difficulty];
+  const intervalPool = INTERVAL_POOLS[difficulty];
+  const notePool = NOTE_POOLS[difficulty];
+  const targetConfig = pick([configA, configB], rng);
+  const otherConfig = targetConfig === configA ? configB : configA;
+
+  switch (type) {
+    case "EAR_SINGLE": {
+      const cfg = targetConfig as EarSingleConfig;
+      const correct = noteToDisplayName(cfg.targetNote);
+      const mandatory = noteToDisplayName((otherConfig as EarSingleConfig).targetNote);
+      const remaining = shuffled(
+        simpleNames.filter((n) => n !== correct && n !== mandatory),
+        rng
+      ).slice(0, Math.max(0, s.choiceCount - 2));
+      return {
+        kind: "exercise",
+        type,
+        config: {
+          targetNote: cfg.targetNote,
+          choices: shuffled([correct, mandatory, ...remaining], rng),
+          correctAnswer: correct,
+        },
+      };
+    }
+    case "PITCH_MATCH":
+      return { kind: "exercise", type, config: targetConfig };
+    case "SIGHT_READ_PIANO":
+      return { kind: "exercise", type, config: targetConfig };
+    case "INTERVAL_ID": {
+      const cfg = targetConfig as IntervalIdConfig;
+      const interval = cfg.correctAnswer;
+      const otherInterval = (otherConfig as IntervalIdConfig).correctAnswer;
+      const semitones = INTERVALS.find((i) => i.name === interval)!.semitones;
+      const safePool = notePool.filter((n) => noteStrToMidi(n) + semitones <= 84);
+      const noteA = pick(safePool.length ? safePool : notePool, rng);
+      const noteB = midiToNoteStr(noteStrToMidi(noteA) + semitones);
+      const distractors: IntervalName[] =
+        interval !== otherInterval
+          ? [
+              otherInterval as IntervalName,
+              ...shuffled(
+                (intervalPool as IntervalName[]).filter((i) => i !== interval && i !== otherInterval),
+                rng
+              ).slice(0, Math.max(0, s.choiceCount - 2)),
+            ]
+          : (shuffled(
+              (intervalPool as IntervalName[]).filter((i) => i !== interval),
+              rng
+            ).slice(0, s.choiceCount - 1) as IntervalName[]);
+      return {
+        kind: "exercise",
+        type,
+        config: {
+          noteA,
+          noteB,
+          choices: shuffled([interval as IntervalName, ...distractors], rng) as IntervalName[],
+          correctAnswer: interval,
+        },
+      };
+    }
+    case "EAR_MULTI": {
+      const cfg = targetConfig as EarMultiConfig;
+      return { kind: "exercise", type, config: { ...cfg, choices: shuffled(cfg.choices, rng) } };
+    }
+  }
+}
+
 const TYPE_POOLS: Record<Difficulty, ExerciseType[]> = {
   beginner: ["EAR_SINGLE", "EAR_SINGLE", "PITCH_MATCH", "SIGHT_READ_PIANO"],
   intermediate: ["EAR_SINGLE", "EAR_MULTI", "INTERVAL_ID", "PITCH_MATCH", "SIGHT_READ_PIANO"],
@@ -251,11 +330,59 @@ function slugToSeed(slug: string): number {
   return h;
 }
 
+function buildConsolidationTeachSlide(exerciseType: ExerciseType, position: "intro" | "mid" | "challenge"): TeachStep {
+  if (position === "mid") {
+    return {
+      kind: "teach",
+      icon: "tips_and_updates",
+      title: "Halfway There",
+      body: "Keep going. You are training your ear to recognize multiple sounds automatically.",
+    };
+  }
+  if (position === "challenge") {
+    return {
+      kind: "teach",
+      icon: "emoji_events",
+      title: "Final Stretch",
+      body: "Last exercises. Everything from this unit is in the mix. Trust what you have learned.",
+    };
+  }
+  const intros: Record<ExerciseType, string> = {
+    EAR_SINGLE: "Review time. Every note from this unit is in the mix. Listen carefully and name what you hear.",
+    PITCH_MATCH: "Singing review. All the notes from this unit. Match your pitch each time.",
+    INTERVAL_ID: "Interval review. All the intervals from this unit, in random order. Identify each one.",
+    SIGHT_READ_PIANO: "Staff reading review. Every note position from this unit. Read and click the right key.",
+    EAR_MULTI: "Chord review. All the chords from this unit. Pick out every note you hear.",
+  };
+  return {
+    kind: "teach",
+    icon: "cached",
+    title: "Review",
+    body: intros[exerciseType],
+  };
+}
+
 function buildTeachSlide(
   exerciseType: ExerciseType,
   exerciseConfig: ExerciseConfig,
-  position: "intro" | "mid" | "challenge"
+  position: "intro" | "mid" | "challenge" | "mix"
 ): TeachStep {
+  if (position === "mix") {
+    const mixTexts: Record<ExerciseType, string> = {
+      EAR_SINGLE: "Both notes mixed now. Listen and identify which one you hear each time.",
+      PITCH_MATCH: "Now mix both notes. You will be asked to sing either one. Stay focused.",
+      INTERVAL_ID: "Both intervals together now. Same process, trust your ears.",
+      SIGHT_READ_PIANO: "Notes from both parts of this lesson on the staff. Read each one.",
+      EAR_MULTI: "Chords from both sections. Identify all notes you hear.",
+    };
+    return {
+      kind: "teach",
+      icon: "shuffle",
+      title: "Mix Time",
+      body: mixTexts[exerciseType],
+    };
+  }
+
   if (position === "mid") {
     const tips: Record<ExerciseType, string> = {
       EAR_SINGLE: "Tip: Before answering, hum the note quietly to yourself. It helps lock the sound in memory.",
@@ -358,18 +485,57 @@ function buildTeachSlide(
   }
 }
 
-// Generates 15 lesson steps: 3 teach slides + 12 exercises
-// Structure: [teach, ex×4, teach, ex×5, teach, ex×3]
+// Generates 15 lesson steps with one of three structures:
+// - Consolidation (consolidationConfigs provided): [teach, ex×4, teach, ex×5, teach, ex×3] — random from pool
+// - Two-phase (secondaryExerciseConfig provided): [teachA, exA×4, teachB, exB×4, teachMix, exAB×4]
+// - Single (default): [teach, ex×4, teach, ex×5, teach, ex×3]
 export function generateLessonSteps(
   lessonSlug: string,
   exerciseType: ExerciseType,
   exerciseConfig: ExerciseConfig,
-  difficulty: Difficulty
+  difficulty: Difficulty,
+  secondaryExerciseConfig?: ExerciseConfig,
+  consolidationConfigs?: ExerciseConfig[]
 ): LessonStep[] {
   const seed = slugToSeed(lessonSlug);
   const rng = createRng(seed);
 
-  // First exercise uses exact lesson config; the rest lock to the same concept with varied presentation
+  if (consolidationConfigs && consolidationConfigs.length > 0) {
+    const makeEx = (): ExerciseStep =>
+      generateLockedExercise(exerciseType, pick(consolidationConfigs, rng), difficulty, rng);
+    return [
+      buildConsolidationTeachSlide(exerciseType, "intro"),
+      ...Array.from({ length: 4 }, makeEx),
+      buildConsolidationTeachSlide(exerciseType, "mid"),
+      ...Array.from({ length: 5 }, makeEx),
+      buildConsolidationTeachSlide(exerciseType, "challenge"),
+      ...Array.from({ length: 3 }, makeEx),
+    ];
+  }
+
+  if (secondaryExerciseConfig) {
+    const exA: ExerciseStep[] = [
+      { kind: "exercise", type: exerciseType, config: exerciseConfig },
+      ...Array.from({ length: 3 }, () => generateLockedExercise(exerciseType, exerciseConfig, difficulty, rng)),
+    ];
+    const exB: ExerciseStep[] = [
+      { kind: "exercise", type: exerciseType, config: secondaryExerciseConfig },
+      ...Array.from({ length: 3 }, () => generateLockedExercise(exerciseType, secondaryExerciseConfig, difficulty, rng)),
+    ];
+    const exMix: ExerciseStep[] = Array.from({ length: 4 }, () =>
+      generateMixExercise(exerciseType, exerciseConfig, secondaryExerciseConfig, difficulty, rng)
+    );
+    return [
+      buildTeachSlide(exerciseType, exerciseConfig, "intro"),
+      ...exA,
+      buildTeachSlide(exerciseType, secondaryExerciseConfig, "intro"),
+      ...exB,
+      buildTeachSlide(exerciseType, exerciseConfig, "mix"),
+      ...exMix,
+    ];
+  }
+
+  // Single concept
   const firstExercise: ExerciseStep = { kind: "exercise", type: exerciseType, config: exerciseConfig };
   const generated: ExerciseStep[] = Array.from({ length: 11 }, () =>
     generateLockedExercise(exerciseType, exerciseConfig, difficulty, rng)

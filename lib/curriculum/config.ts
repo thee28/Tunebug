@@ -7,6 +7,8 @@ export interface CurriculumLesson {
   order: number;
   exerciseType: ExerciseType;
   exerciseConfig: ExerciseConfig;
+  secondaryExerciseConfig?: ExerciseConfig;
+  consolidationConfigs?: ExerciseConfig[];
   passingScore: number;
   xpReward: number;
 }
@@ -47,10 +49,27 @@ export const CURRICULUM: CurriculumStage[] = [
         description: "Learn the first notes of the musical alphabet",
         order: 0,
         lessons: [
-          { slug: "beg-nn-1", title: "Hear Note C", order: 0, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "C4", choices: ["C", "D", "E", "F"], correctAnswer: "C" }, passingScore: 70, xpReward: 10 },
-          { slug: "beg-nn-2", title: "Hear Note D", order: 1, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "D4", choices: ["C", "D", "E", "F"], correctAnswer: "D" }, passingScore: 70, xpReward: 10 },
-          { slug: "beg-nn-3", title: "Hear Note E", order: 2, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "E4", choices: ["C", "D", "E", "F"], correctAnswer: "E" }, passingScore: 70, xpReward: 10 },
-          { slug: "beg-nn-4", title: "C, D, E Together", order: 3, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "D4", choices: ["C", "D", "E", "G", "A", "B"], correctAnswer: "D" }, passingScore: 70, xpReward: 15 },
+          {
+            slug: "beg-nn-1", title: "C and D", order: 0, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "C4", choices: ["C", "D", "E", "F"], correctAnswer: "C" },
+            secondaryExerciseConfig: { targetNote: "D4", choices: ["C", "D", "E", "F"], correctAnswer: "D" },
+            passingScore: 70, xpReward: 10,
+          },
+          {
+            slug: "beg-nn-2", title: "Meet E", order: 1, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "E4", choices: ["C", "D", "E", "F"], correctAnswer: "E" },
+            passingScore: 70, xpReward: 10,
+          },
+          {
+            slug: "beg-nn-3", title: "C, D, E Together", order: 2, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "C4", choices: ["C", "D", "E", "F"], correctAnswer: "C" },
+            consolidationConfigs: [
+              { targetNote: "C4", choices: ["C", "D", "E", "F"], correctAnswer: "C" },
+              { targetNote: "D4", choices: ["C", "D", "E", "F"], correctAnswer: "D" },
+              { targetNote: "E4", choices: ["C", "D", "E", "F"], correctAnswer: "E" },
+            ],
+            passingScore: 70, xpReward: 15,
+          },
         ],
       },
       {
@@ -59,10 +78,29 @@ export const CURRICULUM: CurriculumStage[] = [
         description: "Complete the seven notes of the most important scale",
         order: 1,
         lessons: [
-          { slug: "beg-cm-1", title: "Notes F and G", order: 0, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "G4", choices: ["E", "F", "G", "A"], correctAnswer: "G" }, passingScore: 70, xpReward: 10 },
-          { slug: "beg-cm-2", title: "Notes A and B", order: 1, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "A4", choices: ["G", "A", "B", "C"], correctAnswer: "A" }, passingScore: 70, xpReward: 10 },
-          { slug: "beg-cm-3", title: "High Note B", order: 2, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "B4", choices: ["G", "A", "B", "C"], correctAnswer: "B" }, passingScore: 70, xpReward: 10 },
-          { slug: "beg-cm-4", title: "All Scale Notes", order: 3, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "F4", choices: ["C", "D", "E", "F", "G", "A", "B"], correctAnswer: "F" }, passingScore: 70, xpReward: 15 },
+          {
+            slug: "beg-cm-1", title: "F and G", order: 0, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "F4", choices: ["E", "F", "G", "A"], correctAnswer: "F" },
+            secondaryExerciseConfig: { targetNote: "G4", choices: ["E", "F", "G", "A"], correctAnswer: "G" },
+            passingScore: 70, xpReward: 10,
+          },
+          {
+            slug: "beg-cm-2", title: "A and B", order: 1, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "A4", choices: ["G", "A", "B", "C"], correctAnswer: "A" },
+            secondaryExerciseConfig: { targetNote: "B4", choices: ["G", "A", "B", "C"], correctAnswer: "B" },
+            passingScore: 70, xpReward: 10,
+          },
+          {
+            slug: "beg-cm-3", title: "Scale Review", order: 2, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "F4", choices: ["E", "F", "G", "A"], correctAnswer: "F" },
+            consolidationConfigs: [
+              { targetNote: "F4", choices: ["E", "F", "G", "A"], correctAnswer: "F" },
+              { targetNote: "G4", choices: ["E", "F", "G", "A"], correctAnswer: "G" },
+              { targetNote: "A4", choices: ["G", "A", "B", "C"], correctAnswer: "A" },
+              { targetNote: "B4", choices: ["G", "A", "B", "C"], correctAnswer: "B" },
+            ],
+            passingScore: 70, xpReward: 15,
+          },
         ],
       },
       {
@@ -71,10 +109,28 @@ export const CURRICULUM: CurriculumStage[] = [
         description: "Find notes on the treble clef staff",
         order: 2,
         lessons: [
-          { slug: "beg-st-1", title: "Note C on Staff", order: 0, exerciseType: "SIGHT_READ_PIANO", exerciseConfig: { targetNote: "C4", vexKey: "c/4", octaveRange: [3, 5] }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-st-2", title: "Note E on Staff", order: 1, exerciseType: "SIGHT_READ_PIANO", exerciseConfig: { targetNote: "E4", vexKey: "e/4", octaveRange: [3, 5] }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-st-3", title: "Note G on Staff", order: 2, exerciseType: "SIGHT_READ_PIANO", exerciseConfig: { targetNote: "G4", vexKey: "g/4", octaveRange: [3, 5] }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-st-4", title: "Notes C through G", order: 3, exerciseType: "SIGHT_READ_PIANO", exerciseConfig: { targetNote: "F4", vexKey: "f/4", octaveRange: [3, 5] }, passingScore: 70, xpReward: 20 },
+          {
+            slug: "beg-st-1", title: "C and E on Staff", order: 0, exerciseType: "SIGHT_READ_PIANO",
+            exerciseConfig: { targetNote: "C4", vexKey: "c/4", octaveRange: [3, 5] },
+            secondaryExerciseConfig: { targetNote: "E4", vexKey: "e/4", octaveRange: [3, 5] },
+            passingScore: 70, xpReward: 15,
+          },
+          {
+            slug: "beg-st-2", title: "G on Staff", order: 1, exerciseType: "SIGHT_READ_PIANO",
+            exerciseConfig: { targetNote: "G4", vexKey: "g/4", octaveRange: [3, 5] },
+            passingScore: 70, xpReward: 15,
+          },
+          {
+            slug: "beg-st-3", title: "Staff Review", order: 2, exerciseType: "SIGHT_READ_PIANO",
+            exerciseConfig: { targetNote: "C4", vexKey: "c/4", octaveRange: [3, 5] },
+            consolidationConfigs: [
+              { targetNote: "C4", vexKey: "c/4", octaveRange: [3, 5] },
+              { targetNote: "E4", vexKey: "e/4", octaveRange: [3, 5] },
+              { targetNote: "G4", vexKey: "g/4", octaveRange: [3, 5] },
+              { targetNote: "F4", vexKey: "f/4", octaveRange: [3, 5] },
+            ],
+            passingScore: 70, xpReward: 20,
+          },
         ],
       },
       {
@@ -83,10 +139,29 @@ export const CURRICULUM: CurriculumStage[] = [
         description: "Match your voice to notes for the first time",
         order: 3,
         lessons: [
-          { slug: "beg-sv-1", title: "Sing Note C", order: 0, exerciseType: "PITCH_MATCH", exerciseConfig: { targetNote: "C4", displayNote: "C", confidenceThreshold: 0.80, timeoutSeconds: 10 }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-sv-2", title: "Sing Note E", order: 1, exerciseType: "PITCH_MATCH", exerciseConfig: { targetNote: "E4", displayNote: "E", confidenceThreshold: 0.80, timeoutSeconds: 10 }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-sv-3", title: "Sing Note G", order: 2, exerciseType: "PITCH_MATCH", exerciseConfig: { targetNote: "G4", displayNote: "G", confidenceThreshold: 0.80, timeoutSeconds: 10 }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-sv-4", title: "Sing Note A", order: 3, exerciseType: "PITCH_MATCH", exerciseConfig: { targetNote: "A4", displayNote: "A", confidenceThreshold: 0.80, timeoutSeconds: 10 }, passingScore: 70, xpReward: 20 },
+          {
+            slug: "beg-sv-1", title: "Sing C and E", order: 0, exerciseType: "PITCH_MATCH",
+            exerciseConfig: { targetNote: "C4", displayNote: "C", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+            secondaryExerciseConfig: { targetNote: "E4", displayNote: "E", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+            passingScore: 70, xpReward: 15,
+          },
+          {
+            slug: "beg-sv-2", title: "Sing G and A", order: 1, exerciseType: "PITCH_MATCH",
+            exerciseConfig: { targetNote: "G4", displayNote: "G", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+            secondaryExerciseConfig: { targetNote: "A4", displayNote: "A", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+            passingScore: 70, xpReward: 15,
+          },
+          {
+            slug: "beg-sv-3", title: "Singing Review", order: 2, exerciseType: "PITCH_MATCH",
+            exerciseConfig: { targetNote: "C4", displayNote: "C", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+            consolidationConfigs: [
+              { targetNote: "C4", displayNote: "C", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+              { targetNote: "E4", displayNote: "E", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+              { targetNote: "G4", displayNote: "G", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+              { targetNote: "A4", displayNote: "A", confidenceThreshold: 0.80, timeoutSeconds: 10 },
+            ],
+            passingScore: 70, xpReward: 20,
+          },
         ],
       },
       {
@@ -95,10 +170,22 @@ export const CURRICULUM: CurriculumStage[] = [
         description: "Discover the first and most important interval",
         order: 4,
         lessons: [
-          { slug: "beg-oc-1", title: "What Is an Octave?", order: 0, exerciseType: "INTERVAL_ID", exerciseConfig: { noteA: "C4", noteB: "C5", choices: ["Perfect 4th", "Perfect 5th", "Major 7th", "Octave"], correctAnswer: "Octave" }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-oc-2", title: "Hear C5", order: 1, exerciseType: "EAR_SINGLE", exerciseConfig: { targetNote: "C5", choices: ["A", "B", "C", "D"], correctAnswer: "C" }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-oc-3", title: "Octave on G", order: 2, exerciseType: "INTERVAL_ID", exerciseConfig: { noteA: "G4", noteB: "G5", choices: ["Perfect 5th", "Major 6th", "Major 7th", "Octave"], correctAnswer: "Octave" }, passingScore: 70, xpReward: 15 },
-          { slug: "beg-oc-4", title: "Sing High C", order: 3, exerciseType: "PITCH_MATCH", exerciseConfig: { targetNote: "C5", displayNote: "C", confidenceThreshold: 0.80, timeoutSeconds: 12 }, passingScore: 70, xpReward: 20 },
+          {
+            slug: "beg-oc-1", title: "The Octave", order: 0, exerciseType: "INTERVAL_ID",
+            exerciseConfig: { noteA: "C4", noteB: "C5", choices: ["Perfect 4th", "Perfect 5th", "Major 7th", "Octave"], correctAnswer: "Octave" },
+            secondaryExerciseConfig: { noteA: "G4", noteB: "G5", choices: ["Perfect 5th", "Major 6th", "Major 7th", "Octave"], correctAnswer: "Octave" },
+            passingScore: 70, xpReward: 15,
+          },
+          {
+            slug: "beg-oc-2", title: "Hear High Notes", order: 1, exerciseType: "EAR_SINGLE",
+            exerciseConfig: { targetNote: "C5", choices: ["A", "B", "C", "D"], correctAnswer: "C" },
+            passingScore: 70, xpReward: 15,
+          },
+          {
+            slug: "beg-oc-3", title: "Sing High C", order: 2, exerciseType: "PITCH_MATCH",
+            exerciseConfig: { targetNote: "C5", displayNote: "C", confidenceThreshold: 0.80, timeoutSeconds: 12 },
+            passingScore: 70, xpReward: 20,
+          },
         ],
       },
     ],

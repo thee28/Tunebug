@@ -11,8 +11,13 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const REMOVED_LESSON_SLUGS = ["beg-nn-4", "beg-cm-4", "beg-st-4", "beg-sv-4", "beg-oc-4"];
+
 async function main() {
   console.log("Seeding curriculum…");
+
+  const removed = await prisma.lesson.deleteMany({ where: { slug: { in: REMOVED_LESSON_SLUGS } } });
+  if (removed.count > 0) console.log(`  Removed ${removed.count} retired lesson(s)`);
 
   for (const stage of CURRICULUM) {
     const { units, difficulty: _d, ...stageData } = stage;
@@ -33,7 +38,8 @@ async function main() {
       });
 
       for (const lesson of lessons) {
-        const lessonData = { ...lesson, unitId: createdUnit.id, exerciseConfig: lesson.exerciseConfig as never };
+        const { secondaryExerciseConfig: _sec, consolidationConfigs: _cons, ...lessonCore } = lesson;
+        const lessonData = { ...lessonCore, unitId: createdUnit.id, exerciseConfig: lesson.exerciseConfig as never };
         await prisma.lesson.upsert({
           where: { slug: lesson.slug },
           update: lessonData,

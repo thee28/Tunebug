@@ -6,6 +6,7 @@ import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "@/components/exercises/LessonRunner";
 import { generateLessonSteps } from "@/lib/curriculum/generator";
+import { CURRICULUM } from "@/lib/curriculum/config";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
@@ -172,7 +173,10 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
           >
             <LessonRunner
               title={`${exercise.stage.title} · ${exercise.unit.title}`}
-              steps={generateLessonSteps(exercise.lesson.slug, exercise.lesson.exerciseType, exercise.lesson.exerciseConfig, exercise.difficulty)}
+              steps={(() => {
+                const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === exercise.lesson.slug);
+                return generateLessonSteps(exercise.lesson.slug, exercise.lesson.exerciseType, exercise.lesson.exerciseConfig, exercise.difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs);
+              })()}
               difficulty={exercise.difficulty}
               xpReward={exercise.lesson.xpReward}
               onComplete={async (score) => {

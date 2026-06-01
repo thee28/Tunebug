@@ -6,6 +6,7 @@ import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "./LessonRunner";
 import { generateLessonSteps } from "@/lib/curriculum/generator";
+import { CURRICULUM } from "@/lib/curriculum/config";
 
 interface Props {
   stage: Stage;
@@ -69,7 +70,10 @@ export function StageRunner({ stage, difficulty }: Props) {
     return (
       <LessonRunner
         title={`${stage.title} · ${unit.title}`}
-        steps={generateLessonSteps(lesson.slug, lesson.exerciseType, lesson.exerciseConfig, difficulty)}
+        steps={(() => {
+          const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === lesson.slug);
+          return generateLessonSteps(lesson.slug, lesson.exerciseType, lesson.exerciseConfig, difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs);
+        })()}
         difficulty={difficulty}
         xpReward={lesson.xpReward}
         onComplete={async (score) => {
