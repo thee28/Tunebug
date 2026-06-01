@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { LessonStep } from "@/types/lesson";
 import { ExerciseEngine, type ExerciseResult } from "./ExerciseEngine";
@@ -300,8 +301,9 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
         }}>
           {/* Teach step: just a Continue button */}
           {isTeachStep ? (
-            <button
+            <motion.button
               onClick={handleContinue}
+              whileTap={{ scale: 0.97 }}
               style={{
                 padding: "16px 56px", borderRadius: 14,
                 backgroundColor: C.primary,
@@ -313,7 +315,7 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
               }}
             >
               Continue
-            </button>
+            </motion.button>
           ) : (
             <>
               {/* Left: feedback or Skip */}
@@ -337,8 +339,9 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
                   </div>
                 </div>
               ) : (
-                <button
+                <motion.button
                   onClick={handleSkip}
+                  whileTap={{ scale: 0.95 }}
                   style={{
                     padding: "16px 40px", borderRadius: 14,
                     backgroundColor: "transparent",
@@ -350,13 +353,14 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
                   }}
                 >
                   Skip
-                </button>
+                </motion.button>
               )}
 
               {/* Right: CHECK or CONTINUE */}
               {pendingResult ? (
-                <button
+                <motion.button
                   onClick={handleContinue}
+                  whileTap={{ scale: 0.97 }}
                   style={{
                     padding: "16px 56px", borderRadius: 14,
                     backgroundColor: isCorrect ? C.success : C.error,
@@ -368,11 +372,12 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
                   }}
                 >
                   Continue
-                </button>
+                </motion.button>
               ) : (
-                <button
+                <motion.button
                   onClick={handleCheck}
                   disabled={!hasAnswer}
+                  whileTap={hasAnswer ? { scale: 0.97 } : {}}
                   style={{
                     padding: "16px 56px", borderRadius: 14,
                     backgroundColor: hasAnswer ? C.primary : C.surfaceHigh,
@@ -386,7 +391,7 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
                   }}
                 >
                   Check
-                </button>
+                </motion.button>
               )}
             </>
           )}
