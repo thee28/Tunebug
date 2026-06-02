@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getStagesWithProgress } from "@/lib/db/stages";
 import { getStreak } from "@/lib/db/streak";
@@ -23,23 +24,25 @@ const C = {
   text: "#f3eff5",
 };
 
-const navItems = [
-  { icon: "school", label: "Learn", href: "/dashboard", active: true },
-  { icon: "music_note", label: "Free Practice", href: "/practice", active: false },
-  { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
-  { icon: "workspace_premium", label: "Achievements", href: "#", active: false },
-  { icon: "person", label: "Profile", href: "#", active: false },
-  { icon: "settings", label: "Settings", href: "#", active: false },
-];
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const { view } = await searchParams;
+  const isPractice = view === "practice";
 
-const mobileNav = [
-  { icon: "school", label: "Learn", active: true },
-  { icon: "music_note", label: "Free Practice", active: false },
-  { icon: "emoji_events", label: "Stats", active: false },
-  { icon: "person", label: "Profile", active: false },
-];
+  const navItems = [
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice },
+    { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
+    { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
+    { icon: "workspace_premium", label: "Achievements", href: "#", active: false },
+    { icon: "person", label: "Profile", href: "#", active: false },
+    { icon: "settings", label: "Settings", href: "#", active: false },
+  ];
 
-export default async function DashboardPage() {
+  const mobileNav = [
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice },
+    { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
+    { icon: "emoji_events", label: "Stats", href: "#", active: false },
+    { icon: "person", label: "Profile", href: "#", active: false },
+  ];
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -358,11 +361,13 @@ export default async function DashboardPage() {
       <main
         className="pt-14 pb-24 md:pb-8 md:ml-64 lg:mr-80 min-h-screen flex flex-col items-center px-6"
       >
-        <DashboardContent
-          stages={stages}
-          difficulties={difficulties}
-          stageTitle={stages.find((s) => s.status !== "complete")?.title ?? stages[0]?.title ?? ""}
-        />
+        <Suspense fallback={null}>
+          <DashboardContent
+            stages={stages}
+            difficulties={difficulties}
+            stageTitle={stages.find((s) => s.status !== "complete")?.title ?? stages[0]?.title ?? ""}
+          />
+        </Suspense>
       </main>
 
       {/* ── Mobile Bottom Nav ── */}
@@ -370,11 +375,12 @@ export default async function DashboardPage() {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center h-16 border-t-2"
         style={{ backgroundColor: C.surface, borderColor: C.border }}
       >
-        {mobileNav.map(({ icon, label, active }) => (
-          <button
+        {mobileNav.map(({ icon, label, href, active }) => (
+          <Link
             key={label}
+            href={href}
             className="flex flex-col items-center gap-0.5 py-2 px-3"
-            style={{ color: active ? C.primaryDim : C.muted }}
+            style={{ color: active ? C.primaryDim : C.muted, textDecoration: "none" }}
           >
             <span
               className="material-symbols-outlined"
@@ -388,7 +394,7 @@ export default async function DashboardPage() {
             >
               {label}
             </span>
-          </button>
+          </Link>
         ))}
       </nav>
     </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import LessonPath from "./LessonPath";
 import SectionList from "./SectionList";
 import Guidebook from "./Guidebook";
+import FreePractice from "./FreePractice";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 
@@ -24,9 +26,13 @@ interface Props {
 type View = "path" | "sections" | "guidebook";
 
 export default function DashboardContent({ stages, difficulties, stageTitle }: Props) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [view, setView] = useState<View>("path");
   const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
   const [scrollToUnit, setScrollToUnit] = useState<string | undefined>();
+
+  const isPractice = searchParams.get("view") === "practice";
 
   function openGuidebook(unitSlug: string, unitTitle: string) {
     setGuidebookUnit({ slug: unitSlug, title: unitTitle });
@@ -65,7 +71,19 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
   return (
     <div style={{ width: "100%", maxWidth: 560 }}>
       <AnimatePresence mode="wait" initial={false}>
-        {view === "sections" && (
+        {isPractice && (
+          <motion.div
+            key="practice"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.18 }}
+          >
+            <FreePractice />
+          </motion.div>
+        )}
+
+        {!isPractice && view === "sections" && (
           <motion.div
             key="sections"
             initial={{ opacity: 0, x: 24 }}
@@ -81,7 +99,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
           </motion.div>
         )}
 
-        {view === "guidebook" && guidebookUnit && (
+        {!isPractice && view === "guidebook" && guidebookUnit && (
           <motion.div
             key="guidebook"
             initial={{ opacity: 0, x: 24 }}
@@ -98,7 +116,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
           </motion.div>
         )}
 
-        {view === "path" && (
+        {!isPractice && view === "path" && (
           <motion.div
             key="path"
             initial={{ opacity: 0 }}
