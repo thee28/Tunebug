@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ExerciseType, ExerciseConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
-import { DIFFICULTY_SETTINGS, NOTE_POOLS } from "@/lib/curriculum/content";
+import { DIFFICULTY_SETTINGS } from "@/lib/curriculum/content";
 import { ExerciseEngine, type ExerciseResult } from "@/components/exercises/ExerciseEngine";
 
 const C = {
@@ -15,10 +15,34 @@ const C = {
   selected: "#3d3580",
 };
 
-const DIFFICULTIES: { value: Difficulty; label: string }[] = [
-  { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Intermediate" },
-  { value: "advanced", label: "Advanced" },
+interface PracticeLevel {
+  id: string;
+  label: string;
+  difficulty: Difficulty;
+  notePool: string[];
+}
+
+const PRACTICE_LEVELS: PracticeLevel[] = [
+  {
+    id: "beginner", label: "Beginner", difficulty: "beginner",
+    notePool: ["C4", "D4", "E4"],
+  },
+  {
+    id: "elementary", label: "Elementary", difficulty: "beginner",
+    notePool: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C#4", "F#4", "A#4", "C5"],
+  },
+  {
+    id: "intermediate", label: "Intermediate", difficulty: "intermediate",
+    notePool: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C#4", "D#4", "F#4", "G#4", "A#4", "C5", "D5", "E5"],
+  },
+  {
+    id: "upper-intermediate", label: "Upper Intermediate", difficulty: "intermediate",
+    notePool: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C#4", "D#4", "F#4", "G#4", "A#4", "C5", "D5", "E5", "F5", "G5", "A5"],
+  },
+  {
+    id: "advanced", label: "Advanced", difficulty: "advanced",
+    notePool: ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C#4", "D#4", "F#4", "G#4", "A#4", "C5", "D5", "E5", "F5", "G5", "A5"],
+  },
 ];
 
 const EXERCISE_TYPES: { value: ExerciseType; label: string; icon: string }[] = [
@@ -48,7 +72,7 @@ function buildFreeExercise(type: ExerciseType, note: string, difficulty: Difficu
 }
 
 export default function FreePractice() {
-  const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
+  const [practiceLevel, setPracticeLevel] = useState<PracticeLevel>(PRACTICE_LEVELS[0]);
   const [exerciseType, setExerciseType] = useState<ExerciseType>("EAR_SINGLE");
   const [selectedNote, setSelectedNote] = useState<string>("C4");
   const [mode, setMode] = useState<"config" | "exercise">("config");
@@ -58,7 +82,7 @@ export default function FreePractice() {
   const [hasAnswer, setHasAnswer] = useState(false);
   const [pendingResult, setPendingResult] = useState<ExerciseResult | null>(null);
 
-  const notePool = NOTE_POOLS[difficulty];
+  const { difficulty, notePool } = practiceLevel;
 
   const handleStart = () => {
     setLastResult(null);
@@ -110,20 +134,21 @@ export default function FreePractice() {
         )}
 
         <section style={{ marginBottom: 28 }}>
-          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>Difficulty</p>
-          <div style={{ display: "flex", gap: 10 }}>
-            {DIFFICULTIES.map((d) => (
+          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>Level</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {PRACTICE_LEVELS.map((lvl) => (
               <button
-                key={d.value}
-                onClick={() => { setDifficulty(d.value); setSelectedNote(NOTE_POOLS[d.value][0]); }}
+                key={lvl.id}
+                onClick={() => { setPracticeLevel(lvl); setSelectedNote(lvl.notePool[0]); }}
                 style={{
-                  flex: 1, padding: "10px 0", borderRadius: 12,
-                  backgroundColor: difficulty === d.value ? C.primary : C.surfaceHigh,
-                  border: `2px solid ${difficulty === d.value ? C.primary : C.border}`,
+                  padding: "8px 14px", borderRadius: 12,
+                  backgroundColor: practiceLevel.id === lvl.id ? C.primary : C.surfaceHigh,
+                  border: `2px solid ${practiceLevel.id === lvl.id ? C.primary : C.border}`,
                   color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  whiteSpace: "nowrap" as const,
                 }}
               >
-                {d.label}
+                {lvl.label}
               </button>
             ))}
           </div>
