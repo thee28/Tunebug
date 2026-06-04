@@ -173,12 +173,9 @@ export default function FreePractice() {
   // ── Config ────────────────────────────────────────────────────────────────
   const configUI = (
     <div style={{ paddingTop: 28 }}>
-      <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900, margin: "0 0 4px" }}>
+      <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900, margin: "0 0 28px" }}>
         Free Practice
       </h1>
-      <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: "0 0 32px" }}>
-        Set up your session and practice on your terms.
-      </p>
 
       {/* Difficulty */}
       <section style={{ marginBottom: 28 }}>
