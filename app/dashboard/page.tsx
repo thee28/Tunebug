@@ -279,12 +279,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             >
               Daily Quest
             </h3>
-            <button
+            <Link
+              href="/dashboard?view=quests"
               className="font-bold text-xs uppercase tracking-widest"
-              style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
+              style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif", textDecoration: "none" }}
             >
               View All
-            </button>
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <div
