@@ -27,18 +27,19 @@ const C = {
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
   const isPractice = view === "practice";
+  const isQuests = view === "quests";
 
   const navItems = [
-    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice },
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests },
     { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
     { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
-    { icon: "workspace_premium", label: "Achievements", href: "#", active: false },
+    { icon: "military_tech", label: "Quests", href: "/dashboard?view=quests", active: isQuests },
     { icon: "person", label: "Profile", href: "#", active: false },
     { icon: "settings", label: "Settings", href: "#", active: false },
   ];
 
   const mobileNav = [
-    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice },
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests },
     { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
     { icon: "emoji_events", label: "Stats", href: "#", active: false },
     { icon: "person", label: "Profile", href: "#", active: false },

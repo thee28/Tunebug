@@ -7,6 +7,7 @@ import LessonPath from "./LessonPath";
 import SectionList from "./SectionList";
 import Guidebook from "./Guidebook";
 import FreePractice from "./FreePractice";
+import Quests from "./Quests";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 
@@ -32,7 +33,10 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
   const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
   const [scrollToUnit, setScrollToUnit] = useState<string | undefined>();
 
-  const isPractice = searchParams.get("view") === "practice";
+  const urlView = searchParams.get("view");
+  const isPractice = urlView === "practice";
+  const isQuests = urlView === "quests";
+  const isUrlView = isPractice || isQuests;
 
   function openGuidebook(unitSlug: string, unitTitle: string) {
     setGuidebookUnit({ slug: unitSlug, title: unitTitle });
@@ -83,7 +87,19 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
           </motion.div>
         )}
 
-        {!isPractice && view === "sections" && (
+        {isQuests && (
+          <motion.div
+            key="quests"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.18 }}
+          >
+            <Quests />
+          </motion.div>
+        )}
+
+        {!isUrlView && view === "sections" && (
           <motion.div
             key="sections"
             initial={{ opacity: 0, x: 24 }}
@@ -99,7 +115,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
           </motion.div>
         )}
 
-        {!isPractice && view === "guidebook" && guidebookUnit && (
+        {!isUrlView && view === "guidebook" && guidebookUnit && (
           <motion.div
             key="guidebook"
             initial={{ opacity: 0, x: 24 }}
@@ -116,7 +132,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
           </motion.div>
         )}
 
-        {!isPractice && view === "path" && (
+        {!isUrlView && view === "path" && (
           <motion.div
             key="path"
             initial={{ opacity: 0 }}
