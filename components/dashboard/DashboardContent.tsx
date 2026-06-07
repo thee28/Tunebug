@@ -8,6 +8,7 @@ import SectionList from "./SectionList";
 import Guidebook from "./Guidebook";
 import FreePractice from "./FreePractice";
 import Quests from "./Quests";
+import Profile, { type ProfileData } from "./Profile";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 
@@ -22,11 +23,12 @@ interface Props {
   stages: Stage[];
   difficulties: Record<string, Difficulty>;
   stageTitle: string;
+  profile: ProfileData;
 }
 
 type View = "path" | "sections" | "guidebook";
 
-export default function DashboardContent({ stages, difficulties, stageTitle }: Props) {
+export default function DashboardContent({ stages, difficulties, stageTitle, profile }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [view, setView] = useState<View>("path");
@@ -36,7 +38,8 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
   const urlView = searchParams.get("view");
   const isPractice = urlView === "practice";
   const isQuests = urlView === "quests";
-  const isUrlView = isPractice || isQuests;
+  const isProfile = urlView === "profile";
+  const isUrlView = isPractice || isQuests || isProfile;
 
   function openGuidebook(unitSlug: string, unitTitle: string) {
     setGuidebookUnit({ slug: unitSlug, title: unitTitle });
@@ -96,6 +99,18 @@ export default function DashboardContent({ stages, difficulties, stageTitle }: P
             transition={{ duration: 0.18 }}
           >
             <Quests />
+          </motion.div>
+        )}
+
+        {isProfile && (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.18 }}
+          >
+            <Profile data={profile} />
           </motion.div>
         )}
 

@@ -28,21 +28,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const { view } = await searchParams;
   const isPractice = view === "practice";
   const isQuests = view === "quests";
+  const isProfile = view === "profile";
 
   const navItems = [
-    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests },
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests && !isProfile },
     { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
     { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
     { icon: "military_tech", label: "Quests", href: "/dashboard?view=quests", active: isQuests },
-    { icon: "person", label: "Profile", href: "#", active: false },
+    { icon: "person", label: "Profile", href: "/dashboard?view=profile", active: isProfile },
     { icon: "settings", label: "Settings", href: "#", active: false },
   ];
 
   const mobileNav = [
-    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests },
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests && !isProfile },
     { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
     { icon: "emoji_events", label: "Stats", href: "#", active: false },
-    { icon: "person", label: "Profile", href: "#", active: false },
+    { icon: "person", label: "Profile", href: "/dashboard?view=profile", active: isProfile },
   ];
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -55,7 +56,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const userWithXP = await import("@/lib/prisma").then(({ prisma }) =>
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { xp: true },
+      select: { xp: true, createdAt: true },
     })
   );
   const totalXP = userWithXP?.xp ?? 0;
@@ -368,6 +369,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             stages={stages}
             difficulties={difficulties}
             stageTitle={stages.find((s) => s.status !== "complete")?.title ?? stages[0]?.title ?? ""}
+            profile={{
+              displayName,
+              initials,
+              email: session.user.email ?? "",
+              totalXP,
+              currentStreak,
+              level,
+              completedStages,
+              totalStages,
+              joinedAt: (userWithXP?.createdAt ?? new Date()).toISOString(),
+            }}
           />
         </Suspense>
       </main>
