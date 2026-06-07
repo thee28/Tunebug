@@ -14,6 +14,7 @@ model User {
   emailVerified DateTime?
   passwordHash  String?
   xp            Int       @default(0)
+  bannerColor   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
