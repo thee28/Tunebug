@@ -56,7 +56,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const userWithXP = await import("@/lib/prisma").then(({ prisma }) =>
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { xp: true, createdAt: true, bannerColor: true },
+      select: { xp: true, createdAt: true },
     })
   );
   const totalXP = userWithXP?.xp ?? 0;
@@ -379,7 +379,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               completedStages,
               totalStages,
               joinedAt: (userWithXP?.createdAt ?? new Date()).toISOString(),
-              bannerColor: userWithXP?.bannerColor ?? undefined,
             }}
           />
         </Suspense>

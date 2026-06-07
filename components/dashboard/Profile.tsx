@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   secondary: "#006c4e", secondaryDim: "#83f5c6",
@@ -9,11 +7,6 @@ const C = {
   border: "#33313D", muted: "#938F99", text: "#f3eff5",
   tertiary: "#ffb95d",
 };
-
-const BANNER_COLORS = [
-  "#574eb1", "#7c3aed", "#db2777", "#dc2626",
-  "#d97706", "#16a34a", "#0891b2", "#0f172a",
-];
 
 export interface ProfileData {
   displayName: string;
@@ -25,7 +18,6 @@ export interface ProfileData {
   completedStages: number;
   totalStages: number;
   joinedAt: string; // ISO string, serialisable from server
-  bannerColor?: string;
 }
 
 function formatJoinDate(iso: string): string {
@@ -43,30 +35,6 @@ function leagueFromXP(xp: number): string {
 export default function Profile({ data }: { data: ProfileData }) {
   const { displayName, initials, email, totalXP, currentStreak, level, completedStages, totalStages } = data;
   const league = leagueFromXP(totalXP);
-
-  const [bannerColor, setBannerColor] = useState(data.bannerColor ?? C.primary);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    }
-    if (pickerOpen) document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [pickerOpen]);
-
-  async function pickColor(color: string) {
-    setBannerColor(color);
-    setPickerOpen(false);
-    await fetch("/api/user/banner-color", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ color }),
-    });
-  }
 
   const achievements = [
     {
@@ -110,51 +78,12 @@ export default function Profile({ data }: { data: ProfileData }) {
 
       {/* Hero banner */}
       <div style={{
-        borderRadius: 20, overflow: "visible", marginBottom: 24,
-        backgroundColor: bannerColor,
+        borderRadius: 20, overflow: "hidden", marginBottom: 24,
+        backgroundColor: C.primary,
         border: `2px solid rgba(255,255,255,0.08)`,
         padding: "40px 28px 36px",
         display: "flex", alignItems: "center", gap: 24,
-        position: "relative",
       }}>
-        {/* Color picker button */}
-        <div ref={pickerRef} style={{ position: "absolute", top: 14, right: 14 }}>
-          <button
-            onClick={() => setPickerOpen(v => !v)}
-            style={{
-              width: 32, height: 32, borderRadius: 8, border: "2px solid rgba(255,255,255,0.3)",
-              backgroundColor: "rgba(255,255,255,0.15)", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-            title="Change banner color"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18, color: "white" }}>palette</span>
-          </button>
-
-          {pickerOpen && (
-            <div style={{
-              position: "absolute", top: 38, right: 0, zIndex: 20,
-              backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
-              borderRadius: 14, padding: 12,
-              display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-            }}>
-              {BANNER_COLORS.map(color => (
-                <button
-                  key={color}
-                  onClick={() => pickColor(color)}
-                  style={{
-                    width: 32, height: 32, borderRadius: 8, cursor: "pointer",
-                    backgroundColor: color,
-                    border: color === bannerColor ? "3px solid white" : "2px solid rgba(255,255,255,0.15)",
-                    outline: "none",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* Avatar */}
         <div style={{
           width: 80, height: 80, borderRadius: "50%", flexShrink: 0,
