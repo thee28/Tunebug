@@ -140,27 +140,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         className="hidden md:flex flex-col fixed left-0 top-14 bottom-0 w-64 py-5 px-3 gap-2 overflow-y-auto"
         style={{ backgroundColor: C.dark, borderRight: `2px solid ${C.border}` }}
       >
-        {/* User profile card */}
-        <div
-          className="flex items-center gap-3 px-3 py-3 rounded-2xl mb-3"
-          style={{ backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}
-        >
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-extrabold text-sm"
-            style={{ backgroundColor: C.primary, color: "white", fontFamily: "'Nunito', sans-serif" }}
-          >
-            {initials}
-          </div>
-          <div className="min-w-0">
-            <p className="font-bold text-sm truncate" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
-              {displayName}
-            </p>
-            <p className="text-xs" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}>
-              Level {level}
-            </p>
-          </div>
-        </div>
-
         <nav className="flex flex-col gap-0.5">
           {navItems.map(({ icon, label, href, active }) => (
             <Link
