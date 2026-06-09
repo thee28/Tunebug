@@ -8,6 +8,7 @@ import SectionList from "./SectionList";
 import Guidebook from "./Guidebook";
 import FreePractice from "./FreePractice";
 import Quests from "./Quests";
+import Leaderboards from "./Leaderboards";
 import Profile, { type ProfileData } from "./Profile";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
@@ -39,7 +40,8 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
   const isPractice = urlView === "practice";
   const isQuests = urlView === "quests";
   const isProfile = urlView === "profile";
-  const isUrlView = isPractice || isQuests || isProfile;
+  const isLeaderboards = urlView === "leaderboards";
+  const isUrlView = isPractice || isQuests || isProfile || isLeaderboards;
 
   function openGuidebook(unitSlug: string, unitTitle: string) {
     setGuidebookUnit({ slug: unitSlug, title: unitTitle });
@@ -87,6 +89,22 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
             transition={{ duration: 0.18 }}
           >
             <FreePractice />
+          </motion.div>
+        )}
+
+        {isLeaderboards && (
+          <motion.div
+            key="leaderboards"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.18 }}
+          >
+            <Leaderboards
+              totalXP={profile.totalXP}
+              displayName={profile.displayName}
+              initials={profile.initials}
+            />
           </motion.div>
         )}
 

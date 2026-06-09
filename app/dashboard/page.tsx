@@ -29,20 +29,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const isPractice = view === "practice";
   const isQuests = view === "quests";
   const isProfile = view === "profile";
+  const isLeaderboards = view === "leaderboards";
 
   const navItems = [
-    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests && !isProfile },
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests && !isProfile && !isLeaderboards },
     { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
-    { icon: "emoji_events", label: "Leaderboards", href: "#", active: false },
+    { icon: "emoji_events", label: "Leaderboards", href: "/dashboard?view=leaderboards", active: isLeaderboards },
     { icon: "military_tech", label: "Quests", href: "/dashboard?view=quests", active: isQuests },
     { icon: "person", label: "Profile", href: "/dashboard?view=profile", active: isProfile },
     { icon: "settings", label: "Settings", href: "#", active: false },
   ];
 
   const mobileNav = [
-    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests && !isProfile },
+    { icon: "school", label: "Learn", href: "/dashboard", active: !isPractice && !isQuests && !isProfile && !isLeaderboards },
     { icon: "music_note", label: "Free Practice", href: "/dashboard?view=practice", active: isPractice },
-    { icon: "emoji_events", label: "Stats", href: "#", active: false },
+    { icon: "emoji_events", label: "Ranks", href: "/dashboard?view=leaderboards", active: isLeaderboards },
     { icon: "person", label: "Profile", href: "/dashboard?view=profile", active: isProfile },
   ];
   const session = await auth();
@@ -316,12 +317,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             >
               Bronze League
             </h3>
-            <button
+            <Link
+              href="/dashboard?view=leaderboards"
               className="font-bold text-xs uppercase tracking-widest"
-              style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
+              style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif", textDecoration: "none" }}
             >
               View League
-            </button>
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <div
