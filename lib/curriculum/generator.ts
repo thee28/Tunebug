@@ -220,13 +220,14 @@ function generateMixExercise(
   configA: ExerciseConfig,
   configB: ExerciseConfig,
   difficulty: Difficulty,
-  rng: () => number
+  rng: () => number,
+  forcedTarget?: ExerciseConfig
 ): ExerciseStep {
   const s = DIFFICULTY_SETTINGS[difficulty];
   const simpleNames = NOTE_NAMES_BY_DIFFICULTY[difficulty];
   const intervalPool = INTERVAL_POOLS[difficulty];
   const notePool = NOTE_POOLS[difficulty];
-  const targetConfig = pick([configA, configB], rng);
+  const targetConfig = forcedTarget ?? pick([configA, configB], rng);
   const otherConfig = targetConfig === configA ? configB : configA;
 
   switch (type) {
@@ -522,9 +523,12 @@ export function generateLessonSteps(
       { kind: "exercise", type: exerciseType, config: secondaryExerciseConfig },
       ...Array.from({ length: 3 }, () => generateLockedExercise(exerciseType, secondaryExerciseConfig, difficulty, rng)),
     ];
-    const exMix: ExerciseStep[] = Array.from({ length: 4 }, () =>
-      generateMixExercise(exerciseType, exerciseConfig, secondaryExerciseConfig, difficulty, rng)
-    );
+    const exMix: ExerciseStep[] = shuffled([
+      generateMixExercise(exerciseType, exerciseConfig, secondaryExerciseConfig, difficulty, rng, exerciseConfig),
+      generateMixExercise(exerciseType, exerciseConfig, secondaryExerciseConfig, difficulty, rng, exerciseConfig),
+      generateMixExercise(exerciseType, exerciseConfig, secondaryExerciseConfig, difficulty, rng, secondaryExerciseConfig),
+      generateMixExercise(exerciseType, exerciseConfig, secondaryExerciseConfig, difficulty, rng, secondaryExerciseConfig),
+    ], rng);
     return [
       buildTeachSlide(exerciseType, exerciseConfig, "intro"),
       ...exA,

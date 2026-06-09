@@ -56,17 +56,19 @@ export const CURRICULUM: CurriculumStage[] = [
             passingScore: 70, xpReward: 10,
           },
           {
-            slug: "beg-nn-2", title: "Meet E", order: 1, exerciseType: "EAR_SINGLE",
+            slug: "beg-nn-2", title: "E and F", order: 1, exerciseType: "EAR_SINGLE",
             exerciseConfig: { targetNote: "E4", choices: ["C", "D", "E", "F"], correctAnswer: "E" },
+            secondaryExerciseConfig: { targetNote: "F4", choices: ["C", "D", "E", "F"], correctAnswer: "F" },
             passingScore: 70, xpReward: 10,
           },
           {
-            slug: "beg-nn-3", title: "C, D, E Together", order: 2, exerciseType: "EAR_SINGLE",
+            slug: "beg-nn-3", title: "C, D, E, F Together", order: 2, exerciseType: "EAR_SINGLE",
             exerciseConfig: { targetNote: "C4", choices: ["C", "D", "E", "F"], correctAnswer: "C" },
             consolidationConfigs: [
               { targetNote: "C4", choices: ["C", "D", "E", "F"], correctAnswer: "C" },
               { targetNote: "D4", choices: ["C", "D", "E", "F"], correctAnswer: "D" },
               { targetNote: "E4", choices: ["C", "D", "E", "F"], correctAnswer: "E" },
+              { targetNote: "F4", choices: ["C", "D", "E", "F"], correctAnswer: "F" },
             ],
             passingScore: 70, xpReward: 15,
           },
