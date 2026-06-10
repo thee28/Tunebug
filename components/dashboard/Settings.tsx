@@ -6,7 +6,7 @@ const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   surface: "#141321", surfaceHigh: "#211F26",
   border: "#33313D", muted: "#938F99", text: "#f3eff5",
-  accent: "#1cb0f6",
+  accent: "#574eb1",
 };
 
 const INPUT = {
@@ -39,7 +39,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
         boxShadow: "0 1px 3px rgba(0,0,0,0.35)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <div style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: on ? C.accent : "#bbb" }} />
+        <div style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: on ? "#c5c0ff" : "#bbb" }} />
       </div>
     </div>
   );
