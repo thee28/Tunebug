@@ -208,18 +208,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               </nav>
             </div>
 
-            {/* Subscription */}
-            <div className="rounded-2xl p-5" style={{ backgroundColor: C.surface, border: `2px solid ${C.border}` }}>
-              <h3 className="font-bold text-base mb-3" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>Subscription</h3>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500, padding: 0 }}>
-                Choose a plan
-              </button>
-            </div>
-
             {/* Support */}
             <div className="rounded-2xl p-5" style={{ backgroundColor: C.surface, border: `2px solid ${C.border}` }}>
               <h3 className="font-bold text-base mb-3" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>Support</h3>
-              <Link href="/help" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
+              <Link href="/help" className="nav-link" style={{ display: "block", padding: "10px 12px", borderRadius: 10, color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
                 Help Center
               </Link>
             </div>
