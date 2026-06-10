@@ -192,12 +192,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <Link
                       key={item.label}
                       href={`/dashboard?view=settings${item.sub ? `&sub=${item.sub}` : ""}`}
+                      className="nav-link"
                       style={{
                         display: "block", padding: "10px 12px", borderRadius: 10,
-                        backgroundColor: active ? "rgba(255,255,255,0.08)" : "transparent",
-                        color: active ? C.text : C.muted,
-                        fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: active ? 700 : 500,
-                        textDecoration: "none", transition: "background-color 0.15s",
+                        backgroundColor: "transparent",
+                        color: C.muted,
+                        fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500,
+                        textDecoration: "none",
                       }}
                     >
                       {item.label}
