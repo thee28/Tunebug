@@ -10,10 +10,10 @@ import DashboardContent from "@/components/dashboard/DashboardContent";
 import LogoutButton from "@/components/LogoutButton";
 
 const C = {
-  dark: "#0F0F13",
-  surface: "#1C1B21",
-  surfaceHigh: "#211F26",
-  border: "#33313D",
+  dark: "var(--c-dark)",
+  surface: "var(--c-surface)",
+  surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)",
   primary: "#574eb1",
   primaryDark: "#41379b",
   primaryDim: "#c5c0ff",
@@ -21,8 +21,8 @@ const C = {
   secondaryDark: "#00513a",
   secondaryDim: "#83f5c6",
   tertiary: "#ffb95d",
-  muted: "#938F99",
-  text: "#f3eff5",
+  muted: "var(--c-muted)",
+  text: "var(--c-text)",
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ view?: string; sub?: string }> }) {
@@ -330,7 +330,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-white mb-1" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  <p className="font-bold text-sm mb-1" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
                     Earn 10 XP
                   </p>
                   <div className="w-full h-2.5 rounded-full" style={{ backgroundColor: C.border }}>

@@ -16,9 +16,9 @@ const C = {
   secondary: "#006c4e",
   secondaryDark: "#00513a",
   secondaryDim: "#83f5c6",
-  surfaceHigh: "#211F26",
-  border: "#33313D",
-  muted: "#938F99",
+  surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)",
+  muted: "var(--c-muted)",
 };
 
 export default function StageNode({ stage, index, xOffset, isFirstActive }: Props) {
@@ -38,7 +38,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
   // Layers 2+3 together form a continuous ring around the entire coin shape.
   let coinDepth: string;
   if (isActive) {
-    coinDepth = `0 9px 0 0 ${C.primaryDark}, 0 0 0 10px #2d2d3e, 0 9px 0 10px #2d2d3e`;
+    coinDepth = `0 9px 0 0 ${C.primaryDark}, 0 0 0 10px var(--c-dark), 0 9px 0 10px var(--c-dark)`;
   } else if (isComplete) {
     coinDepth = `0 9px 0 0 ${C.secondaryDark}`;
   } else if (isAvailable) {
@@ -98,7 +98,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
         <div className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap z-10">
           <div
             className="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest"
-            style={{ backgroundColor: C.border, color: "#f3eff5", fontFamily: "'Nunito', sans-serif" }}
+            style={{ backgroundColor: C.border, color: "var(--c-text)", fontFamily: "'Nunito', sans-serif" }}
           >
             START
           </div>

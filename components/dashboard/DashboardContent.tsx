@@ -15,10 +15,10 @@ import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 
 const C = {
-  muted: "#938F99",
-  text: "#f3eff5",
-  dark: "#0F0F13",
-  border: "#33313D",
+  muted: "var(--c-muted)",
+  text: "var(--c-text)",
+  dark: "var(--c-dark)",
+  border: "var(--c-border)",
 };
 
 interface Props {

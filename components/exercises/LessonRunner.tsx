@@ -17,11 +17,11 @@ interface Props {
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
-  surface: "#0F0F13", surfaceHigh: "#211F26",
-  border: "#33313D", muted: "#938F99",
+  surface: "var(--c-dark)", surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)", muted: "var(--c-muted)",
   success: "#006c4e", successDim: "#83f5c6",
   error: "#8b2828", errorDim: "#ffb4ab",
-  text: "#f3eff5", tertiary: "#ffb95d",
+  text: "var(--c-text)", tertiary: "#ffb95d",
 };
 
 export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, onExit }: Props) {

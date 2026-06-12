@@ -23,6 +23,18 @@
   box-sizing: border-box;
 }
 
+/* ── Theme CSS variables ── */
+:root {
+  --c-dark: #0F0F13;
+  --c-surface: #1C1B21;
+  --c-surface-alt: #141321;
+  --c-surface-high: #211F26;
+  --c-border: #33313D;
+  --c-muted: #938F99;
+  --c-text: #f3eff5;
+}
+
+
 html {
   background-color: #fcf8fe;
 }
@@ -43,11 +55,11 @@ h1, h2, h3, h4, h5, h6 {
   transition: background-color 120ms ease, color 120ms ease;
 }
 .nav-link:hover:not(.nav-active) {
-  background-color: rgba(255, 255, 255, 0.07) !important;
-  color: #e8e4f4 !important;
+  background-color: var(--c-surface-high) !important;
+  color: var(--c-text) !important;
 }
 .nav-link:hover:not(.nav-active) span {
-  color: #e8e4f4 !important;
+  color: var(--c-text) !important;
 }
 
 /* Guidebook / glass button press */
@@ -73,7 +85,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .node-press:active {
   transform: translateY(9px) !important;
-  box-shadow: 0 0 0 11px #2d2d3e !important;
+  box-shadow: 0 0 0 11px var(--c-dark) !important;
 }
 
 /* Tactile 3D button system */

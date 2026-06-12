@@ -16,8 +16,8 @@ interface Props {
 const C = {
   primary: "#574eb1", primaryDark: "#41379b",
   secondary: "#006c4e", secondaryDark: "#00513a", secondaryDim: "#83f5c6",
-  surface: "#141321", surfaceHigh: "#211F26",
-  border: "#33313D", muted: "#938F99", text: "#f3eff5",
+  surface: "var(--c-surface-alt)", surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
 };
 
 type View =
@@ -197,7 +197,7 @@ export function StageRunner({ stage, difficulty }: Props) {
                   <div
                     style={{
                       width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
-                      backgroundColor: isUnitComplete ? C.secondary : isUnitLocked ? "#2a2838" : C.primary,
+                      backgroundColor: isUnitComplete ? C.secondary : isUnitLocked ? "var(--c-surface-high)" : C.primary,
                       boxShadow: `0 5px 0 0 ${isUnitComplete ? C.secondaryDark : isUnitLocked ? "rgba(0,0,0,0.35)" : C.primaryDark}`,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       opacity: isUnitLocked ? 0.45 : 1,
@@ -277,7 +277,7 @@ export function StageRunner({ stage, difficulty }: Props) {
                           <div
                             style={{
                               width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                              backgroundColor: isDone ? C.secondary : isLocked ? "#2a2838" : C.primary,
+                              backgroundColor: isDone ? C.secondary : isLocked ? "var(--c-surface-high)" : C.primary,
                               display: "flex", alignItems: "center", justifyContent: "center",
                             }}
                           >

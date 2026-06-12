@@ -11,8 +11,8 @@ import { ExerciseEngine, type ExerciseResult } from "@/components/exercises/Exer
 const C = {
   primary: "#574eb1", primaryDark: "#41379b",
   secondary: "#006c4e", secondaryDark: "#00513a",
-  surface: "#141321", surfaceHigh: "#211F26",
-  border: "#33313D", muted: "#938F99", text: "#f3eff5",
+  surface: "var(--c-surface-alt)", surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
   selected: "#3d3580",
 };
 

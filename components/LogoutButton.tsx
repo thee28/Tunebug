@@ -3,8 +3,8 @@
 import { signOut } from "next-auth/react";
 
 const C = {
-  border: "#33313D", muted: "#938F99", text: "#f3eff5",
-  surfaceHigh: "#211F26",
+  border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
+  surfaceHigh: "var(--c-surface-high)",
 };
 
 export default function LogoutButton() {

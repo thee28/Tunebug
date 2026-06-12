@@ -6,8 +6,8 @@ import { motion } from "framer-motion";
 const C = {
   primary: "#574eb1", primaryDim: "#c5c0ff",
   secondary: "#006c4e", secondaryDim: "#83f5c6",
-  surfaceHigh: "#211F26", border: "#33313D",
-  muted: "#938F99", text: "#f3eff5",
+  surfaceHigh: "var(--c-surface-high)", border: "var(--c-border)",
+  muted: "var(--c-muted)", text: "var(--c-text)",
 };
 
 interface GlossaryTerm {

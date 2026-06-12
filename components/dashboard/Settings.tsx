@@ -4,8 +4,8 @@ import { useState } from "react";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
-  surface: "#141321", surfaceHigh: "#211F26",
-  border: "#33313D", muted: "#938F99", text: "#f3eff5",
+  surface: "var(--c-surface-alt)", surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
   accent: "#574eb1",
 };
 
@@ -161,10 +161,6 @@ function Preferences() {
         <ToggleRow label="Listening exercises" on={listening} onToggle={() => setListening(v => !v)} />
       </div>
 
-      <div style={{ marginBottom: 28 }}>
-        <SectionHeader title="Appearance" />
-        <ToggleRow label="Dark mode" on={true} onToggle={() => {}} />
-      </div>
     </div>
   );
 }

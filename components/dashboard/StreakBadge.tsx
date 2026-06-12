@@ -18,7 +18,7 @@ export default function StreakBadge({ streak }: { streak: StreakData | null }) {
       >
         local_fire_department
       </span>
-      <span style={{ fontFamily: "'Nunito', sans-serif", color: "#f3eff5" }}>
+      <span style={{ fontFamily: "'Nunito', sans-serif", color: "var(--c-text)" }}>
         {current} day streak
       </span>
     </div>

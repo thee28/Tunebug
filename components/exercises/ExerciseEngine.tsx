@@ -46,6 +46,6 @@ export function ExerciseEngine({ type, config, difficulty, submitted, onAnswerCh
     case "SIGHT_READ_PIANO":
       return <SightReadExercise config={config as SightReadPianoConfig} {...shared} />;
     default:
-      return <div style={{ color: "#938F99" }}>Unknown exercise type</div>;
+      return <div style={{ color: "var(--c-muted)" }}>Unknown exercise type</div>;
   }
 }

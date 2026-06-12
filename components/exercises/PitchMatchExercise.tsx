@@ -21,8 +21,8 @@ interface Props {
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b",
-  surfaceHigh: "#211F26", border: "#33313D", muted: "#938F99",
-  success: "#006c4e", text: "#f3eff5",
+  surfaceHigh: "var(--c-surface-high)", border: "var(--c-border)", muted: "var(--c-muted)",
+  success: "#006c4e", text: "var(--c-text)",
 };
 
 export function PitchMatchExercise({ config, difficulty, onComplete }: Props) {

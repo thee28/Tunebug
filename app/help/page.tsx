@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 
 const C = {
-  dark: "#0F0F13", surface: "#1C1B21", surfaceHigh: "#211F26",
-  border: "#33313D", muted: "#938F99", text: "#f3eff5",
+  dark: "var(--c-dark)", surface: "var(--c-surface)", surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
   primary: "#574eb1", primaryDim: "#c5c0ff", accent: "#c5c0ff",
 };
 

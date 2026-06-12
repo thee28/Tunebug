@@ -11,8 +11,8 @@ import { CURRICULUM } from "@/lib/curriculum/config";
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   secondary: "#006c4e", secondaryDark: "#00513a", secondaryDim: "#83f5c6",
-  surface: "#141321", surfaceHigh: "#211F26",
-  border: "#33313D", muted: "#938F99", text: "#f3eff5",
+  surface: "var(--c-surface-alt)", surfaceHigh: "var(--c-surface-high)",
+  border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
 };
 
 const OFFSETS = [70, -70, 110, -40, 50, -100, 90, -55];
@@ -196,7 +196,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
       </AnimatePresence>
 
       {/* Sticky banner — clicking shows sections inline */}
-      <div style={{ position: "sticky", top: 56, zIndex: 10, width: "100%", marginBottom: 20, backgroundColor: "#0F0F13", paddingTop: 20 }}>
+      <div style={{ position: "sticky", top: 56, zIndex: 10, width: "100%", marginBottom: 20, backgroundColor: "var(--c-dark)", paddingTop: 20 }}>
         <div
           style={{
             borderRadius: 16,
@@ -369,7 +369,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                               const dy = isPressed ? 6 : isHovered ? 3 : 0;
                               const baseV = isActive ? 8 : 6;
                               const shadow = isActive
-                                ? `0 ${Math.max(baseV - dy, 2)}px 0 0 ${C.primaryDark}, 0 0 0 10px #2a2838, 0 ${Math.max(baseV - dy, 2)}px 0 10px #2a2838`
+                                ? `0 ${Math.max(baseV - dy, 2)}px 0 0 ${C.primaryDark}, 0 0 0 10px var(--c-dark), 0 ${Math.max(baseV - dy, 2)}px 0 10px var(--c-dark)`
                                 : isDone
                                 ? `0 ${Math.max(6 - dy, 0)}px 0 0 ${C.secondaryDark}`
                                 : isLocked
@@ -392,7 +392,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                               style={{
                                 width: size, height: size,
                                 borderRadius: "50%",
-                                backgroundColor: isDone ? C.secondary : isLocked ? "#2a2838" : C.primary,
+                                backgroundColor: isDone ? C.secondary : isLocked ? "var(--c-surface-high)" : C.primary,
                                 boxShadow: shadow,
                                 transform: `translateY(${dy}px)`,
                                 transition: "transform 0.08s ease, box-shadow 0.08s ease",
@@ -454,7 +454,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
             <div style={{ marginBottom: 14 }}>
               <span
                 style={{
-                  backgroundColor: "#2a2838",
+                  backgroundColor: "var(--c-surface-high)",
                   color: C.muted, fontFamily: "'Nunito', sans-serif",
                   fontSize: 10, fontWeight: 800,
                   textTransform: "uppercase", letterSpacing: "0.12em",

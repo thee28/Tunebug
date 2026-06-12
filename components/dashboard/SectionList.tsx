@@ -6,7 +6,7 @@ import type { Stage } from "@/types/lesson";
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   secondary: "#006c4e", secondaryDark: "#00513a", secondaryDim: "#83f5c6",
-  surfaceHigh: "#211F26", border: "#33313D", muted: "#938F99", text: "#f3eff5",
+  surfaceHigh: "var(--c-surface-high)", border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
 };
 
 const SECTION_ICONS = ["school", "menu_book", "library_music", "piano", "workspace_premium"];
@@ -43,7 +43,7 @@ export default function SectionList({ stages, onBack }: { stages: Stage[]; onBac
               <div
                 style={{
                   width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                  backgroundColor: isComplete ? C.secondary : isActive ? C.primary : "#2a2838",
+                  backgroundColor: isComplete ? C.secondary : isActive ? C.primary : "var(--c-surface-high)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
@@ -104,7 +104,7 @@ export default function SectionList({ stages, onBack }: { stages: Stage[]; onBac
                 </p>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: "#2a2838", overflow: "hidden" }}>
+                  <div style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: "var(--c-border)", overflow: "hidden" }}>
                     <div
                       style={{
                         height: "100%", borderRadius: 4,
@@ -126,7 +126,7 @@ export default function SectionList({ stages, onBack }: { stages: Stage[]; onBac
                 <div
                   style={{
                     width: "100%", padding: "12px 0", borderRadius: 14, textAlign: "center",
-                    backgroundColor: "#2a2838", border: `2px solid ${C.border}`,
+                    backgroundColor: "var(--c-surface-high)", border: `2px solid ${C.border}`,
                     color: C.muted, fontFamily: "'Nunito', sans-serif", fontWeight: 800,
                     fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em",
                   }}

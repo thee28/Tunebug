@@ -19,8 +19,8 @@ interface Props {
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b",
-  surfaceHigh: "#211F26", border: "#33313D", muted: "#938F99",
-  success: "#006c4e", error: "#8b2828", text: "#f3eff5",
+  surfaceHigh: "var(--c-surface-high)", border: "var(--c-border)", muted: "var(--c-muted)",
+  success: "#006c4e", error: "#8b2828", text: "var(--c-text)",
 };
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
