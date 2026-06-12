@@ -369,7 +369,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                               const dy = isPressed ? 6 : isHovered ? 3 : 0;
                               const baseV = isActive ? 8 : 6;
                               const shadow = isActive
-                                ? `0 ${Math.max(baseV - dy, 2)}px 0 0 ${C.primaryDark}, 0 0 0 10px var(--c-dark), 0 ${Math.max(baseV - dy, 2)}px 0 10px var(--c-dark)`
+                                ? `0 ${Math.max(baseV - dy, 2)}px 0 0 ${C.primaryDark}, 0 0 0 10px #2a2838, 0 ${Math.max(baseV - dy, 2)}px 0 10px #2a2838`
                                 : isDone
                                 ? `0 ${Math.max(6 - dy, 0)}px 0 0 ${C.secondaryDark}`
                                 : isLocked

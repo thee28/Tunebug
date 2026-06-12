@@ -38,7 +38,7 @@ export default function StageNode({ stage, index, xOffset, isFirstActive }: Prop
   // Layers 2+3 together form a continuous ring around the entire coin shape.
   let coinDepth: string;
   if (isActive) {
-    coinDepth = `0 9px 0 0 ${C.primaryDark}, 0 0 0 10px var(--c-dark), 0 9px 0 10px var(--c-dark)`;
+    coinDepth = `0 9px 0 0 ${C.primaryDark}, 0 0 0 10px #2a2838, 0 9px 0 10px #2a2838`;
   } else if (isComplete) {
     coinDepth = `0 9px 0 0 ${C.secondaryDark}`;
   } else if (isAvailable) {
