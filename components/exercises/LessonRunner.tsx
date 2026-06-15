@@ -6,6 +6,43 @@ import type { Difficulty } from "@/lib/curriculum/content";
 import type { LessonStep } from "@/types/lesson";
 import { ExerciseEngine, type ExerciseResult } from "./ExerciseEngine";
 
+function playCorrectSound() {
+  try {
+    const ctx = new AudioContext();
+    [[0, 523.25], [0.1, 783.99]].forEach(([t, freq]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + t);
+      gain.gain.setValueAtTime(0.28, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.28);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.28);
+    });
+    setTimeout(() => ctx.close(), 700);
+  } catch {}
+}
+
+function playIncorrectSound() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.22);
+    gain.gain.setValueAtTime(0.22, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.32);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.32);
+    setTimeout(() => ctx.close(), 500);
+  } catch {}
+}
+
 interface Props {
   title: string;
   steps: LessonStep[];
@@ -74,6 +111,8 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
 
   const handleExerciseComplete = (result: ExerciseResult) => {
     setPendingResult(result);
+    if (result.passed) playCorrectSound();
+    else playIncorrectSound();
   };
 
   const advanceStep = (newScores: number[]) => {
