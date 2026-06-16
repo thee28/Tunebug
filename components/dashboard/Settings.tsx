@@ -143,9 +143,7 @@ function SaveButton({ disabled }: { disabled?: boolean }) {
 
 function Preferences() {
   const [soundEffects, setSoundEffects] = useState(true);
-  const [animations, setAnimations] = useState(true);
   const [motivational, setMotivational] = useState(true);
-  const [listening, setListening] = useState(true);
 
   return (
     <div>
@@ -156,9 +154,7 @@ function Preferences() {
       <div style={{ marginBottom: 28 }}>
         <SectionHeader title="Lesson experience" />
         <ToggleRow label="Sound effects" on={soundEffects} onToggle={() => setSoundEffects(v => !v)} />
-        <ToggleRow label="Animations" on={animations} onToggle={() => setAnimations(v => !v)} />
         <ToggleRow label="Motivational messages" on={motivational} onToggle={() => setMotivational(v => !v)} />
-        <ToggleRow label="Listening exercises" on={listening} onToggle={() => setListening(v => !v)} />
       </div>
 
     </div>
