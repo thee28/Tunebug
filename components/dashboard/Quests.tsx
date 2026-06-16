@@ -1,5 +1,7 @@
 "use client";
 
+import type { QuestProgress } from "@/lib/db/quests";
+
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   secondary: "#006c4e", secondaryDim: "#83f5c6",
@@ -18,11 +20,13 @@ interface Quest {
   goal: number;
 }
 
-const DAILY_QUESTS: Quest[] = [
-  { id: "xp", label: "Earn 10 XP today", icon: "bolt", iconBg: "rgba(255,185,93,0.2)", iconColor: C.tertiary, current: 0, goal: 10 },
-  { id: "lessons", label: "Complete 2 lessons", icon: "school", iconBg: "rgba(87,78,177,0.2)", iconColor: C.primaryDim, current: 0, goal: 2 },
-  { id: "score", label: "Score 80% or higher in a lesson", icon: "gps_fixed", iconBg: "rgba(0,108,78,0.2)", iconColor: C.secondaryDim, current: 0, goal: 1 },
-];
+function buildQuests(qp: QuestProgress): Quest[] {
+  return [
+    { id: "xp", label: "Earn 10 XP today", icon: "bolt", iconBg: "rgba(255,185,93,0.2)", iconColor: C.tertiary, current: Math.min(qp.xpToday, 10), goal: 10 },
+    { id: "lessons", label: "Complete 2 lessons", icon: "school", iconBg: "rgba(87,78,177,0.2)", iconColor: C.primaryDim, current: Math.min(qp.lessonsToday, 2), goal: 2 },
+    { id: "score", label: "Score 80% or higher in a lesson", icon: "gps_fixed", iconBg: "rgba(0,108,78,0.2)", iconColor: C.secondaryDim, current: qp.highScoreToday, goal: 1 },
+  ];
+}
 
 function hoursUntilMidnight(): number {
   const now = new Date();
@@ -31,7 +35,8 @@ function hoursUntilMidnight(): number {
   return Math.ceil((midnight.getTime() - now.getTime()) / 3600000);
 }
 
-export default function Quests() {
+export default function Quests({ questProgress }: { questProgress: QuestProgress }) {
+  const DAILY_QUESTS = buildQuests(questProgress);
   const completed = DAILY_QUESTS.filter(q => q.current >= q.goal).length;
   const hours = hoursUntilMidnight();
 

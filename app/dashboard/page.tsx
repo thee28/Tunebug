@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getStagesWithProgress } from "@/lib/db/stages";
 import { getStreak } from "@/lib/db/streak";
+import { getTodayQuestProgress } from "@/lib/db/quests";
 import { CURRICULUM } from "@/lib/curriculum/config";
 import type { Difficulty } from "@/lib/curriculum/content";
 import DashboardContent from "@/components/dashboard/DashboardContent";
@@ -54,9 +55,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [stages, streak] = await Promise.all([
+  const [stages, streak, questProgress] = await Promise.all([
     getStagesWithProgress(session.user.id),
     getStreak(session.user.id),
+    getTodayQuestProgress(session.user.id),
   ]);
 
   const userWithXP = await import("@/lib/prisma").then(({ prisma }) =>
@@ -338,11 +340,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <div className="w-full h-2.5 rounded-full" style={{ backgroundColor: C.border }}>
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${Math.min((totalXP % 100) * 10, 100)}%`, backgroundColor: C.tertiary }}
+                      style={{ width: `${Math.min((questProgress.xpToday / 10) * 100, 100)}%`, backgroundColor: C.tertiary }}
                     />
                   </div>
                   <p className="text-xs mt-1" style={{ color: C.muted }}>
-                    {Math.min(totalXP % 100, 10)} / 10
+                    {Math.min(questProgress.xpToday, 10)} / 10
                   </p>
                 </div>
                 <div
@@ -414,6 +416,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               totalStages,
               joinedAt: (userWithXP?.createdAt ?? new Date()).toISOString(),
             }}
+            questProgress={questProgress}
           />
         </Suspense>
       </main>

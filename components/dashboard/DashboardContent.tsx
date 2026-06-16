@@ -13,6 +13,7 @@ import Profile, { type ProfileData } from "./Profile";
 import Settings from "./Settings";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
+import type { QuestProgress } from "@/lib/db/quests";
 
 const C = {
   muted: "var(--c-muted)",
@@ -26,11 +27,12 @@ interface Props {
   difficulties: Record<string, Difficulty>;
   stageTitle: string;
   profile: ProfileData;
+  questProgress: QuestProgress;
 }
 
 type View = "path" | "sections" | "guidebook";
 
-export default function DashboardContent({ stages, difficulties, stageTitle, profile }: Props) {
+export default function DashboardContent({ stages, difficulties, stageTitle, profile, questProgress }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [view, setView] = useState<View>("path");
@@ -119,7 +121,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            <Quests />
+            <Quests questProgress={questProgress} />
           </motion.div>
         )}
 
