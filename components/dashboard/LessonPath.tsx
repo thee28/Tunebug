@@ -175,7 +175,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
               title={`${exercise.stage.title} · ${exercise.unit.title}`}
               steps={(() => {
                 const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === exercise.lesson.slug);
-                return generateLessonSteps(exercise.lesson.slug, exercise.lesson.exerciseType, exercise.lesson.exerciseConfig, exercise.difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs);
+                return generateLessonSteps(exercise.lesson.slug, exercise.lesson.exerciseType, cl?.exerciseConfig ?? exercise.lesson.exerciseConfig, exercise.difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs, cl?.reinforceWithPrior);
               })()}
               difficulty={exercise.difficulty}
               xpReward={exercise.lesson.xpReward}

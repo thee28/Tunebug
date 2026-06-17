@@ -72,7 +72,7 @@ export function StageRunner({ stage, difficulty }: Props) {
         title={`${stage.title} · ${unit.title}`}
         steps={(() => {
           const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === lesson.slug);
-          return generateLessonSteps(lesson.slug, lesson.exerciseType, lesson.exerciseConfig, difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs);
+          return generateLessonSteps(lesson.slug, lesson.exerciseType, cl?.exerciseConfig ?? lesson.exerciseConfig, difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs, cl?.reinforceWithPrior);
         })()}
         difficulty={difficulty}
         xpReward={lesson.xpReward}

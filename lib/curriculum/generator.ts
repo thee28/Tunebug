@@ -366,8 +366,54 @@ function buildConsolidationTeachSlide(exerciseType: ExerciseType, position: "int
 function buildTeachSlide(
   exerciseType: ExerciseType,
   exerciseConfig: ExerciseConfig,
-  position: "intro" | "mid" | "challenge" | "mix"
+  position: "intro" | "secondary" | "mid" | "challenge" | "mix"
 ): TeachStep {
+  if (position === "secondary") {
+    switch (exerciseType) {
+      case "EAR_SINGLE": {
+        const cfg = exerciseConfig as EarSingleConfig;
+        const noteName = noteToDisplayName(cfg.targetNote);
+        return {
+          kind: "teach",
+          icon: "hearing",
+          title: `Now: Note ${noteName}`,
+          body: `You've already heard Note ${noteName}. Press play to refresh the sound, then we'll mix it with the new note.`,
+          playNote: cfg.targetNote,
+        };
+      }
+      case "PITCH_MATCH": {
+        const cfg = exerciseConfig as PitchMatchConfig;
+        return {
+          kind: "teach",
+          icon: "mic",
+          title: `Now Sing: Note ${cfg.displayNote}`,
+          body: `You've sung Note ${cfg.displayNote} before. Press play to hear it again, then we'll mix both notes together.`,
+          playNote: cfg.targetNote,
+        };
+      }
+      case "SIGHT_READ_PIANO": {
+        const cfg = exerciseConfig as SightReadPianoConfig;
+        const noteName = noteToDisplayName(cfg.targetNote);
+        return {
+          kind: "teach",
+          icon: "music_note",
+          title: `Now: ${noteName} on the Staff`,
+          body: `You know ${noteName} already. Find it on the staff one more time, then we'll mix both notes.`,
+        };
+      }
+      default: {
+        const cfg = exerciseConfig as IntervalIdConfig;
+        return {
+          kind: "teach",
+          icon: "piano",
+          title: `Now: The ${cfg.correctAnswer}`,
+          body: `You've heard this interval before. Press play to refresh it, then we'll combine both.`,
+          playInterval: [cfg.noteA, cfg.noteB],
+        };
+      }
+    }
+  }
+
   if (position === "mix") {
     const mixTexts: Record<ExerciseType, string> = {
       EAR_SINGLE: "Both notes mixed now. Listen and identify which one you hear each time.",
@@ -496,7 +542,8 @@ export function generateLessonSteps(
   exerciseConfig: ExerciseConfig,
   difficulty: Difficulty,
   secondaryExerciseConfig?: ExerciseConfig,
-  consolidationConfigs?: ExerciseConfig[]
+  consolidationConfigs?: ExerciseConfig[],
+  reinforceWithPrior?: boolean
 ): LessonStep[] {
   const seed = slugToSeed(lessonSlug);
   const rng = createRng(seed);
@@ -504,6 +551,27 @@ export function generateLessonSteps(
   if (consolidationConfigs && consolidationConfigs.length > 0) {
     const makeEx = (): ExerciseStep =>
       generateLockedExercise(exerciseType, pick(consolidationConfigs, rng), difficulty, rng);
+
+    if (reinforceWithPrior) {
+      // Introduce the new note first, then mix it with prior notes from the pool
+      const primaryExercises: ExerciseStep[] = [
+        { kind: "exercise", type: exerciseType, config: exerciseConfig },
+        ...Array.from({ length: 3 }, () => generateLockedExercise(exerciseType, exerciseConfig, difficulty, rng)),
+      ];
+      const mixSlide: TeachStep = {
+        kind: "teach",
+        icon: "shuffle",
+        title: "Mix It Up",
+        body: "Now we'll bring in notes you've already learned. Listen carefully — any of them could play.",
+      };
+      return [
+        buildTeachSlide(exerciseType, exerciseConfig, "intro"),
+        ...primaryExercises,
+        mixSlide,
+        ...Array.from({ length: 9 }, makeEx),
+      ];
+    }
+
     return [
       buildConsolidationTeachSlide(exerciseType, "intro"),
       ...Array.from({ length: 4 }, makeEx),
@@ -532,7 +600,7 @@ export function generateLessonSteps(
     return [
       buildTeachSlide(exerciseType, exerciseConfig, "intro"),
       ...exA,
-      buildTeachSlide(exerciseType, secondaryExerciseConfig, "intro"),
+      buildTeachSlide(exerciseType, secondaryExerciseConfig, "secondary"),
       ...exB,
       buildTeachSlide(exerciseType, exerciseConfig, "mix"),
       ...exMix,
