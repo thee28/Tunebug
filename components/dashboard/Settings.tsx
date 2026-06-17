@@ -142,8 +142,18 @@ function SaveButton({ disabled }: { disabled?: boolean }) {
 // ── Sub-views ──────────────────────────────────────────────────────────────
 
 function Preferences() {
-  const [soundEffects, setSoundEffects] = useState(true);
+  const [soundEffects, setSoundEffects] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const stored = localStorage.getItem("pref_soundEffects");
+    return stored === null ? true : stored !== "false";
+  });
   const [motivational, setMotivational] = useState(true);
+
+  function toggleSound() {
+    const next = !soundEffects;
+    setSoundEffects(next);
+    localStorage.setItem("pref_soundEffects", String(next));
+  }
 
   return (
     <div>
@@ -153,7 +163,7 @@ function Preferences() {
 
       <div style={{ marginBottom: 28 }}>
         <SectionHeader title="Lesson experience" />
-        <ToggleRow label="Sound effects" on={soundEffects} onToggle={() => setSoundEffects(v => !v)} />
+        <ToggleRow label="Sound effects" on={soundEffects} onToggle={toggleSound} />
         <ToggleRow label="Motivational messages" on={motivational} onToggle={() => setMotivational(v => !v)} />
       </div>
 

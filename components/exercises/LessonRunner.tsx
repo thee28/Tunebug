@@ -6,7 +6,14 @@ import type { Difficulty } from "@/lib/curriculum/content";
 import type { LessonStep } from "@/types/lesson";
 import { ExerciseEngine, type ExerciseResult } from "./ExerciseEngine";
 
+function isSoundEnabled() {
+  if (typeof window === "undefined") return true;
+  const stored = localStorage.getItem("pref_soundEffects");
+  return stored === null ? true : stored !== "false";
+}
+
 function playCorrectSound() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = new AudioContext();
     [[0, 523.25], [0.1, 783.99]].forEach(([t, freq]) => {
@@ -26,6 +33,7 @@ function playCorrectSound() {
 }
 
 function playIncorrectSound() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
