@@ -167,13 +167,16 @@ export function StageRunner({ stage, difficulty }: Props) {
 
         {/* Units */}
         {stage.units.map((unit, unitIndex) => {
+          const prevUnit = stage.units[unitIndex - 1];
+          const isUnitLocked = unitIndex > 0 &&
+            !(prevUnit?.lessons.every((l) => completedIds.has(l.id)) ?? false);
+
           const unitLessons = unit.lessons.map((lesson, i) => {
             const prevLesson = unit.lessons[i - 1];
-            const unitUnlocked = unit.status !== "locked";
             const prevPassed = i === 0 || (prevLesson ? completedIds.has(prevLesson.id) : false);
             return {
               ...lesson,
-              unlocked: unitUnlocked && prevPassed,
+              unlocked: !isUnitLocked && prevPassed,
               passed: completedIds.has(lesson.id),
             };
           });
@@ -181,7 +184,6 @@ export function StageRunner({ stage, difficulty }: Props) {
           const unitDone = unitLessons.filter((l) => l.passed).length;
           const unitTotal = unitLessons.length;
           const isUnitComplete = unitDone === unitTotal && unitTotal > 0;
-          const isUnitLocked = unit.status === "locked";
 
           return (
             <div key={unit.id}>
