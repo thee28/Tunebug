@@ -164,6 +164,16 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
     setSubmitted(true);
   };
 
+  const handleDebugAdvance = () => {
+    if (isTeachStep || currentStep?.kind === "teach") {
+      advanceStep(scores);
+    } else {
+      const newScores = [...scores, 100];
+      setScores(newScores);
+      advanceStep(newScores);
+    }
+  };
+
   const progressPct = ((phase === "result" ? steps.length : index) / steps.length) * 100;
   const currentStep = steps[index];
   const isTeachStep = phase === "exercise" && currentStep?.kind === "teach";
@@ -204,6 +214,22 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
           <span className="material-symbols-outlined" style={{ fontSize: 28, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}>favorite</span>
           <span style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 18, fontWeight: 700 }}>∞</span>
         </div>
+
+        {/* Debug: auto-advance (dev only) */}
+        {process.env.NODE_ENV === "development" && (
+          <button
+            onClick={handleDebugAdvance}
+            title="Debug: auto-correct"
+            style={{
+              marginTop: 8, marginLeft: 8,
+              width: 32, height: 32, borderRadius: 8,
+              background: "rgba(255,185,93,0.15)", border: "1.5px solid rgba(255,185,93,0.4)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#ffb95d" }}>fast_forward</span>
+          </button>
+        )}
       </div>
 
       {/* ── Body ── */}
