@@ -7,6 +7,7 @@ import type {
   SightReadPianoConfig,
   EarMultiConfig,
   IntervalIdConfig,
+  NoteValueConfig,
 } from "@/types/music";
 import type { LessonStep, TeachStep, ExerciseStep } from "@/types/lesson";
 import {
@@ -201,6 +202,10 @@ function generateLockedExercise(
         },
       };
     }
+    case "NOTE_VALUE_ID": {
+      const cfg = baseConfig as NoteValueConfig;
+      return { kind: "exercise", type, config: { ...cfg, choices: shuffled(cfg.choices, rng) } };
+    }
     case "EAR_MULTI": {
       const cfg = baseConfig as EarMultiConfig;
       return {
@@ -284,6 +289,10 @@ function generateMixExercise(
           correctAnswer: interval,
         },
       };
+    }
+    case "NOTE_VALUE_ID": {
+      const cfg = targetConfig as NoteValueConfig;
+      return { kind: "exercise", type, config: { ...cfg, choices: shuffled(cfg.choices, rng) } };
     }
     case "EAR_MULTI": {
       const cfg = targetConfig as EarMultiConfig;
@@ -401,6 +410,15 @@ function buildTeachSlide(
           body: `You know ${noteName} already. Find it on the staff one more time, then we'll mix both notes.`,
         };
       }
+      case "NOTE_VALUE_ID": {
+        const cfg = exerciseConfig as NoteValueConfig;
+        return {
+          kind: "teach",
+          icon: "music_note",
+          title: `Now: The ${cfg.correctAnswer}`,
+          body: `You know this one. Take one more look before we mix both symbols together.`,
+        };
+      }
       default: {
         const cfg = exerciseConfig as IntervalIdConfig;
         return {
@@ -421,6 +439,7 @@ function buildTeachSlide(
       INTERVAL_ID: "Both intervals together now. Same process, trust your ears.",
       SIGHT_READ_PIANO: "Notes from both parts of this lesson on the staff. Read each one.",
       EAR_MULTI: "Chords from both sections. Identify all notes you hear.",
+      NOTE_VALUE_ID: "Both note types mixed. Look at each symbol and identify it.",
     };
     return {
       kind: "teach",
@@ -527,6 +546,26 @@ function buildTeachSlide(
           ? `A chord is multiple notes played at the exact same time. Instead of a single pitch, you hear them all blend together. Press play to hear this ${cfg.targetNotes.length}-note chord and try to pick out each note inside it.`
           : `You'll hear ${cfg.targetNotes.length} notes at once. Listen for each pitch individually as the chord fades. Press play, then identify all the notes.`,
         playNotes: cfg.targetNotes,
+      };
+    }
+    case "NOTE_VALUE_ID": {
+      const cfg = exerciseConfig as NoteValueConfig;
+      const durations: Record<string, string> = {
+        "Quarter note": "1 beat",
+        "Half note": "2 beats",
+        "Whole note": "4 beats",
+        "Eighth note": "half a beat",
+        "Quarter rest": "1 beat of silence",
+        "Half rest": "2 beats of silence",
+        "Whole rest": "4 beats of silence",
+      };
+      const name = cfg.correctAnswer;
+      const duration = durations[name] ?? "";
+      return {
+        kind: "teach",
+        icon: "music_note",
+        title: `The ${name}`,
+        body: `A ${name.toLowerCase()} lasts ${duration}. Each note shape tells you exactly how long to hold a pitch. Learn to recognize this symbol on sight.`,
       };
     }
   }

@@ -36,7 +36,24 @@ export type ExerciseType =
   | "SIGHT_READ_PIANO"
   | "EAR_SINGLE"
   | "EAR_MULTI"
-  | "INTERVAL_ID";
+  | "INTERVAL_ID"
+  | "NOTE_VALUE_ID";
+
+export type NoteSymbol =
+  | "whole_note"
+  | "half_note"
+  | "quarter_note"
+  | "eighth_note"
+  | "whole_rest"
+  | "half_rest"
+  | "quarter_rest";
+
+export interface NoteValueConfig {
+  symbol: NoteSymbol;
+  question: string;
+  choices: string[];
+  correctAnswer: string;
+}
 
 // exerciseConfig shapes per type
 export interface PitchMatchConfig {
@@ -76,4 +93,5 @@ export type ExerciseConfig =
   | SightReadPianoConfig
   | EarSingleConfig
   | EarMultiConfig
-  | IntervalIdConfig;
+  | IntervalIdConfig
+  | NoteValueConfig;

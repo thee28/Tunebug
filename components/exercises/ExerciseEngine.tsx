@@ -8,6 +8,7 @@ import type {
   EarSingleConfig,
   EarMultiConfig,
   IntervalIdConfig,
+  NoteValueConfig,
 } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { EarSingleExercise } from "./EarSingleExercise";
@@ -15,6 +16,7 @@ import { EarMultiExercise } from "./EarMultiExercise";
 import { IntervalIdExercise } from "./IntervalIdExercise";
 import { PitchMatchExercise } from "./PitchMatchExercise";
 import { SightReadExercise } from "./SightReadExercise";
+import { NoteValueExercise } from "./NoteValueExercise";
 
 export interface ExerciseResult {
   score: number;
@@ -45,6 +47,8 @@ export function ExerciseEngine({ type, config, difficulty, submitted, onAnswerCh
       return <PitchMatchExercise config={config as PitchMatchConfig} {...shared} />;
     case "SIGHT_READ_PIANO":
       return <SightReadExercise config={config as SightReadPianoConfig} {...shared} />;
+    case "NOTE_VALUE_ID":
+      return <NoteValueExercise config={config as NoteValueConfig} {...shared} />;
     default:
       return <div style={{ color: "var(--c-muted)" }}>Unknown exercise type</div>;
   }

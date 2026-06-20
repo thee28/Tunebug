@@ -11,13 +11,16 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const REMOVED_LESSON_SLUGS = ["beg-nn-4", "beg-cm-4", "beg-st-4", "beg-sv-4", "beg-oc-4"];
+const REMOVED_LESSON_SLUGS = ["beg-nn-4", "beg-cm-4", "beg-st-4", "beg-sv-4", "beg-oc-4", "beg-st-1", "beg-st-2", "beg-st-3"];
+const REMOVED_UNIT_SLUGS = ["beg-staff"];
 
 async function main() {
   console.log("Seeding curriculum…");
 
   const removed = await prisma.lesson.deleteMany({ where: { slug: { in: REMOVED_LESSON_SLUGS } } });
   if (removed.count > 0) console.log(`  Removed ${removed.count} retired lesson(s)`);
+  const removedUnits = await prisma.unit.deleteMany({ where: { slug: { in: REMOVED_UNIT_SLUGS } } });
+  if (removedUnits.count > 0) console.log(`  Removed ${removedUnits.count} retired unit(s)`);
 
   for (const stage of CURRICULUM) {
     const { units, difficulty: _d, ...stageData } = stage;
@@ -38,7 +41,7 @@ async function main() {
       });
 
       for (const lesson of lessons) {
-        const { secondaryExerciseConfig: _sec, consolidationConfigs: _cons, ...lessonCore } = lesson;
+        const { secondaryExerciseConfig: _sec, consolidationConfigs: _cons, reinforceWithPrior: _rwp, ...lessonCore } = lesson;
         const lessonData = { ...lessonCore, unitId: createdUnit.id, exerciseConfig: lesson.exerciseConfig as never };
         await prisma.lesson.upsert({
           where: { slug: lesson.slug },

@@ -115,6 +115,7 @@ enum ExerciseType {
   EAR_SINGLE
   EAR_MULTI
   INTERVAL_ID
+  NOTE_VALUE_ID
 }
 
 model LessonProgress {

@@ -125,36 +125,42 @@ export const CURRICULUM: CurriculumStage[] = [
         ],
       },
       {
-        slug: "beg-staff",
-        title: "Reading the Staff",
-        description: "Find notes on the treble clef staff",
+        slug: "beg-note-values",
+        title: "Note Values",
+        description: "Learn the shapes that tell you how long to hold a note",
         order: 2,
         lessons: [
           {
-            slug: "beg-st-1", title: "C and E on Staff", order: 0, exerciseType: "SIGHT_READ_PIANO",
-            exerciseConfig: { targetNote: "C4", vexKey: "c/4", octaveRange: [3, 5] },
-            secondaryExerciseConfig: { targetNote: "E4", vexKey: "e/4", octaveRange: [3, 5] },
-            passingScore: 70, xpReward: 15,
+            // Introduces quarter note (1 beat) and half note (2 beats) — most common in beginner music.
+            slug: "beg-nv-1", title: "Quarter and Half Notes", order: 0, exerciseType: "NOTE_VALUE_ID",
+            exerciseConfig: { symbol: "quarter_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Quarter note" },
+            secondaryExerciseConfig: { symbol: "half_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Half note" },
+            passingScore: 70, xpReward: 10,
           },
           {
-            // G is new to the staff. Secondary reviews D so it's never just one note.
-            slug: "beg-st-2", title: "G and D on Staff", order: 1, exerciseType: "SIGHT_READ_PIANO",
-            exerciseConfig: { targetNote: "G4", vexKey: "g/4", octaveRange: [3, 5] },
-            secondaryExerciseConfig: { targetNote: "D4", vexKey: "d/4", octaveRange: [3, 5] },
-            passingScore: 70, xpReward: 15,
-          },
-          {
-            // Staff review — includes F (from beg-nn-2) alongside C, D, E, G for retention.
-            slug: "beg-st-3", title: "Staff Review", order: 2, exerciseType: "SIGHT_READ_PIANO",
-            exerciseConfig: { targetNote: "G4", vexKey: "g/4", octaveRange: [3, 5] },
+            // Introduces whole note (4 beats). Reinforces with quarter + half for retention.
+            slug: "beg-nv-2", title: "The Whole Note", order: 1, exerciseType: "NOTE_VALUE_ID",
+            exerciseConfig: { symbol: "whole_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Whole note" },
+            reinforceWithPrior: true,
             consolidationConfigs: [
-              { targetNote: "C4", vexKey: "c/4", octaveRange: [3, 5] },
-              { targetNote: "D4", vexKey: "d/4", octaveRange: [3, 5] },
-              { targetNote: "E4", vexKey: "e/4", octaveRange: [3, 5] },
-              { targetNote: "F4", vexKey: "f/4", octaveRange: [3, 5] },
-              { targetNote: "G4", vexKey: "g/4", octaveRange: [3, 5] },
+              { symbol: "whole_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Whole note" },
+              { symbol: "whole_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Whole note" },
+              { symbol: "quarter_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Quarter note" },
+              { symbol: "half_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Half note" },
             ],
-            passingScore: 70, xpReward: 20,
+            passingScore: 70, xpReward: 10,
+          },
+          {
+            // Consolidates whole, half, quarter. Also introduces the eighth note in the pool.
+            slug: "beg-nv-3", title: "Note Values Review", order: 2, exerciseType: "NOTE_VALUE_ID",
+            exerciseConfig: { symbol: "quarter_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Quarter note" },
+            consolidationConfigs: [
+              { symbol: "whole_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Whole note" },
+              { symbol: "half_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Half note" },
+              { symbol: "quarter_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Quarter note" },
+              { symbol: "eighth_note", question: "What is this note called?", choices: ["Whole note", "Half note", "Quarter note", "Eighth note"], correctAnswer: "Eighth note" },
+            ],
+            passingScore: 70, xpReward: 15,
           },
         ],
       },
