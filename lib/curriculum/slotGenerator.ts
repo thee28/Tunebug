@@ -1,6 +1,7 @@
 import type {
   ExerciseType,
   IntervalName,
+  NoteSymbol,
   EarSingleConfig,
   EarMultiConfig,
   IntervalIdConfig,
@@ -9,6 +10,11 @@ import type {
   HigherLowerConfig,
   OddOneOutConfig,
   FreePickKeyboardConfig,
+  CountBeatsConfig,
+  SameDifferentRhythmConfig,
+  FillBlankRhythmConfig,
+  BuildRhythmConfig,
+  TapAlongConfig,
 } from "@/types/music";
 import type { LessonStep, TeachStep, ExerciseStep } from "@/types/lesson";
 import type { Concept } from "./concepts";
@@ -240,7 +246,90 @@ function fillSlot(
       };
       return { kind: "exercise", type: "FREE_PICK_KEYBOARD", config: cfg };
     }
+    case "COUNT_BEATS": {
+      const c = concept.config as NoteValueConfig;
+      const beats = SYMBOL_BEATS[c.symbol];
+      const choices = uniqueBeatChoices(beats, diff.choiceCount, rng);
+      const cfg: CountBeatsConfig = { symbol: c.symbol, correctBeats: beats, choices };
+      return { kind: "exercise", type: "COUNT_BEATS", config: cfg };
+    }
+    case "SAME_DIFFERENT_RHYTHM": {
+      const c = concept.config as NoteValueConfig;
+      const len = 3 + Math.floor(rng() * 2); // 3-4 cells
+      const patternA = makeRhythmPattern(c.symbol, len, rng);
+      const isSame = rng() < 0.5;
+      const patternB = isSame ? [...patternA] : mutatePattern(patternA, rng);
+      const cfg: SameDifferentRhythmConfig = {
+        patternA, patternB,
+        correctAnswer: arraysEqual(patternA, patternB) ? "Same" : "Different",
+      };
+      return { kind: "exercise", type: "SAME_DIFFERENT_RHYTHM", config: cfg };
+    }
+    case "FILL_BLANK_RHYTHM": {
+      const c = concept.config as NoteValueConfig;
+      const len = 4;
+      const pattern = makeRhythmPattern(c.symbol, len, rng);
+      const blankIndex = Math.floor(rng() * len);
+      const correct = pattern[blankIndex];
+      const distractors = uniqueSymbolChoices(correct, diff.choiceCount - 1, rng);
+      const cfg: FillBlankRhythmConfig = {
+        pattern, blankIndex,
+        choices: shuffled([correct, ...distractors], rng),
+        correctAnswer: correct,
+      };
+      return { kind: "exercise", type: "FILL_BLANK_RHYTHM", config: cfg };
+    }
+    case "BUILD_RHYTHM": {
+      const c = concept.config as NoteValueConfig;
+      const targetBeats = SYMBOL_BEATS[c.symbol] * (2 + Math.floor(rng() * 2)); // 2-3x the unit
+      const palette: NoteSymbol[] = ["whole_note", "half_note", "quarter_note", "eighth_note"];
+      const cfg: BuildRhythmConfig = { targetBeats: Math.max(1, targetBeats), palette };
+      return { kind: "exercise", type: "BUILD_RHYTHM", config: cfg };
+    }
+    case "TAP_ALONG": {
+      const c = concept.config as NoteValueConfig;
+      const len = 4 + Math.floor(rng() * 2);
+      const pattern = makeRhythmPattern(c.symbol, len, rng);
+      const tolerance = diff.distractorCloseness === "adjacent" ? 180 : diff.distractorCloseness === "mixed" ? 240 : 320;
+      const cfg: TapAlongConfig = { pattern, bpm: 80, toleranceMs: tolerance };
+      return { kind: "exercise", type: "TAP_ALONG", config: cfg };
+    }
   }
+}
+
+// ─── Rhythm helpers ──────────────────────────────────────────────
+const SYMBOL_BEATS: Record<NoteSymbol, number> = {
+  whole_note: 4, half_note: 2, quarter_note: 1, eighth_note: 0.5,
+  whole_rest: 4, half_rest: 2, quarter_rest: 1,
+};
+const SYMBOL_NOTES_POOL: NoteSymbol[] = ["whole_note", "half_note", "quarter_note", "eighth_note"];
+
+function uniqueBeatChoices(correct: number, count: number, rng: () => number): number[] {
+  const all = [0.5, 1, 2, 3, 4, 6, 8];
+  const others = all.filter((b) => b !== correct);
+  return shuffled([correct, ...shuffled(others, rng).slice(0, Math.max(1, count - 1))], rng);
+}
+
+function uniqueSymbolChoices(correct: NoteSymbol, count: number, rng: () => number): NoteSymbol[] {
+  const others = SYMBOL_NOTES_POOL.filter((s) => s !== correct);
+  return shuffled(others, rng).slice(0, count);
+}
+
+function makeRhythmPattern(_anchor: NoteSymbol, len: number, rng: () => number): NoteSymbol[] {
+  // Sometimes start with the anchor; otherwise mix from the standard pool.
+  return Array.from({ length: len }, () => pick(SYMBOL_NOTES_POOL, rng));
+}
+
+function mutatePattern(p: NoteSymbol[], rng: () => number): NoteSymbol[] {
+  const out = [...p];
+  const idx = Math.floor(rng() * out.length);
+  const alt = SYMBOL_NOTES_POOL.filter((s) => s !== out[idx]);
+  out[idx] = pick(alt, rng);
+  return out;
+}
+
+function arraysEqual<T>(a: T[], b: T[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
 // Some types only work for certain concept data. E.g. FREE_PICK_KEYBOARD

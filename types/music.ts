@@ -41,7 +41,12 @@ export type ExerciseType =
   | "SAME_DIFFERENT"
   | "HIGHER_LOWER"
   | "ODD_ONE_OUT"
-  | "FREE_PICK_KEYBOARD";
+  | "FREE_PICK_KEYBOARD"
+  | "COUNT_BEATS"
+  | "SAME_DIFFERENT_RHYTHM"
+  | "FILL_BLANK_RHYTHM"
+  | "BUILD_RHYTHM"
+  | "TAP_ALONG";
 
 export type NoteSymbol =
   | "whole_note"
@@ -114,6 +119,36 @@ export interface FreePickKeyboardConfig {
   octaveRange: [number, number];
 }
 
+export interface CountBeatsConfig {
+  symbol: NoteSymbol;
+  correctBeats: number;
+  choices: number[];
+}
+
+export interface SameDifferentRhythmConfig {
+  patternA: NoteSymbol[];
+  patternB: NoteSymbol[];
+  correctAnswer: "Same" | "Different";
+}
+
+export interface FillBlankRhythmConfig {
+  pattern: NoteSymbol[];     // full pattern (the answer's location is highlighted)
+  blankIndex: number;
+  choices: NoteSymbol[];
+  correctAnswer: NoteSymbol;
+}
+
+export interface BuildRhythmConfig {
+  targetBeats: number;       // total beats the user must reach
+  palette: NoteSymbol[];     // available icons
+}
+
+export interface TapAlongConfig {
+  pattern: NoteSymbol[];     // beat durations to tap along
+  bpm: number;
+  toleranceMs: number;       // tap-window radius
+}
+
 export type ExerciseConfig =
   | PitchMatchConfig
   | SightReadPianoConfig
@@ -124,4 +159,9 @@ export type ExerciseConfig =
   | SameDifferentConfig
   | HigherLowerConfig
   | OddOneOutConfig
-  | FreePickKeyboardConfig;
+  | FreePickKeyboardConfig
+  | CountBeatsConfig
+  | SameDifferentRhythmConfig
+  | FillBlankRhythmConfig
+  | BuildRhythmConfig
+  | TapAlongConfig;

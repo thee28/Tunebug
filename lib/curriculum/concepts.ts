@@ -35,7 +35,7 @@ export const CONCEPT_TYPE_POOL: Record<ConceptCategory, ExerciseType[]> = {
   "staff-note":    ["SIGHT_READ_PIANO"],
   "ear-interval":  ["INTERVAL_ID"],
   "ear-chord":     ["EAR_MULTI"],
-  "rhythm-symbol": ["NOTE_VALUE_ID"],
+  "rhythm-symbol": ["NOTE_VALUE_ID", "COUNT_BEATS", "SAME_DIFFERENT_RHYTHM", "FILL_BLANK_RHYTHM", "BUILD_RHYTHM", "TAP_ALONG"],
 };
 
 // Gentlest type for the very first 1-2 questions on a brand-new concept.

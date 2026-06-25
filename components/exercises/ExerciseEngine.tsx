@@ -13,6 +13,11 @@ import type {
   HigherLowerConfig,
   OddOneOutConfig,
   FreePickKeyboardConfig,
+  CountBeatsConfig,
+  SameDifferentRhythmConfig,
+  FillBlankRhythmConfig,
+  BuildRhythmConfig,
+  TapAlongConfig,
 } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { EarSingleExercise } from "./EarSingleExercise";
@@ -25,6 +30,11 @@ import { SameDifferentExercise } from "./SameDifferentExercise";
 import { HigherLowerExercise } from "./HigherLowerExercise";
 import { OddOneOutExercise } from "./OddOneOutExercise";
 import { FreePickKeyboardExercise } from "./FreePickKeyboardExercise";
+import { CountBeatsExercise } from "./CountBeatsExercise";
+import { SameDifferentRhythmExercise } from "./SameDifferentRhythmExercise";
+import { FillBlankRhythmExercise } from "./FillBlankRhythmExercise";
+import { BuildRhythmExercise } from "./BuildRhythmExercise";
+import { TapAlongExercise } from "./TapAlongExercise";
 
 export interface ExerciseResult {
   score: number;
@@ -65,6 +75,16 @@ export function ExerciseEngine({ type, config, difficulty, submitted, onAnswerCh
       return <OddOneOutExercise config={config as OddOneOutConfig} {...shared} />;
     case "FREE_PICK_KEYBOARD":
       return <FreePickKeyboardExercise config={config as FreePickKeyboardConfig} {...shared} />;
+    case "COUNT_BEATS":
+      return <CountBeatsExercise config={config as CountBeatsConfig} {...shared} />;
+    case "SAME_DIFFERENT_RHYTHM":
+      return <SameDifferentRhythmExercise config={config as SameDifferentRhythmConfig} {...shared} />;
+    case "FILL_BLANK_RHYTHM":
+      return <FillBlankRhythmExercise config={config as FillBlankRhythmConfig} {...shared} />;
+    case "BUILD_RHYTHM":
+      return <BuildRhythmExercise config={config as BuildRhythmConfig} {...shared} />;
+    case "TAP_ALONG":
+      return <TapAlongExercise config={config as TapAlongConfig} {...shared} />;
     default:
       return <div style={{ color: "var(--c-muted)" }}>Unknown exercise type</div>;
   }
