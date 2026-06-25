@@ -9,6 +9,10 @@ import type {
   EarMultiConfig,
   IntervalIdConfig,
   NoteValueConfig,
+  SameDifferentConfig,
+  HigherLowerConfig,
+  OddOneOutConfig,
+  FreePickKeyboardConfig,
 } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { EarSingleExercise } from "./EarSingleExercise";
@@ -17,6 +21,10 @@ import { IntervalIdExercise } from "./IntervalIdExercise";
 import { PitchMatchExercise } from "./PitchMatchExercise";
 import { SightReadExercise } from "./SightReadExercise";
 import { NoteValueExercise } from "./NoteValueExercise";
+import { SameDifferentExercise } from "./SameDifferentExercise";
+import { HigherLowerExercise } from "./HigherLowerExercise";
+import { OddOneOutExercise } from "./OddOneOutExercise";
+import { FreePickKeyboardExercise } from "./FreePickKeyboardExercise";
 
 export interface ExerciseResult {
   score: number;
@@ -49,6 +57,14 @@ export function ExerciseEngine({ type, config, difficulty, submitted, onAnswerCh
       return <SightReadExercise config={config as SightReadPianoConfig} {...shared} />;
     case "NOTE_VALUE_ID":
       return <NoteValueExercise config={config as NoteValueConfig} {...shared} />;
+    case "SAME_DIFFERENT":
+      return <SameDifferentExercise config={config as SameDifferentConfig} {...shared} />;
+    case "HIGHER_LOWER":
+      return <HigherLowerExercise config={config as HigherLowerConfig} {...shared} />;
+    case "ODD_ONE_OUT":
+      return <OddOneOutExercise config={config as OddOneOutConfig} {...shared} />;
+    case "FREE_PICK_KEYBOARD":
+      return <FreePickKeyboardExercise config={config as FreePickKeyboardConfig} {...shared} />;
     default:
       return <div style={{ color: "var(--c-muted)" }}>Unknown exercise type</div>;
   }

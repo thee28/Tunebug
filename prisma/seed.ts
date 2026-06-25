@@ -42,7 +42,14 @@ async function main() {
 
       for (const lesson of lessons) {
         const { secondaryExerciseConfig: _sec, consolidationConfigs: _cons, reinforceWithPrior: _rwp, ...lessonCore } = lesson;
-        const lessonData = { ...lessonCore, unitId: createdUnit.id, exerciseConfig: lesson.exerciseConfig as never };
+        // CurriculumLesson.exerciseType is a wider union than the Prisma enum
+        // (slot-generator-only types like SAME_DIFFERENT aren't stored).
+        const lessonData = {
+          ...lessonCore,
+          unitId: createdUnit.id,
+          exerciseType: lesson.exerciseType as never,
+          exerciseConfig: lesson.exerciseConfig as never,
+        };
         await prisma.lesson.upsert({
           where: { slug: lesson.slug },
           update: lessonData,

@@ -163,6 +163,8 @@ function generateOne(type: ExerciseType, difficulty: Difficulty, rng: () => numb
         },
       };
     }
+    default:
+      throw new Error(`generateOne: unsupported daily exercise type ${type}`);
   }
 }
 

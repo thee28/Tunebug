@@ -5,6 +5,10 @@ import type {
   EarMultiConfig,
   IntervalIdConfig,
   NoteValueConfig,
+  SameDifferentConfig,
+  HigherLowerConfig,
+  OddOneOutConfig,
+  FreePickKeyboardConfig,
 } from "@/types/music";
 import type { LessonStep, TeachStep, ExerciseStep } from "@/types/lesson";
 import type { Concept } from "./concepts";
@@ -155,7 +159,79 @@ function fillSlot(
       const c = concept.config as NoteValueConfig;
       return { kind: "exercise", type: "NOTE_VALUE_ID", config: { ...c, choices: shuffled(c.choices, rng) } };
     }
+    case "SAME_DIFFERENT": {
+      const c = concept.config as EarSingleConfig;
+      const noteA = c.targetNote;
+      // Coin flip: same or different. Adjacency-biased when different.
+      const isSame = rng() < 0.5;
+      let noteB: string;
+      if (isSame) {
+        noteB = noteA;
+      } else {
+        const aMidi = noteStrToMidi(noteA);
+        // Pick offset ±1 to ±3 semitones, more closeness for "adjacent"
+        const maxStep = diff.distractorCloseness === "adjacent" ? 1 : diff.distractorCloseness === "mixed" ? 3 : 5;
+        const step = (Math.floor(rng() * maxStep) + 1) * (rng() < 0.5 ? -1 : 1);
+        const clamped = Math.max(36, Math.min(84, aMidi + step));
+        noteB = midiToNoteStr(clamped);
+      }
+      const cfg: SameDifferentConfig = {
+        noteA,
+        noteB,
+        correctAnswer: noteA === noteB ? "Same" : "Different",
+      };
+      return { kind: "exercise", type: "SAME_DIFFERENT", config: cfg };
+    }
+    case "HIGHER_LOWER": {
+      const c = concept.config as EarSingleConfig;
+      const noteA = c.targetNote;
+      const aMidi = noteStrToMidi(noteA);
+      // Always pick a different pitch. Larger gaps when "far", smaller when "adjacent".
+      const maxStep = diff.distractorCloseness === "adjacent" ? 2 : diff.distractorCloseness === "mixed" ? 5 : 8;
+      const step = (Math.floor(rng() * maxStep) + 1) * (rng() < 0.5 ? -1 : 1);
+      const clamped = Math.max(36, Math.min(84, aMidi + step));
+      const noteB = midiToNoteStr(clamped);
+      const bMidi = noteStrToMidi(noteB);
+      const cfg: HigherLowerConfig = {
+        noteA,
+        noteB,
+        correctAnswer: bMidi > aMidi ? "Higher" : "Lower",
+      };
+      return { kind: "exercise", type: "HIGHER_LOWER", config: cfg };
+    }
+    case "ODD_ONE_OUT": {
+      const c = concept.config as EarSingleConfig;
+      const target = c.targetNote;
+      const targetMidi = noteStrToMidi(target);
+      const maxStep = diff.distractorCloseness === "adjacent" ? 1 : diff.distractorCloseness === "mixed" ? 3 : 5;
+      const step = (Math.floor(rng() * maxStep) + 1) * (rng() < 0.5 ? -1 : 1);
+      const odd = midiToNoteStr(Math.max(36, Math.min(84, targetMidi + step)));
+      const oddIndex = Math.floor(rng() * 3);
+      const notes = [target, target, target];
+      notes[oddIndex] = odd;
+      const cfg: OddOneOutConfig = { notes, oddIndex };
+      return { kind: "exercise", type: "ODD_ONE_OUT", config: cfg };
+    }
+    case "FREE_PICK_KEYBOARD": {
+      const c = concept.config as EarSingleConfig;
+      const oct = parseInt(c.targetNote.match(/(\d)$/)?.[1] ?? "4");
+      const cfg: FreePickKeyboardConfig = {
+        targetNote: c.targetNote,
+        octaveRange: [Math.max(3, oct - 1), Math.min(6, oct + 1)] as [number, number],
+      };
+      return { kind: "exercise", type: "FREE_PICK_KEYBOARD", config: cfg };
+    }
   }
+}
+
+// Some types only work for certain concept data. E.g. FREE_PICK_KEYBOARD
+// renders white keys only, so sharp/flat targets are unanswerable there.
+function typeIsValidFor(type: ExerciseType, concept: Concept): boolean {
+  if (type === "FREE_PICK_KEYBOARD") {
+    const c = concept.config as { targetNote?: string };
+    return !c.targetNote?.includes("#");
+  }
+  return true;
 }
 
 // ─── Type picker honoring anti-repeat constraints ──────────────────
@@ -166,7 +242,7 @@ function pickType(
   forceGentle: boolean
 ): ExerciseType {
   if (forceGentle) return GENTLEST_TYPE[concept.category];
-  const pool = CONCEPT_TYPE_POOL[concept.category];
+  const pool = CONCEPT_TYPE_POOL[concept.category].filter((t) => typeIsValidFor(t, concept));
   if (pool.length === 1) return pool[0];
   // Hard: not equal to last
   const last = recentTypes[recentTypes.length - 1];
@@ -233,6 +309,8 @@ function introTeachFor(concept: Concept): TeachStep {
         body: `Learn to recognize this symbol on sight.`,
       };
     }
+    default:
+      throw new Error(`introTeachFor: no intro copy for ${concept.exerciseType}`);
   }
 }
 

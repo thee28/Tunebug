@@ -37,7 +37,11 @@ export type ExerciseType =
   | "EAR_SINGLE"
   | "EAR_MULTI"
   | "INTERVAL_ID"
-  | "NOTE_VALUE_ID";
+  | "NOTE_VALUE_ID"
+  | "SAME_DIFFERENT"
+  | "HIGHER_LOWER"
+  | "ODD_ONE_OUT"
+  | "FREE_PICK_KEYBOARD";
 
 export type NoteSymbol =
   | "whole_note"
@@ -88,10 +92,36 @@ export interface IntervalIdConfig {
   correctAnswer: IntervalName;
 }
 
+export interface SameDifferentConfig {
+  noteA: string;
+  noteB: string;
+  correctAnswer: "Same" | "Different";
+}
+
+export interface HigherLowerConfig {
+  noteA: string;
+  noteB: string;
+  correctAnswer: "Higher" | "Lower";
+}
+
+export interface OddOneOutConfig {
+  notes: string[];     // 3 notes; two identical, one different
+  oddIndex: number;    // position of the odd note
+}
+
+export interface FreePickKeyboardConfig {
+  targetNote: string;
+  octaveRange: [number, number];
+}
+
 export type ExerciseConfig =
   | PitchMatchConfig
   | SightReadPianoConfig
   | EarSingleConfig
   | EarMultiConfig
   | IntervalIdConfig
-  | NoteValueConfig;
+  | NoteValueConfig
+  | SameDifferentConfig
+  | HigherLowerConfig
+  | OddOneOutConfig
+  | FreePickKeyboardConfig;

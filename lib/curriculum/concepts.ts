@@ -28,14 +28,13 @@ export interface Concept {
   answerKey: string;
 }
 
-// Phase 1: one type per category (existing exercise types only).
-// Phase 2 expands these pools with new exercise components.
+// Per-category pool of exercise types the slot algorithm may pick from.
 export const CONCEPT_TYPE_POOL: Record<ConceptCategory, ExerciseType[]> = {
-  "ear-note": ["EAR_SINGLE"],
-  "sing-note": ["PITCH_MATCH"],
-  "staff-note": ["SIGHT_READ_PIANO"],
-  "ear-interval": ["INTERVAL_ID"],
-  "ear-chord": ["EAR_MULTI"],
+  "ear-note":      ["EAR_SINGLE", "SAME_DIFFERENT", "HIGHER_LOWER", "ODD_ONE_OUT", "FREE_PICK_KEYBOARD"],
+  "sing-note":     ["PITCH_MATCH"],
+  "staff-note":    ["SIGHT_READ_PIANO"],
+  "ear-interval":  ["INTERVAL_ID"],
+  "ear-chord":     ["EAR_MULTI"],
   "rhythm-symbol": ["NOTE_VALUE_ID"],
 };
 
@@ -57,6 +56,8 @@ function categoryForType(type: ExerciseType): ConceptCategory {
     case "INTERVAL_ID":     return "ear-interval";
     case "EAR_MULTI":       return "ear-chord";
     case "NOTE_VALUE_ID":   return "rhythm-symbol";
+    default:
+      throw new Error(`No concept category for exercise type ${type} — curriculum lessons only use the 6 base types.`);
   }
 }
 
@@ -91,6 +92,8 @@ function configToConcept(type: ExerciseType, config: ExerciseConfig): Concept {
       const c = config as NoteValueConfig;
       return { id: `rhythm:${c.symbol}`, category, exerciseType: type, config: c, answerKey: c.correctAnswer };
     }
+    default:
+      throw new Error(`configToConcept: unsupported exercise type ${type}`);
   }
 }
 
