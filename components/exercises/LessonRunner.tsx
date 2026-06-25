@@ -56,6 +56,7 @@ interface Props {
   steps: LessonStep[];
   difficulty: Difficulty;
   xpReward: number;
+  lessonSlug?: string;
   onComplete: (totalScore: number) => void;
   onExit: () => void;
 }
@@ -69,7 +70,7 @@ const C = {
   text: "var(--c-text)", tertiary: "#ffb95d",
 };
 
-export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, onExit }: Props) {
+export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, onComplete, onExit }: Props) {
   const [index, setIndex] = useState(0);
   const [scores, setScores] = useState<number[]>([]);
   const [phase, setPhase] = useState<"exercise" | "result">("exercise");
@@ -121,6 +122,22 @@ export function LessonRunner({ title, steps, difficulty, xpReward, onComplete, o
     setPendingResult(result);
     if (result.passed) playCorrectSound();
     else playIncorrectSound();
+
+    // Fire-and-forget mastery recording. The slot generator tags each exercise
+    // step with its conceptId; if a step came from some other path it lacks
+    // a tag and we skip the write.
+    const step = steps[index];
+    if (step?.kind === "exercise" && step.conceptId) {
+      fetch("/api/mastery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conceptId: step.conceptId,
+          isCorrect: result.passed,
+          lessonSlug,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const advanceStep = (newScores: number[]) => {

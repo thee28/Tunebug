@@ -18,6 +18,10 @@ export interface ExerciseStep {
   kind: "exercise";
   type: ExerciseType;
   config: ExerciseConfig;
+  // Tagged by the slot generator so the LessonRunner can record per-concept
+  // mastery on every answer. Optional for backwards compatibility with any
+  // call site that builds steps directly.
+  conceptId?: string;
 }
 
 export type LessonStep = TeachStep | ExerciseStep;

@@ -474,6 +474,7 @@ export function generateSlotPlan(input: SlotPlanInput): LessonStep[] {
     // Build difficulty + step
     const diff = slotDifficulty(progress, input.difficulty, intent.isReview);
     const step = fillSlot(concept, type, diff, input.difficulty, rng);
+    step.conceptId = concept.id;
     steps.push(step);
 
     // Track recents

@@ -24,6 +24,7 @@ model User {
   streak       DailyStreak?
   achievements Achievement[]
   dailyStages  DailyStage[]
+  mastery      ConceptMastery[]
 }
 
 model Account {
@@ -165,6 +166,33 @@ enum AchievementType {
   STREAK_30
   STAGE_COMPLETE
   ALL_STAGES
+}
+
+// Per-user, per-concept mastery state for the spaced-repetition / adaptive engine.
+// conceptId follows the slot-generator scheme (e.g. "ear-note:C4", "ear-interval:Perfect 4th").
+model ConceptMastery {
+  id                  String   @id @default(cuid())
+  userId              String
+  conceptId           String
+  timesSeen           Int      @default(0)
+  timesCorrect        Int      @default(0)
+  currentStreak       Int      @default(0)
+  lastSeenAt          DateTime @default(now())
+  lastSeenLessonSlug  String?
+  // Number of lessons-from-now this concept becomes due for review (SM-2-ish).
+  // Lower = sooner. Stored as Int so the slot generator can compare against a
+  // monotonic lesson counter without DateTime math.
+  reviewIntervalDays  Float    @default(1)
+  nextReviewAt        DateTime @default(now())
+  // Rolling accuracy 0..1; weighted toward recent answers.
+  masteryScore        Float    @default(0)
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conceptId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, masteryScore])
 }
 
 model DailyStage {

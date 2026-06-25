@@ -76,6 +76,7 @@ export function StageRunner({ stage, difficulty }: Props) {
         })()}
         difficulty={difficulty}
         xpReward={lesson.xpReward}
+        lessonSlug={lesson.slug}
         onComplete={async (score) => {
           await fetch("/api/progress", {
             method: "POST",

@@ -179,6 +179,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
               })()}
               difficulty={exercise.difficulty}
               xpReward={exercise.lesson.xpReward}
+              lessonSlug={exercise.lesson.slug}
               onComplete={async (score) => {
                 await fetch("/api/progress", {
                   method: "POST",
