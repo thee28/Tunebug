@@ -52,20 +52,39 @@ function shuffled<T>(arr: T[], rng: () => number): T[] {
 
 // ─── Difficulty escalation ──────────────────────────────────────────
 // progress ∈ [0,1] = position in lesson. Drives distractor closeness & choice count.
+// masteryScore ∈ [0,1] (optional) adapts difficulty per concept.
 interface SlotDifficulty {
   choiceCount: number;
   distractorCloseness: "far" | "adjacent" | "mixed";
 }
-function slotDifficulty(progress: number, base: Difficulty, isReview: boolean): SlotDifficulty {
+const STRONG_MASTERY = 0.75;
+const WEAK_MASTERY = 0.4;
+function slotDifficulty(
+  progress: number,
+  base: Difficulty,
+  isReview: boolean,
+  masteryScore?: number
+): SlotDifficulty {
   const baseCount = DIFFICULTY_SETTINGS[base].choiceCount;
-  // Start with 2-3 fewer choices, grow toward base count by end of lesson.
   const minCount = Math.max(2, baseCount - 2);
-  const count = Math.round(minCount + (baseCount - minCount) * progress);
-  // Review pulls are always at least "adjacent" — they're testing retention.
-  if (isReview) return { choiceCount: count, distractorCloseness: progress < 0.5 ? "mixed" : "adjacent" };
-  if (progress < 0.33) return { choiceCount: count, distractorCloseness: "far" };
-  if (progress < 0.66) return { choiceCount: count, distractorCloseness: "mixed" };
-  return { choiceCount: count, distractorCloseness: "adjacent" };
+  let count = Math.round(minCount + (baseCount - minCount) * progress);
+  let closeness: SlotDifficulty["distractorCloseness"];
+  if (isReview) closeness = progress < 0.5 ? "mixed" : "adjacent";
+  else if (progress < 0.33) closeness = "far";
+  else if (progress < 0.66) closeness = "mixed";
+  else closeness = "adjacent";
+
+  // Adaptive bias: ramp up for confident concepts, back off for weak ones.
+  if (masteryScore !== undefined) {
+    if (masteryScore >= STRONG_MASTERY) {
+      count = Math.min(baseCount + 1, count + 1);
+      closeness = "adjacent";
+    } else if (masteryScore <= WEAK_MASTERY) {
+      count = Math.max(2, count - 1);
+      closeness = closeness === "adjacent" ? "mixed" : "far";
+    }
+  }
+  return { choiceCount: count, distractorCloseness: closeness };
 }
 
 // ─── Distractor selection respecting closeness ──────────────────────
@@ -336,25 +355,35 @@ function reviewTeach(): TeachStep {
   };
 }
 
-// ─── Review-queue pull (Phase 1: recency-weighted, no per-user state) ─
+// ─── Mastery snapshot read by the slot algo ────────────────────────
+export interface MasterySnapshot {
+  masteryScore: number;   // 0..1, EMA of recent accuracy
+  currentStreak: number;
+  timesSeen: number;
+  nextReviewAt: Date;
+}
+
+// ─── Review-queue pull: recency × weakness × already-asked penalty ─
 function pickReviewConcept(
   priorConcepts: Concept[],
   recency: Map<string, number>,
   recentlyAskedIds: string[],
+  masteryMap: Map<string, MasterySnapshot> | undefined,
   rng: () => number
 ): Concept | null {
   if (priorConcepts.length === 0) return null;
-  // Score each prior concept. Phase 3 will fold in mastery weakness.
   const scored = priorConcepts.map((c) => {
     const ago = recency.get(c.id) ?? 99;
-    // Staleness boost: longer-unseen = higher weight. Cap at 10.
     const staleness = Math.min(ago, 10);
-    // Penalize if asked already in this lesson
+    const m = masteryMap?.get(c.id);
+    // Weakness boost: weak concepts (low mastery) score much higher.
+    // Range: 0 (mastered) to 8 (never-correct).
+    const weakness = m ? (1 - m.masteryScore) * 8 : 4; // unseen → moderate priority
+    // Penalize if already asked this lesson — reduces clumping.
     const penalty = recentlyAskedIds.filter((id) => id === c.id).length * 5;
-    return { concept: c, score: staleness * 1.0 - penalty + rng() * 2 };
+    return { concept: c, score: staleness + weakness - penalty + rng() * 2 };
   });
   scored.sort((a, b) => b.score - a.score);
-  // Pick from top 3 with some randomness so it's not deterministic
   const top = scored.slice(0, 3);
   return pick(top, rng).concept;
 }
@@ -369,6 +398,7 @@ export interface SlotPlanInput {
   seed: number;
   slotCount?: number;              // default 12
   reviewRatio?: number;            // 0..1 fraction pulled from review. Default: scales with priorConcepts size.
+  masteryMap?: Map<string, MasterySnapshot>;
 }
 
 export function generateSlotPlan(input: SlotPlanInput): LessonStep[] {
@@ -445,7 +475,7 @@ export function generateSlotPlan(input: SlotPlanInput): LessonStep[] {
       concept = intent.conceptHint;
     } else if (intent.isReview) {
       const pool = input.reviewPoolConcepts.length > 0 ? input.reviewPoolConcepts : input.priorConcepts;
-      concept = pickReviewConcept(pool, input.recency, askedConceptIdsThisLesson, rng);
+      concept = pickReviewConcept(pool, input.recency, askedConceptIdsThisLesson, input.masteryMap, rng);
       if (!concept && hasNew) concept = pick(input.newConcepts, rng);
     } else {
       // New-bucket but not pre-reserved → cycle through new concepts avoiding repeats
@@ -471,8 +501,9 @@ export function generateSlotPlan(input: SlotPlanInput): LessonStep[] {
     const forceGentle = intent.isIntro === true;
     const type = pickType(concept, recentTypes, rng, forceGentle);
 
-    // Build difficulty + step
-    const diff = slotDifficulty(progress, input.difficulty, intent.isReview);
+    // Build difficulty + step (mastery-aware for known concepts)
+    const mastery = input.masteryMap?.get(concept.id)?.masteryScore;
+    const diff = slotDifficulty(progress, input.difficulty, intent.isReview, mastery);
     const step = fillSlot(concept, type, diff, input.difficulty, rng);
     step.conceptId = concept.id;
     steps.push(step);

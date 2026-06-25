@@ -6,6 +6,7 @@ import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "@/components/exercises/LessonRunner";
 import { generateLessonSteps } from "@/lib/curriculum/generator";
+import { useMastery } from "@/components/exercises/useMastery";
 import { CURRICULUM } from "@/lib/curriculum/config";
 
 const C = {
@@ -54,6 +55,7 @@ interface Props {
 }
 
 export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, scrollToUnitSlug }: Props) {
+  const mastery = useMastery();
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     () =>
       new Set(
@@ -64,6 +66,17 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
       )
   );
   const [exercise, setExercise] = useState<ExerciseState | null>(null);
+
+  // Stable steps for the active lesson; mastery captured at entry time.
+  const activeLessonSlug = exercise?.lesson.slug ?? null;
+  const activeDifficulty = exercise?.difficulty;
+  const lessonSteps = useMemo(() => {
+    if (!activeLessonSlug || !activeDifficulty) return null;
+    const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === activeLessonSlug);
+    if (!cl) return null;
+    return generateLessonSteps(cl.slug, cl.exerciseType, cl.exerciseConfig, activeDifficulty, cl.secondaryExerciseConfig, cl.consolidationConfigs, cl.reinforceWithPrior, mastery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLessonSlug, activeDifficulty]);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pressedId, setPressedId] = useState<string | null>(null);
@@ -173,10 +186,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
           >
             <LessonRunner
               title={`${exercise.stage.title} · ${exercise.unit.title}`}
-              steps={(() => {
-                const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === exercise.lesson.slug);
-                return generateLessonSteps(exercise.lesson.slug, exercise.lesson.exerciseType, cl?.exerciseConfig ?? exercise.lesson.exerciseConfig, exercise.difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs, cl?.reinforceWithPrior);
-              })()}
+              steps={lessonSteps ?? []}
               difficulty={exercise.difficulty}
               xpReward={exercise.lesson.xpReward}
               lessonSlug={exercise.lesson.slug}

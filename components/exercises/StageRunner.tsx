@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { LessonRunner } from "./LessonRunner";
 import { generateLessonSteps } from "@/lib/curriculum/generator";
 import { CURRICULUM } from "@/lib/curriculum/config";
+import { useMastery } from "./useMastery";
 
 interface Props {
   stage: Stage;
@@ -25,6 +26,7 @@ type View =
   | { phase: "exercise"; unit: Unit; lesson: Lesson };
 
 export function StageRunner({ stage, difficulty }: Props) {
+  const mastery = useMastery();
   const [view, setView] = useState<View>({ phase: "browse" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     new Set(
@@ -64,16 +66,26 @@ export function StageRunner({ stage, difficulty }: Props) {
     if (view.phase === "browse") setBackLabel(null);
   }, [view.phase]);
 
+  // Stable across renders so a mid-lesson re-render (e.g. mastery fetch
+  // resolving) doesn't shuffle the slot sequence under the user.
+  const activeLessonSlug = view.phase === "exercise" ? view.lesson.slug : null;
+  const lessonSteps = useMemo(() => {
+    if (!activeLessonSlug) return null;
+    const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === activeLessonSlug);
+    if (!cl) return null;
+    return generateLessonSteps(cl.slug, cl.exerciseType, cl.exerciseConfig, difficulty, cl.secondaryExerciseConfig, cl.consolidationConfigs, cl.reinforceWithPrior, mastery);
+    // mastery omitted from deps on purpose — captured once when the user
+    // entered the lesson; subsequent fetches don't reshuffle in-flight steps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLessonSlug, difficulty]);
+
   // ── Exercise view ──────────────────────────────────────
   if (view.phase === "exercise") {
     const { unit, lesson } = view;
     return (
       <LessonRunner
         title={`${stage.title} · ${unit.title}`}
-        steps={(() => {
-          const cl = CURRICULUM.flatMap(s => s.units.flatMap(u => u.lessons)).find(l => l.slug === lesson.slug);
-          return generateLessonSteps(lesson.slug, lesson.exerciseType, cl?.exerciseConfig ?? lesson.exerciseConfig, difficulty, cl?.secondaryExerciseConfig, cl?.consolidationConfigs, cl?.reinforceWithPrior);
-        })()}
+        steps={lessonSteps ?? []}
         difficulty={difficulty}
         xpReward={lesson.xpReward}
         lessonSlug={lesson.slug}

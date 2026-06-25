@@ -22,7 +22,7 @@ import {
   getPriorConcepts,
   getConceptRecency,
 } from "./concepts";
-import { generateSlotPlan } from "./slotGenerator";
+import { generateSlotPlan, type MasterySnapshot } from "./slotGenerator";
 
 // Seeded LCG — same seed produces identical exercise sequence
 function createRng(seed: number) {
@@ -219,7 +219,8 @@ export function generateLessonSteps(
   difficulty: Difficulty = "beginner",
   _secondaryExerciseConfig?: ExerciseConfig,
   _consolidationConfigs?: ExerciseConfig[],
-  _reinforceWithPrior?: boolean
+  _reinforceWithPrior?: boolean,
+  masteryMap?: Map<string, MasterySnapshot>
 ): LessonStep[] {
   void _exerciseType; void _exerciseConfig; void _secondaryExerciseConfig;
   void _consolidationConfigs; void _reinforceWithPrior;
@@ -247,5 +248,6 @@ export function generateLessonSteps(
     difficulty,
     seed: slugToSeed(lessonSlug),
     slotCount: 12,
+    masteryMap,
   });
 }
