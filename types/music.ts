@@ -46,7 +46,12 @@ export type ExerciseType =
   | "SAME_DIFFERENT_RHYTHM"
   | "FILL_BLANK_RHYTHM"
   | "BUILD_RHYTHM"
-  | "TAP_ALONG";
+  | "TAP_ALONG"
+  | "NAME_IT"
+  | "TRUE_FALSE"
+  | "ERROR_SPOTTING"
+  | "MATCHING_PAIRS"
+  | "SEQUENCE_RECALL";
 
 export type NoteSymbol =
   | "whole_note"
@@ -149,6 +154,43 @@ export interface TapAlongConfig {
   toleranceMs: number;       // tap-window radius
 }
 
+// Show notation cue, user picks the letter name from buttons (no audio).
+export interface NameItConfig {
+  targetNote: string;        // e.g. "E4"
+  vexKey: string;            // e.g. "e/4"
+  choices: string[];         // note-letter options ("C", "D", ...)
+  correctAnswer: string;     // letter name only
+}
+
+// Generic claim/T-F. audioNote, if set, plays before the claim is shown.
+export interface TrueFalseConfig {
+  prompt: string;            // e.g. "Listen and answer"
+  claim: string;             // e.g. "The note you just heard is a D"
+  audioNote?: string;        // e.g. "C4" — optional playback
+  correctAnswer: boolean;    // is the claim true?
+}
+
+// Show staff with a (possibly wrong) label; user marks correct/wrong.
+// If wrong they pick the actual letter name from the choices.
+export interface ErrorSpottingConfig {
+  shownLabel: string;        // the displayed letter (e.g. "F")
+  actualNote: string;        // the actual note shown on staff (e.g. "E4")
+  vexKey: string;
+  choices: string[];         // letter-name options for the "what is it actually" follow-up
+}
+
+// Memory grid — tiles are face-down note slots. Tap to play a note.
+// Match two with the same note to lock them in.
+export interface MatchingPairsConfig {
+  notes: string[];           // unique notes in this round (pairs derived)
+}
+
+// Play a sequence of notes; user must tap the same notes in order on the keyboard.
+export interface SequenceRecallConfig {
+  sequence: string[];        // note names with octave
+  octaveRange: [number, number];
+}
+
 export type ExerciseConfig =
   | PitchMatchConfig
   | SightReadPianoConfig
@@ -164,4 +206,9 @@ export type ExerciseConfig =
   | SameDifferentRhythmConfig
   | FillBlankRhythmConfig
   | BuildRhythmConfig
-  | TapAlongConfig;
+  | TapAlongConfig
+  | NameItConfig
+  | TrueFalseConfig
+  | ErrorSpottingConfig
+  | MatchingPairsConfig
+  | SequenceRecallConfig;

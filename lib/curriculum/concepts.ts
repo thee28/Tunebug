@@ -30,9 +30,9 @@ export interface Concept {
 
 // Per-category pool of exercise types the slot algorithm may pick from.
 export const CONCEPT_TYPE_POOL: Record<ConceptCategory, ExerciseType[]> = {
-  "ear-note":      ["EAR_SINGLE", "SAME_DIFFERENT", "HIGHER_LOWER", "ODD_ONE_OUT", "FREE_PICK_KEYBOARD"],
+  "ear-note":      ["EAR_SINGLE", "SAME_DIFFERENT", "HIGHER_LOWER", "ODD_ONE_OUT", "FREE_PICK_KEYBOARD", "TRUE_FALSE", "MATCHING_PAIRS", "SEQUENCE_RECALL"],
   "sing-note":     ["PITCH_MATCH"],
-  "staff-note":    ["SIGHT_READ_PIANO"],
+  "staff-note":    ["SIGHT_READ_PIANO", "NAME_IT", "ERROR_SPOTTING", "TRUE_FALSE"],
   "ear-interval":  ["INTERVAL_ID"],
   "ear-chord":     ["EAR_MULTI"],
   "rhythm-symbol": ["NOTE_VALUE_ID", "COUNT_BEATS", "SAME_DIFFERENT_RHYTHM", "FILL_BLANK_RHYTHM", "BUILD_RHYTHM", "TAP_ALONG"],

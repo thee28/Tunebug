@@ -18,6 +18,11 @@ import type {
   FillBlankRhythmConfig,
   BuildRhythmConfig,
   TapAlongConfig,
+  NameItConfig,
+  TrueFalseConfig,
+  ErrorSpottingConfig,
+  MatchingPairsConfig,
+  SequenceRecallConfig,
 } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import { EarSingleExercise } from "./EarSingleExercise";
@@ -35,6 +40,11 @@ import { SameDifferentRhythmExercise } from "./SameDifferentRhythmExercise";
 import { FillBlankRhythmExercise } from "./FillBlankRhythmExercise";
 import { BuildRhythmExercise } from "./BuildRhythmExercise";
 import { TapAlongExercise } from "./TapAlongExercise";
+import { NameItExercise } from "./NameItExercise";
+import { TrueFalseExercise } from "./TrueFalseExercise";
+import { ErrorSpottingExercise } from "./ErrorSpottingExercise";
+import { MatchingPairsExercise } from "./MatchingPairsExercise";
+import { SequenceRecallExercise } from "./SequenceRecallExercise";
 
 export interface ExerciseResult {
   score: number;
@@ -85,6 +95,16 @@ export function ExerciseEngine({ type, config, difficulty, submitted, onAnswerCh
       return <BuildRhythmExercise config={config as BuildRhythmConfig} {...shared} />;
     case "TAP_ALONG":
       return <TapAlongExercise config={config as TapAlongConfig} {...shared} />;
+    case "NAME_IT":
+      return <NameItExercise config={config as NameItConfig} {...shared} />;
+    case "TRUE_FALSE":
+      return <TrueFalseExercise config={config as TrueFalseConfig} {...shared} />;
+    case "ERROR_SPOTTING":
+      return <ErrorSpottingExercise config={config as ErrorSpottingConfig} {...shared} />;
+    case "MATCHING_PAIRS":
+      return <MatchingPairsExercise config={config as MatchingPairsConfig} {...shared} />;
+    case "SEQUENCE_RECALL":
+      return <SequenceRecallExercise config={config as SequenceRecallConfig} {...shared} />;
     default:
       return <div style={{ color: "var(--c-muted)" }}>Unknown exercise type</div>;
   }

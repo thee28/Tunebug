@@ -6,6 +6,7 @@ import type {
   EarMultiConfig,
   IntervalIdConfig,
   NoteValueConfig,
+  SightReadPianoConfig,
   SameDifferentConfig,
   HigherLowerConfig,
   OddOneOutConfig,
@@ -15,6 +16,11 @@ import type {
   FillBlankRhythmConfig,
   BuildRhythmConfig,
   TapAlongConfig,
+  NameItConfig,
+  TrueFalseConfig,
+  ErrorSpottingConfig,
+  MatchingPairsConfig,
+  SequenceRecallConfig,
 } from "@/types/music";
 import type { LessonStep, TeachStep, ExerciseStep } from "@/types/lesson";
 import type { Concept } from "./concepts";
@@ -294,6 +300,88 @@ function fillSlot(
       const cfg: TapAlongConfig = { pattern, bpm: 80, toleranceMs: tolerance };
       return { kind: "exercise", type: "TAP_ALONG", config: cfg };
     }
+    case "NAME_IT": {
+      const c = concept.config as SightReadPianoConfig;
+      const target = c.targetNote;
+      const correct = target.replace(/\d$/, "");
+      const distractors = distractorsForNoteName(correct, simpleNames, diff.choiceCount - 1, diff.distractorCloseness, rng);
+      const cfg: NameItConfig = {
+        targetNote: target,
+        vexKey: c.vexKey,
+        choices: shuffled([correct, ...distractors], rng),
+        correctAnswer: correct,
+      };
+      return { kind: "exercise", type: "NAME_IT", config: cfg };
+    }
+    case "TRUE_FALSE": {
+      // Works for either ear-note or staff-note concepts.
+      const audioNote = (concept.config as { targetNote?: string }).targetNote;
+      const actualLetter = audioNote ? audioNote.replace(/\d$/, "") : concept.answerKey;
+      const isTrue = rng() < 0.5;
+      // For a false claim, swap to a nearby name.
+      let claimedLetter = actualLetter;
+      if (!isTrue) {
+        const alt = distractorsForNoteName(actualLetter, simpleNames, 1, diff.distractorCloseness, rng);
+        claimedLetter = alt[0] ?? actualLetter;
+      }
+      const isAudio = concept.category === "ear-note";
+      const cfg: TrueFalseConfig = {
+        prompt: isAudio ? "Listen and answer" : "Look and answer",
+        claim: isAudio ? `The note you just heard is ${claimedLetter}` : `This note is ${claimedLetter}`,
+        audioNote: isAudio ? audioNote : undefined,
+        correctAnswer: isTrue,
+      };
+      return { kind: "exercise", type: "TRUE_FALSE", config: cfg };
+    }
+    case "ERROR_SPOTTING": {
+      const c = concept.config as SightReadPianoConfig;
+      const actual = c.targetNote;
+      const actualLetter = actual.replace(/\d$/, "");
+      const showWrong = rng() < 0.5;
+      let shownLabel = actualLetter;
+      if (showWrong) {
+        const alt = distractorsForNoteName(actualLetter, simpleNames, 1, diff.distractorCloseness, rng);
+        shownLabel = alt[0] ?? actualLetter;
+      }
+      const distractors = distractorsForNoteName(actualLetter, simpleNames, diff.choiceCount - 1, diff.distractorCloseness, rng);
+      const cfg: ErrorSpottingConfig = {
+        shownLabel,
+        actualNote: actual,
+        vexKey: c.vexKey,
+        choices: shuffled([actualLetter, ...distractors], rng),
+      };
+      return { kind: "exercise", type: "ERROR_SPOTTING", config: cfg };
+    }
+    case "MATCHING_PAIRS": {
+      const c = concept.config as EarSingleConfig;
+      const target = c.targetNote;
+      // 3 pairs (6 tiles): the concept's note plus 2 adjacents.
+      const aMidi = noteStrToMidi(target);
+      const adjacents = [aMidi + 2, aMidi - 2, aMidi + 5]
+        .filter((m) => m >= 36 && m <= 84)
+        .slice(0, 2)
+        .map(midiToNoteStr);
+      const notes = [target, ...adjacents];
+      const cfg: MatchingPairsConfig = { notes };
+      return { kind: "exercise", type: "MATCHING_PAIRS", config: cfg };
+    }
+    case "SEQUENCE_RECALL": {
+      const c = concept.config as EarSingleConfig;
+      const len = diff.distractorCloseness === "adjacent" ? 4 : diff.distractorCloseness === "mixed" ? 3 : 2;
+      const aMidi = noteStrToMidi(c.targetNote);
+      const seq: string[] = [c.targetNote];
+      for (let i = 1; i < len; i++) {
+        const step = (Math.floor(rng() * 5) - 2) || 1;
+        const next = Math.max(36, Math.min(84, aMidi + step * i));
+        seq.push(midiToNoteStr(next));
+      }
+      const oct = parseInt(c.targetNote.match(/(\d)$/)?.[1] ?? "4");
+      const cfg: SequenceRecallConfig = {
+        sequence: seq,
+        octaveRange: [Math.max(3, oct - 1), Math.min(6, oct + 1)] as [number, number],
+      };
+      return { kind: "exercise", type: "SEQUENCE_RECALL", config: cfg };
+    }
   }
 }
 
@@ -335,7 +423,8 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
 // Some types only work for certain concept data. E.g. FREE_PICK_KEYBOARD
 // renders white keys only, so sharp/flat targets are unanswerable there.
 function typeIsValidFor(type: ExerciseType, concept: Concept): boolean {
-  if (type === "FREE_PICK_KEYBOARD") {
+  if (type === "FREE_PICK_KEYBOARD" || type === "SEQUENCE_RECALL") {
+    // Both render white-keys-only keyboards — sharp/flat targets aren't tappable.
     const c = concept.config as { targetNote?: string };
     return !c.targetNote?.includes("#");
   }
