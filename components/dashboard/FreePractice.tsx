@@ -105,6 +105,8 @@ function generateFreeExercise(type: ExerciseType, level: PracticeLevel): { type:
       const distractors = rndShuffled((intervalPool as IntervalName[]).filter(i => i !== interval)).slice(0, s.choiceCount - 1);
       return { type, config: { noteA, noteB, choices: rndShuffled([interval, ...distractors]) as IntervalName[], correctAnswer: interval } };
     }
+    default:
+      throw new Error(`FreePractice doesn't support exercise type ${type}. Restrict selectableTypes in the UI.`);
   }
 }
 

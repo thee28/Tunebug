@@ -422,12 +422,9 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
 
 // Some types only work for certain concept data. E.g. FREE_PICK_KEYBOARD
 // renders white keys only, so sharp/flat targets are unanswerable there.
-function typeIsValidFor(type: ExerciseType, concept: Concept): boolean {
-  if (type === "FREE_PICK_KEYBOARD" || type === "SEQUENCE_RECALL") {
-    // Both render white-keys-only keyboards — sharp/flat targets aren't tappable.
-    const c = concept.config as { targetNote?: string };
-    return !c.targetNote?.includes("#");
-  }
+function typeIsValidFor(_type: ExerciseType, _concept: Concept): boolean {
+  // Reserved for future per-concept type gating. All current types support
+  // both natural and chromatic notes via the shared Keyboard component.
   return true;
 }
 

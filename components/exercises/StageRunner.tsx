@@ -61,10 +61,6 @@ export function StageRunner({ stage, difficulty }: Props) {
     return () => observers.forEach((o) => o.disconnect());
   }, [view.phase, stage.units]);
 
-  // Reset back label when returning to browse
-  useEffect(() => {
-    if (view.phase === "browse") setBackLabel(null);
-  }, [view.phase]);
 
   // Stable across renders so a mid-lesson re-render (e.g. mastery fetch
   // resolving) doesn't shuffle the slot sequence under the user.
@@ -99,7 +95,7 @@ export function StageRunner({ stage, difficulty }: Props) {
             setCompletedIds((prev) => new Set([...prev, lesson.id]));
           }
         }}
-        onExit={() => setView({ phase: "browse" })}
+        onExit={() => { setBackLabel(null); setView({ phase: "browse" }); }}
       />
     );
   }

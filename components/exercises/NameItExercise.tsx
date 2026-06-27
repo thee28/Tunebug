@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { NameItConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
+import { StaffRenderer } from "./StaffRenderer";
 
 interface Props {
   config: NameItConfig;
@@ -35,25 +36,17 @@ export function NameItExercise({ config, submitted, onAnswerChange, onComplete }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
-  const targetName = config.targetNote.replace(/\d$/, "");
-
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
       <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
         Name this note
       </p>
 
-      {/* Staff placeholder — TODO: real VexFlow rendering */}
       <div style={{
-        width: "100%", maxWidth: 360, height: 120,
-        backgroundColor: C.surfaceHigh, borderRadius: 12,
-        border: `2px solid ${C.border}`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexDirection: "column", gap: 4,
+        padding: 12, borderRadius: 12,
+        backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
       }}>
-        <span style={{ color: C.muted, fontSize: 12, fontFamily: "'Nunito', sans-serif" }}>Staff</span>
-        <span style={{ color: C.text, fontSize: 26, fontWeight: 900, fontFamily: "'Nunito', sans-serif" }}>{targetName}</span>
-        <span style={{ color: C.muted, fontSize: 10, fontFamily: "'Nunito', sans-serif" }}>{config.vexKey}</span>
+        <StaffRenderer vexKey={config.vexKey} />
       </div>
 
       <div style={{

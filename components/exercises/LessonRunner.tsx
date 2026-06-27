@@ -278,6 +278,8 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
                 </div>
                 {hasAudio && (
                   <button
+                    // playTeachAudio reads teachSynthRef.current lazily inside the async body — only ever fires on click.
+                    // eslint-disable-next-line react-hooks/refs
                     onClick={() => playTeachAudio(step.playNote, step.playNotes, step.playInterval)}
                     style={{
                       width: 80, height: 80, borderRadius: "50%",

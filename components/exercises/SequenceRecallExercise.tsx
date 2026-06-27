@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { SequenceRecallConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
+import { Keyboard } from "./Keyboard";
 
 interface Props {
   config: SequenceRecallConfig;
@@ -19,21 +20,10 @@ const C = {
   text: "var(--c-text)", success: "#006c4e", error: "#8b2828",
 };
 
-function buildKeyboard(range: [number, number]): string[] {
-  const keys: string[] = [];
-  for (let oct = range[0]; oct <= range[1]; oct++) {
-    for (const name of ["C", "D", "E", "F", "G", "A", "B"]) {
-      keys.push(`${name}${oct}`);
-    }
-  }
-  return keys;
-}
-
 export function SequenceRecallExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [userSeq, setUserSeq] = useState<string[]>([]);
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
-  const whiteKeys = buildKeyboard(config.octaveRange);
 
   const playSequence = useCallback(async () => {
     if (playing) return;
@@ -128,26 +118,11 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 3, overflowX: "auto", maxWidth: "100%", padding: "0 4px" }}>
-        {whiteKeys.map((note) => (
-          <button
-            key={note}
-            onClick={() => tapKey(note)}
-            disabled={submitted || userSeq.length >= config.sequence.length}
-            style={{
-              width: 36, height: 80, borderRadius: "0 0 6px 6px",
-              backgroundColor: "white",
-              border: `2px solid #ccc`,
-              cursor: submitted ? "default" : "pointer", flexShrink: 0,
-              display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 4,
-            }}
-          >
-            <span style={{ fontSize: 9, fontFamily: "'Nunito', sans-serif", color: "#555", fontWeight: 600 }}>
-              {note.replace(/\d$/, "")}
-            </span>
-          </button>
-        ))}
-      </div>
+      <Keyboard
+        octaveRange={config.octaveRange}
+        disabled={submitted || userSeq.length >= config.sequence.length}
+        onSelect={tapKey}
+      />
 
       {userSeq.length > 0 && !submitted && userSeq.length < config.sequence.length && (
         <button

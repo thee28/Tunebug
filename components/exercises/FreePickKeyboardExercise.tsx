@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { FreePickKeyboardConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
+import { Keyboard } from "./Keyboard";
 
 interface Props {
   config: FreePickKeyboardConfig;
@@ -19,21 +20,10 @@ const C = {
   text: "var(--c-text)",
 };
 
-function buildKeyboard(range: [number, number]): string[] {
-  const keys: string[] = [];
-  for (let oct = range[0]; oct <= range[1]; oct++) {
-    for (const name of ["C", "D", "E", "F", "G", "A", "B"]) {
-      keys.push(`${name}${oct}`);
-    }
-  }
-  return keys;
-}
-
 export function FreePickKeyboardExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
-  const whiteKeys = buildKeyboard(config.octaveRange);
 
   const playTarget = useCallback(async () => {
     if (playing) return;
@@ -87,28 +77,12 @@ export function FreePickKeyboardExercise({ config, submitted, onAnswerChange, on
         </span>
       </button>
 
-      <div style={{ display: "flex", gap: 3, overflowX: "auto", maxWidth: "100%", padding: "0 4px" }}>
-        {whiteKeys.map((note) => {
-          const isSelected = note === selected;
-          return (
-            <button
-              key={note}
-              onClick={() => handleSelect(note)}
-              style={{
-                width: 36, height: 80, borderRadius: "0 0 6px 6px",
-                backgroundColor: isSelected ? "#a5b4fc" : "white",
-                border: `2px solid ${isSelected ? C.primary : "#ccc"}`,
-                cursor: submitted ? "default" : "pointer", flexShrink: 0,
-                display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 4,
-              }}
-            >
-              <span style={{ fontSize: 9, fontFamily: "'Nunito', sans-serif", color: "#555", fontWeight: 600 }}>
-                {note.replace(/\d$/, "")}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <Keyboard
+        octaveRange={config.octaveRange}
+        selectedNote={selected}
+        disabled={submitted}
+        onSelect={handleSelect}
+      />
     </div>
   );
 }

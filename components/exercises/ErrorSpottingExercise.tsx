@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { ErrorSpottingConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
+import { StaffRenderer } from "./StaffRenderer";
 
 interface Props {
   config: ErrorSpottingConfig;
@@ -71,15 +72,12 @@ export function ErrorSpottingExercise({ config, submitted, onAnswerChange, onCom
       </p>
 
       <div style={{
-        width: "100%", maxWidth: 360, height: 120,
-        backgroundColor: C.surfaceHigh, borderRadius: 12,
-        border: `2px solid ${C.border}`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexDirection: "column", gap: 4,
+        padding: 12, borderRadius: 12,
+        backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
       }}>
-        <span style={{ color: C.muted, fontSize: 12, fontFamily: "'Nunito', sans-serif" }}>Staff</span>
-        <span style={{ color: C.text, fontSize: 22, fontFamily: "'Nunito', sans-serif" }}>{config.vexKey}</span>
-        <span style={{ color: C.primary, fontSize: 28, fontWeight: 900, fontFamily: "'Nunito', sans-serif" }}>
+        <StaffRenderer vexKey={config.vexKey} />
+        <span style={{ color: C.primary, fontSize: 22, fontWeight: 900, fontFamily: "'Nunito', sans-serif" }}>
           Labeled: {config.shownLabel}
         </span>
       </div>
