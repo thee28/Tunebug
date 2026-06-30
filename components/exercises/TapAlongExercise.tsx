@@ -20,12 +20,13 @@ const C = {
   text: "var(--c-text)", success: "#006c4e", error: "#8b2828",
 };
 
-type Phase = "idle" | "running" | "done";
+type Phase = "idle" | "countdown" | "running" | "done";
 
 export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [score, setScore] = useState<number | null>(null);
+  const [countdownN, setCountdownN] = useState<number>(0);
 
   const targetTimesRef = useRef<number[]>([]);
   const tapTimesRef = useRef<number[]>([]);
@@ -48,47 +49,72 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
     if (phase !== "idle") return;
     tapTimesRef.current = [];
     targetTimesRef.current = computeTargets();
+
+    // Pre-warm synth so countdown clicks fire instantly.
     try {
       const Tone = await import("tone");
       await Tone.start();
       if (!synthRef.current) {
         synthRef.current = new Tone.MembraneSynth().toDestination();
       }
-      const synth = synthRef.current as InstanceType<typeof Tone.MembraneSynth>;
-      const now = Tone.now();
-      for (let i = 0; i < targetTimesRef.current.length; i++) {
-        synth.triggerAttackRelease("C2", "16n", now + targetTimesRef.current[i] / 1000);
-      }
     } catch {}
-    setPhase("running");
-    startedAtRef.current = performance.now();
-    setCurrentBeat(0);
 
-    // Advance the highlight; finish after last target + 1 beat
-    const total = targetTimesRef.current[targetTimesRef.current.length - 1] + beatMs;
-    targetTimesRef.current.forEach((t, i) => {
-      setTimeout(() => setCurrentBeat(i), t);
-    });
-    setTimeout(() => {
-      setPhase("done");
-      // Score: % of targets that received a tap within tolerance
-      const taps = tapTimesRef.current.map((t) => t - startedAtRef.current);
-      let hits = 0;
-      const used = new Set<number>();
-      for (const tap of taps) {
+    // Countdown: tick at beat tempo, 3 → 2 → 1 → GO, then start.
+    const tickMs = beatMs; // one click per beat
+    setPhase("countdown");
+    setCountdownN(3);
+
+    const playClick = (pitch: string) => {
+      try {
+        const synth = synthRef.current as InstanceType<typeof import("tone").MembraneSynth> | null;
+        synth?.triggerAttackRelease(pitch, "16n");
+      } catch {}
+    };
+    playClick("G2");
+
+    setTimeout(() => { setCountdownN(2); playClick("G2"); }, tickMs);
+    setTimeout(() => { setCountdownN(1); playClick("G2"); }, tickMs * 2);
+    setTimeout(() => { setCountdownN(0); playClick("C3"); }, tickMs * 3); // GO marker
+
+    setTimeout(async () => {
+      // Schedule the pattern clicks
+      try {
+        const Tone = await import("tone");
+        const synth = synthRef.current as InstanceType<typeof Tone.MembraneSynth>;
+        const now = Tone.now();
         for (let i = 0; i < targetTimesRef.current.length; i++) {
-          if (used.has(i)) continue;
-          if (Math.abs(tap - targetTimesRef.current[i]) <= config.toleranceMs) {
-            hits++;
-            used.add(i);
-            break;
+          synth.triggerAttackRelease("C2", "16n", now + targetTimesRef.current[i] / 1000);
+        }
+      } catch {}
+
+      setPhase("running");
+      startedAtRef.current = performance.now();
+      setCurrentBeat(0);
+
+      const total = targetTimesRef.current[targetTimesRef.current.length - 1] + beatMs;
+      targetTimesRef.current.forEach((t, i) => {
+        setTimeout(() => setCurrentBeat(i), t);
+      });
+      setTimeout(() => {
+        setPhase("done");
+        const taps = tapTimesRef.current.map((t) => t - startedAtRef.current);
+        let hits = 0;
+        const used = new Set<number>();
+        for (const tap of taps) {
+          for (let i = 0; i < targetTimesRef.current.length; i++) {
+            if (used.has(i)) continue;
+            if (Math.abs(tap - targetTimesRef.current[i]) <= config.toleranceMs) {
+              hits++;
+              used.add(i);
+              break;
+            }
           }
         }
-      }
-      const pct = Math.round((hits / targetTimesRef.current.length) * 100);
-      setScore(pct);
-      onAnswerChange(true);
-    }, total);
+        const pct = Math.round((hits / targetTimesRef.current.length) * 100);
+        setScore(pct);
+        onAnswerChange(true);
+      }, total);
+    }, tickMs * 4);
   }, [phase, computeTargets, beatMs, config.toleranceMs, onAnswerChange]);
 
   const tap = useCallback(() => {
@@ -154,6 +180,31 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
           Start
         </button>
       )}
+
+      {phase === "countdown" && (
+        <div
+          key={countdownN}
+          style={{
+            width: 160, height: 160, borderRadius: "50%",
+            backgroundColor: countdownN === 0 ? C.success : C.primary,
+            boxShadow: `0 6px 0 0 ${countdownN === 0 ? "#00513a" : C.primaryDark}`,
+            color: "white",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "'Nunito', sans-serif", fontSize: 72, fontWeight: 900,
+            animation: "tapCountPulse 600ms ease-out",
+          }}
+        >
+          {countdownN === 0 ? "GO" : countdownN}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes tapCountPulse {
+          0%   { transform: scale(0.6); opacity: 0.2; }
+          40%  { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
 
       {phase === "running" && (
         <button
