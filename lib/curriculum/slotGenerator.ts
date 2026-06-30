@@ -293,11 +293,11 @@ function fillSlot(
       return { kind: "exercise", type: "BUILD_RHYTHM", config: cfg };
     }
     case "TAP_ALONG": {
-      const c = concept.config as NoteValueConfig;
-      const len = 4 + Math.floor(rng() * 2);
-      const pattern = makeRhythmPattern(c.symbol, len, rng);
-      const tolerance = diff.distractorCloseness === "adjacent" ? 180 : diff.distractorCloseness === "mixed" ? 240 : 320;
-      const cfg: TapAlongConfig = { pattern, bpm: 80, toleranceMs: tolerance };
+      // Standard 4/4 measure at slow practice tempo.
+      // BPM 60 = one beat per second; pattern always sums to exactly 4 beats.
+      const pattern = makeFourFourPattern(rng, diff.distractorCloseness);
+      const tolerance = diff.distractorCloseness === "adjacent" ? 220 : diff.distractorCloseness === "mixed" ? 280 : 340;
+      const cfg: TapAlongConfig = { pattern, bpm: 60, toleranceMs: tolerance };
       return { kind: "exercise", type: "TAP_ALONG", config: cfg };
     }
     case "NAME_IT": {
@@ -406,6 +406,45 @@ function uniqueSymbolChoices(correct: NoteSymbol, count: number, rng: () => numb
 function makeRhythmPattern(_anchor: NoteSymbol, len: number, rng: () => number): NoteSymbol[] {
   // Sometimes start with the anchor; otherwise mix from the standard pool.
   return Array.from({ length: len }, () => pick(SYMBOL_NOTES_POOL, rng));
+}
+
+// Builds a pattern that sums to exactly 4 beats (one 4/4 measure). Greedy fill:
+// pick a symbol whose duration fits in the remaining beats, biased away from
+// eighth notes so practice tempo stays approachable.
+function makeFourFourPattern(rng: () => number, closeness: "far" | "adjacent" | "mixed"): NoteSymbol[] {
+  const out: NoteSymbol[] = [];
+  let remaining = 4;
+  // Weighted pool by closeness. Adjacent = harder = more eighths allowed.
+  const weights: Record<NoteSymbol, number> =
+    closeness === "adjacent"
+      ? { whole_note: 1, half_note: 3, quarter_note: 6, eighth_note: 4, whole_rest: 0, half_rest: 0, quarter_rest: 0 }
+      : closeness === "mixed"
+      ? { whole_note: 1, half_note: 4, quarter_note: 6, eighth_note: 2, whole_rest: 0, half_rest: 0, quarter_rest: 0 }
+      : { whole_note: 2, half_note: 5, quarter_note: 5, eighth_note: 1, whole_rest: 0, half_rest: 0, quarter_rest: 0 };
+
+  while (remaining > 0) {
+    const candidates = SYMBOL_NOTES_POOL.filter((s) => SYMBOL_BEATS[s] <= remaining + 1e-6);
+    // Build weighted pool. Eighth notes only valid in pairs (no orphan halves of a beat).
+    const pool: NoteSymbol[] = [];
+    for (const s of candidates) {
+      if (s === "eighth_note" && remaining < 1) continue;
+      const w = weights[s] || 0;
+      for (let i = 0; i < w; i++) pool.push(s);
+    }
+    if (pool.length === 0) break;
+    const choice = pool[Math.floor(rng() * pool.length)];
+    if (choice === "eighth_note") {
+      // Always add eighths in pairs so total stays on whole-beat boundaries
+      out.push("eighth_note", "eighth_note");
+      remaining -= 1;
+    } else {
+      out.push(choice);
+      remaining -= SYMBOL_BEATS[choice];
+    }
+  }
+  // Safety pad: if remaining > 0 (numeric drift), fill with quarter
+  while (remaining >= 1 - 1e-6) { out.push("quarter_note"); remaining -= 1; }
+  return out;
 }
 
 function mutatePattern(p: NoteSymbol[], rng: () => number): NoteSymbol[] {
