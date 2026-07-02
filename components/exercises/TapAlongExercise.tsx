@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { motion } from "framer-motion";
 import type { TapAlongConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -141,34 +142,68 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-      <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
-        Tap the rhythm in time
-      </p>
-
-      {/* Pattern visualization */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
-        padding: "16px 20px", borderRadius: 16,
-        backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
-        minHeight: 100,
-      }}>
-        {config.pattern.map((sym, i) => (
+      <div style={{ position: "relative", width: "100%", display: "flex", justifyContent: "center" }}>
+        <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, margin: 0, textAlign: "center" }}>
+          Tap the rhythm in time
+        </p>
+        {phase === "countdown" && (
           <div
-            key={i}
             style={{
-              padding: 4, borderRadius: 8,
-              backgroundColor: i === currentBeat ? "rgba(87,78,177,0.35)" : "transparent",
-              transition: "background-color 0.1s",
+              position: "absolute",
+              bottom: "calc(100% + 12px)",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 10,
+              pointerEvents: "none",
             }}
           >
-            <NoteSymbolSVG symbol={sym} size={56} color={sym.includes("rest") ? C.muted : "white"} />
+            <div
+              key={countdownN}
+              style={{
+                width: 90, height: 90, borderRadius: "50%",
+                backgroundColor: C.primary,
+                boxShadow: `0 5px 0 0 ${C.primaryDark}`,
+                color: "white",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "'Nunito', sans-serif",
+                fontSize: countdownN === 0 ? 30 : 44, fontWeight: 900,
+                animation: "tapCountPulse 600ms ease-out",
+                transformOrigin: "center center",
+              }}
+            >
+              {countdownN === 0 ? "GO" : countdownN}
+            </div>
           </div>
-        ))}
+        )}
+      </div>
+
+      {/* Pattern visualization */}
+      <div>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+          padding: "16px 20px", borderRadius: 16,
+          backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
+          minHeight: 100,
+        }}>
+          {config.pattern.map((sym, i) => (
+            <div
+              key={i}
+              style={{
+                padding: 4, borderRadius: 8,
+                backgroundColor: i === currentBeat ? "rgba(87,78,177,0.35)" : "transparent",
+                transition: "background-color 0.1s",
+              }}
+            >
+              <NoteSymbolSVG symbol={sym} size={56} color={sym.includes("rest") ? C.muted : "white"} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {phase === "idle" && (
-        <button
+        <motion.button
           onClick={start}
+          whileTap={{ scale: 0.97 }}
           style={{
             padding: "16px 36px", borderRadius: 14,
             backgroundColor: C.primary, boxShadow: `0 5px 0 0 ${C.primaryDark}`,
@@ -178,24 +213,7 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
           }}
         >
           Start
-        </button>
-      )}
-
-      {phase === "countdown" && (
-        <div
-          key={countdownN}
-          style={{
-            width: 160, height: 160, borderRadius: "50%",
-            backgroundColor: countdownN === 0 ? C.success : C.primary,
-            boxShadow: `0 6px 0 0 ${countdownN === 0 ? "#00513a" : C.primaryDark}`,
-            color: "white",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "'Nunito', sans-serif", fontSize: 72, fontWeight: 900,
-            animation: "tapCountPulse 600ms ease-out",
-          }}
-        >
-          {countdownN === 0 ? "GO" : countdownN}
-        </div>
+        </motion.button>
       )}
 
       <style>{`
@@ -204,17 +222,31 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
           40%  { transform: scale(1.15); opacity: 1; }
           100% { transform: scale(1); opacity: 1; }
         }
+        .tap-button {
+          transition: transform 0.06s ease, box-shadow 0.06s ease;
+        }
+        .tap-button:active {
+          transform: translateY(5px);
+          box-shadow: 0 1px 0 0 var(--tap-shadow) !important;
+        }
       `}</style>
 
-      {phase === "running" && (
+      {(phase === "countdown" || phase === "running") && (
         <button
+          className="tap-button"
           onMouseDown={tap}
           onTouchStart={tap}
+          disabled={phase !== "running"}
           style={{
+            // CSS custom prop consumed by the :active rule above
+            ["--tap-shadow" as string]: C.primaryDark,
             width: 160, height: 160, borderRadius: "50%",
-            backgroundColor: C.primary, boxShadow: `0 6px 0 0 ${C.primaryDark}`,
-            color: "white", border: "none", cursor: "pointer",
-            fontFamily: "'Nunito', sans-serif", fontSize: 18, fontWeight: 800,
+            backgroundColor: phase === "running" ? C.primary : "rgba(87,78,177,0.35)",
+            boxShadow: `0 6px 0 0 ${C.primaryDark}`,
+            color: "white", border: "none",
+            cursor: phase === "running" ? "pointer" : "not-allowed",
+            fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900,
+            letterSpacing: "0.08em",
           }}
         >
           TAP
