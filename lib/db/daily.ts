@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { generateDailyExercises, dateSeed, difficultyFromCompletedStages } from "@/lib/curriculum/generator";
 import type { Difficulty } from "@/lib/curriculum/content";
@@ -62,9 +63,31 @@ export async function getTodaysDailyStage(userId: string): Promise<DailyStageDat
   const seed = dateSeed(today);
   const exercises = generateDailyExercises(difficulty, seed);
 
-  const created = await prisma.dailyStage.create({
-    data: { userId, date: today, difficulty, exercises: exercises as never },
-  });
+  let created;
+  try {
+    created = await prisma.dailyStage.create({
+      data: { userId, date: today, difficulty, exercises: exercises as never },
+    });
+  } catch (e) {
+    // P2002 = another request created today's stage between our find and create.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const row = await prisma.dailyStage.findUnique({
+        where: { userId_date: { userId, date: today } },
+      });
+      if (row) {
+        return {
+          id: row.id,
+          date: row.date,
+          difficulty: row.difficulty as Difficulty,
+          exercises: row.exercises as unknown as DailyStageExercise[],
+          completed: row.completed,
+          score: row.score,
+          xpEarned: row.xpEarned,
+        };
+      }
+    }
+    throw e;
+  }
 
   return {
     id: created.id,
@@ -82,16 +105,27 @@ export async function completeDailyStage(
   userId: string,
   score: number
 ): Promise<{ xpEarned: number }> {
-  const stage = await prisma.dailyStage.findUnique({ where: { id } });
-  if (!stage || stage.userId !== userId) throw new Error("Not found");
-  if (stage.completed) return { xpEarned: stage.xpEarned };
-
   const xpEarned = score >= 70 ? 25 : 10;
 
-  await prisma.$transaction([
-    prisma.dailyStage.update({ where: { id }, data: { completed: true, score, xpEarned } }),
-    prisma.user.update({ where: { id: userId }, data: { xp: { increment: xpEarned } } }),
-  ]);
+  // Atomic claim: the `completed: false` guard means only one concurrent
+  // request can flip the stage and grant XP.
+  const claimed = await prisma.$transaction(async (tx) => {
+    const updated = await tx.dailyStage.updateMany({
+      where: { id, userId, completed: false },
+      data: { completed: true, score, xpEarned },
+    });
+    if (updated.count === 0) return false;
+    await tx.user.update({
+      where: { id: userId },
+      data: { xp: { increment: xpEarned } },
+    });
+    return true;
+  });
 
-  return { xpEarned };
+  if (claimed) return { xpEarned };
+
+  // Either already completed (return recorded XP) or not the owner / missing.
+  const stage = await prisma.dailyStage.findUnique({ where: { id } });
+  if (!stage || stage.userId !== userId) throw new Error("Not found");
+  return { xpEarned: stage.xpEarned };
 }

@@ -31,7 +31,9 @@ export async function updateStreak(userId: string): Promise<void> {
   const last = startOfDayUTC(streak.lastActivityDate);
   const diff = differenceInCalendarDays(today, last);
 
-  if (diff === 0) return;
+  // diff < 0 guards against clock skew / out-of-order writes — never reset
+  // an active streak because "today" appears earlier than the last activity.
+  if (diff <= 0) return;
 
   if (diff === 1) {
     const next = streak.currentStreak + 1;

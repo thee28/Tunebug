@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function saveProgress({
@@ -13,31 +14,53 @@ export async function saveProgress({
   passed: boolean;
   xpReward: number;
 }) {
-  const existing = await prisma.lessonProgress.findFirst({
-    where: { userId, lessonId },
-    orderBy: { completedAt: "desc" },
-  });
+  // Serializable so two concurrent submissions can't both see "never passed"
+  // and each grant first-pass XP. On serialization conflict, retry once.
+  const run = () =>
+    prisma.$transaction(
+      async (tx) => {
+        const [attemptsSoFar, everPassed] = await Promise.all([
+          tx.lessonProgress.count({ where: { userId, lessonId } }),
+          tx.lessonProgress.findFirst({
+            where: { userId, lessonId, passed: true },
+            select: { id: true },
+          }),
+        ]);
 
-  const alreadyPassed = existing?.passed ?? false;
-  const xpEarned = passed && !alreadyPassed ? xpReward : 0;
+        const xpEarned = passed && !everPassed ? xpReward : 0;
 
-  const [progress] = await prisma.$transaction([
-    prisma.lessonProgress.create({
-      data: {
-        userId,
-        lessonId,
-        score,
-        passed,
-        attempts: (existing?.attempts ?? 0) + 1,
-        xpEarned,
+        const progress = await tx.lessonProgress.create({
+          data: {
+            userId,
+            lessonId,
+            score,
+            passed,
+            attempts: attemptsSoFar + 1,
+            xpEarned,
+          },
+        });
+
+        if (xpEarned > 0) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { xp: { increment: xpEarned } },
+          });
+        }
+
+        return { progress, xpEarned };
       },
-    }),
-    ...(xpEarned > 0
-      ? [prisma.user.update({ where: { id: userId }, data: { xp: { increment: xpEarned } } })]
-      : []),
-  ]);
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
 
-  return { progress, xpEarned };
+  try {
+    return await run();
+  } catch (e) {
+    // P2034 = transaction failed due to serialization conflict — safe to retry.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2034") {
+      return run();
+    }
+    throw e;
+  }
 }
 
 export async function getUserProgress(userId: string) {

@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { getTodaysDailyStage, completeDailyStage } from "@/lib/db/daily";
 import { updateStreak } from "@/lib/db/streak";
+import { readJson, isValidScore } from "@/lib/api/validation";
+import { rateLimit, tooManyRequests } from "@/lib/api/rateLimit";
 
 export async function GET() {
   const session = await auth();
@@ -8,8 +10,13 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const dailyStage = await getTodaysDailyStage(session.user.id);
-  return Response.json(dailyStage);
+  try {
+    const dailyStage = await getTodaysDailyStage(session.user.id);
+    return Response.json(dailyStage);
+  } catch (e) {
+    console.error("GET /api/daily-stage failed:", e);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -18,16 +25,33 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, score } = await request.json();
-  if (!id || typeof score !== "number") {
+  if (!rateLimit(`daily:${session.user.id}`, 10, 60_000)) {
+    return tooManyRequests();
+  }
+
+  const body = await readJson(request);
+  if (!body) {
+    return Response.json({ error: "Invalid payload" }, { status: 400 });
+  }
+  const { id, score } = body;
+
+  if (typeof id !== "string" || !id || !isValidScore(score)) {
     return Response.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const { xpEarned } = await completeDailyStage(id, session.user.id, score);
+  try {
+    const { xpEarned } = await completeDailyStage(id, session.user.id, score);
 
-  if (score >= 70) {
-    await updateStreak(session.user.id);
+    if (score >= 70) {
+      await updateStreak(session.user.id);
+    }
+
+    return Response.json({ xpEarned, passed: score >= 70 });
+  } catch (e) {
+    if (e instanceof Error && e.message === "Not found") {
+      return Response.json({ error: "Not found" }, { status: 404 });
+    }
+    console.error("POST /api/daily-stage failed:", e);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return Response.json({ xpEarned, passed: score >= 70 });
 }
