@@ -25,6 +25,12 @@ export function TrueFalseExercise({ config, submitted, onAnswerChange, onComplet
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playAudio = useCallback(async () => {
     if (!config.audioNote || playing) return;
     setPlaying(true);

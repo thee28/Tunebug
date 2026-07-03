@@ -33,6 +33,18 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
   const tapTimesRef = useRef<number[]>([]);
   const startedAtRef = useRef<number>(0);
   const synthRef = useRef<unknown>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const schedule = useCallback((fn: () => void, ms: number) => {
+    timersRef.current.push(setTimeout(fn, ms));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
 
   const beatMs = (60 / config.bpm) * 1000;
 
@@ -73,11 +85,11 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
     };
     playClick("G2");
 
-    setTimeout(() => { setCountdownN(2); playClick("G2"); }, tickMs);
-    setTimeout(() => { setCountdownN(1); playClick("G2"); }, tickMs * 2);
-    setTimeout(() => { setCountdownN(0); playClick("C3"); }, tickMs * 3); // GO marker
+    schedule(() => { setCountdownN(2); playClick("G2"); }, tickMs);
+    schedule(() => { setCountdownN(1); playClick("G2"); }, tickMs * 2);
+    schedule(() => { setCountdownN(0); playClick("C3"); }, tickMs * 3); // GO marker
 
-    setTimeout(async () => {
+    schedule(async () => {
       // Schedule the pattern clicks
       try {
         const Tone = await import("tone");
@@ -94,9 +106,9 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
 
       const total = targetTimesRef.current[targetTimesRef.current.length - 1] + beatMs;
       targetTimesRef.current.forEach((t, i) => {
-        setTimeout(() => setCurrentBeat(i), t);
+        schedule(() => setCurrentBeat(i), t);
       });
-      setTimeout(() => {
+      schedule(() => {
         setPhase("done");
         const taps = tapTimesRef.current.map((t) => t - startedAtRef.current);
         let hits = 0;
@@ -111,12 +123,15 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
             }
           }
         }
-        const pct = Math.round((hits / targetTimesRef.current.length) * 100);
+        // Divide by max(targets, taps) so extra taps count against the score —
+        // otherwise spamming the button trivially scores 100%.
+        const denominator = Math.max(targetTimesRef.current.length, taps.length);
+        const pct = Math.round((hits / denominator) * 100);
         setScore(pct);
         onAnswerChange(true);
       }, total);
     }, tickMs * 4);
-  }, [phase, computeTargets, beatMs, config.toleranceMs, onAnswerChange]);
+  }, [phase, computeTargets, beatMs, config.toleranceMs, onAnswerChange, schedule]);
 
   const tap = useCallback(() => {
     if (phase !== "running") return;
@@ -126,7 +141,7 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
   // Spacebar also taps
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.code === "Space") { e.preventDefault(); tap(); }
+      if (e.code === "Space" && !e.repeat) { e.preventDefault(); tap(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);

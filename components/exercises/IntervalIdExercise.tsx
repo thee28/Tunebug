@@ -25,6 +25,12 @@ export function IntervalIdExercise({ config, difficulty, submitted, onAnswerChan
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playInterval = useCallback(async () => {
     if (playing) return;
     setPlaying(true);

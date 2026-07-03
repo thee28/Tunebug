@@ -26,6 +26,12 @@ export function SameDifferentExercise({ config, submitted, onAnswerChange, onCom
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playPair = useCallback(async () => {
     if (playing) return;
     setPlaying(true);

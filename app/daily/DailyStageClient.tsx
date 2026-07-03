@@ -32,13 +32,17 @@ export function DailyStageClient({ stage }: Props) {
 
   const handleComplete = async (score: number) => {
     setFinalScore(score);
-    const res = await fetch("/api/daily-stage", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: stage.id, score }),
-    });
-    const data = await res.json();
-    setEarnedXP(data.xpEarned ?? 0);
+    try {
+      const res = await fetch("/api/daily-stage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: stage.id, score }),
+      });
+      const data = await res.json().catch(() => null);
+      setEarnedXP(data?.xpEarned ?? 0);
+    } catch (e) {
+      console.error("Failed to save daily stage:", e);
+    }
     setMode("done");
   };
 

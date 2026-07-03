@@ -25,11 +25,13 @@ import {
 import { generateSlotPlan, type MasterySnapshot } from "./slotGenerator";
 
 // Seeded LCG — same seed produces identical exercise sequence
-function createRng(seed: number) {
+export function createRng(seed: number) {
   let s = seed >>> 0;
   return () => {
     s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    return s / 4294967295;
+    // Divide by 2^32 so result stays in [0, 1) — 2^32-1 lets rng() hit
+    // exactly 1.0, which makes pick() index past the end of the array.
+    return s / 4294967296;
   };
 }
 

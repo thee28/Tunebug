@@ -30,6 +30,12 @@ export function SameDifferentRhythmExercise({ config, submitted, onAnswerChange,
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playPatterns = useCallback(async () => {
     if (playing) return;
     setPlaying(true);

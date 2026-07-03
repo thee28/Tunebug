@@ -26,6 +26,12 @@ export function HigherLowerExercise({ config, submitted, onAnswerChange, onCompl
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playPair = useCallback(async () => {
     if (playing) return;
     setPlaying(true);

@@ -25,6 +25,12 @@ export function EarSingleExercise({ config, difficulty, submitted, onAnswerChang
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playNote = useCallback(async () => {
     if (playing) return;
     setPlaying(true);

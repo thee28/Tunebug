@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { LessonStep } from "@/types/lesson";
@@ -85,6 +85,12 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
   const [teachPlaying, setTeachPlaying] = useState(false);
   const teachSynthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (teachSynthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playTeachAudio = useCallback(async (
     note?: string,
     notes?: string[],
@@ -107,6 +113,8 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
         const poly = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" } }).toDestination();
         poly.triggerAttackRelease(notes, "1.2");
         setTimeout(() => setTeachPlaying(false), 1400);
+        // Dispose after the release tail; otherwise each playback leaks a node.
+        setTimeout(() => poly.dispose(), 3000);
       } else if (note) {
         synth.triggerAttackRelease(note, "0.8");
         setTimeout(() => setTeachPlaying(false), 900);

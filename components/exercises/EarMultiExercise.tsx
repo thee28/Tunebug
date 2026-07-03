@@ -25,6 +25,12 @@ export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange
   const [playing, setPlaying] = useState(false);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playChord = useCallback(async () => {
     if (playing) return;
     setPlaying(true);

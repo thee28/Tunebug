@@ -53,32 +53,37 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    if (tab === "signup") {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Sign up failed");
-        setLoading(false);
-        return;
+    try {
+      if (tab === "signup") {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, name }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          setError(data?.error ?? "Sign up failed");
+          setLoading(false);
+          return;
+        }
       }
-    }
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (result?.error) {
-      setError("Invalid email or password");
-    } else {
-      router.push("/dashboard");
+      if (result?.error) {
+        setError("Invalid email or password");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch {
+      setLoading(false);
+      setError("Something went wrong. Please try again.");
     }
   }
 

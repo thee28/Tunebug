@@ -43,11 +43,13 @@ function midiToNoteStr(midi: number): string {
   return `${NOTE_CHROMATIC[midi % 12]}${Math.floor(midi / 12) - 1}`;
 }
 
-function createRng(seed: number) {
+export function createRng(seed: number) {
   let s = seed >>> 0;
   return () => {
     s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    return s / 4294967295;
+    // Divide by 2^32 so result stays in [0, 1) — 2^32-1 lets rng() hit
+    // exactly 1.0, which makes pick() index past the end of the array.
+    return s / 4294967296;
   };
 }
 function pick<T>(arr: T[], rng: () => number): T {
@@ -220,7 +222,9 @@ function fillSlot(
       // Always pick a different pitch. Larger gaps when "far", smaller when "adjacent".
       const maxStep = diff.distractorCloseness === "adjacent" ? 2 : diff.distractorCloseness === "mixed" ? 5 : 8;
       const step = (Math.floor(rng() * maxStep) + 1) * (rng() < 0.5 ? -1 : 1);
-      const clamped = Math.max(36, Math.min(84, aMidi + step));
+      let clamped = Math.max(36, Math.min(84, aMidi + step));
+      // Clamping at the range edge can land back on noteA; step inward instead.
+      if (clamped === aMidi) clamped = aMidi + (step > 0 ? -1 : 1);
       const noteB = midiToNoteStr(clamped);
       const bMidi = noteStrToMidi(noteB);
       const cfg: HigherLowerConfig = {
@@ -236,7 +240,10 @@ function fillSlot(
       const targetMidi = noteStrToMidi(target);
       const maxStep = diff.distractorCloseness === "adjacent" ? 1 : diff.distractorCloseness === "mixed" ? 3 : 5;
       const step = (Math.floor(rng() * maxStep) + 1) * (rng() < 0.5 ? -1 : 1);
-      const odd = midiToNoteStr(Math.max(36, Math.min(84, targetMidi + step)));
+      let oddMidi = Math.max(36, Math.min(84, targetMidi + step));
+      // Clamping at the range edge can land back on the target; step inward instead.
+      if (oddMidi === targetMidi) oddMidi = targetMidi + (step > 0 ? -1 : 1);
+      const odd = midiToNoteStr(oddMidi);
       const oddIndex = Math.floor(rng() * 3);
       const notes = [target, target, target];
       notes[oddIndex] = odd;

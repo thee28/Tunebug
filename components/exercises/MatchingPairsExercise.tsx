@@ -47,6 +47,12 @@ export function MatchingPairsExercise({ config, submitted, onAnswerChange, onCom
   const [revealed, setRevealed] = useState<number[]>([]); // tile ids currently shown
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const allMatched = useMemo(() => tiles.every((t) => t.matched), [tiles]);
 
   useEffect(() => { onAnswerChange(allMatched); }, [allMatched, onAnswerChange]);

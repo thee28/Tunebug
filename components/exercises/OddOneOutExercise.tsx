@@ -25,6 +25,12 @@ export function OddOneOutExercise({ config, submitted, onAnswerChange, onComplet
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const synthRef = useRef<unknown>(null);
 
+  useEffect(() => {
+    return () => {
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
   const playAll = useCallback(async () => {
     if (playing) return;
     setPlaying(true);
