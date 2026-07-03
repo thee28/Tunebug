@@ -5,7 +5,8 @@ import type { NextRequest } from "next/server";
 const { auth } = NextAuth(authConfig);
 
 export function proxy(request: NextRequest) {
-  return auth(request as any);
+  // NextAuth's middleware overload expects its own NextAuthRequest shape.
+  return auth(request as never);
 }
 
 export const config = {

@@ -57,7 +57,8 @@ interface Props {
   difficulty: Difficulty;
   xpReward: number;
   lessonSlug?: string;
-  onComplete: (totalScore: number) => void;
+  // May resolve with the server's XP grant, which overrides the local estimate.
+  onComplete: (totalScore: number) => void | Promise<number | null | void>;
   onExit: () => void;
 }
 
@@ -135,7 +136,9 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
     // step with its conceptId; if a step came from some other path it lacks
     // a tag and we skip the write.
     const step = steps[index];
-    if (step?.kind === "exercise" && step.conceptId) {
+    // PITCH_MATCH is a stub that always reports a pass — keep it out of
+    // mastery tracking until real pitch detection lands.
+    if (step?.kind === "exercise" && step.conceptId && step.type !== "PITCH_MATCH") {
       fetch("/api/mastery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -161,7 +164,12 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
       const xp = total >= 70 ? xpReward : Math.round(xpReward * 0.3);
       setEarnedXP(xp);
       setPhase("result");
-      onComplete(total);
+      // Server returns the actual grant (0 on replays); prefer it over the estimate.
+      Promise.resolve(onComplete(total))
+        .then((serverXp) => {
+          if (typeof serverXp === "number") setEarnedXP(serverXp);
+        })
+        .catch(() => {});
       setSubmitted(false);
       setHasAnswer(false);
       setPendingResult(null);
@@ -175,6 +183,12 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
       return;
     }
     if (!pendingResult) return;
+    // PITCH_MATCH auto-passes (stub) — exclude it from the lesson score
+    // so it can't inflate XP.
+    if (step.kind === "exercise" && step.type === "PITCH_MATCH") {
+      advanceStep(scores);
+      return;
+    }
     const newScores = [...scores, pendingResult.score];
     setScores(newScores);
     advanceStep(newScores);
@@ -200,6 +214,9 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
   };
 
   const progressPct = ((phase === "result" ? steps.length : index) / steps.length) * 100;
+  const avgScore = scores.length
+    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    : 100;
   const currentStep = steps[index];
   const isTeachStep = phase === "exercise" && currentStep?.kind === "teach";
   const isCorrect = pendingResult?.passed ?? false;
@@ -324,21 +341,21 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, textAlign: "center" }}>
             <div style={{
               width: 100, height: 100, borderRadius: "50%",
-              backgroundColor: scores.reduce((a, b) => a + b, 0) / scores.length >= 70 ? C.success : C.surfaceHigh,
-              boxShadow: scores.reduce((a, b) => a + b, 0) / scores.length >= 70 ? `0 8px 0 0 #00513a` : `0 8px 0 0 rgba(0,0,0,0.4)`,
+              backgroundColor: avgScore >= 70 ? C.success : C.surfaceHigh,
+              boxShadow: avgScore >= 70 ? `0 8px 0 0 #00513a` : `0 8px 0 0 rgba(0,0,0,0.4)`,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <span className="material-symbols-outlined" style={{ fontSize: 52, color: "white", fontVariationSettings: "'FILL' 1" }}>
-                {scores.reduce((a, b) => a + b, 0) / scores.length >= 70 ? "star" : "sentiment_neutral"}
+                {avgScore >= 70 ? "star" : "sentiment_neutral"}
               </span>
             </div>
 
             <div>
               <h2 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 26, fontWeight: 900, margin: "0 0 6px" }}>
-                {scores.reduce((a, b) => a + b, 0) / scores.length >= 70 ? "Lesson Complete!" : "Keep Practicing"}
+                {avgScore >= 70 ? "Lesson Complete!" : "Keep Practicing"}
               </h2>
               <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 15, margin: 0 }}>
-                Score: {Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}%
+                Score: {avgScore}%
               </p>
             </div>
 

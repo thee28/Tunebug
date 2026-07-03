@@ -88,9 +88,9 @@ export function EarSingleExercise({ config, difficulty, submitted, onAnswerChang
 
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, width: "100%", maxWidth: 360 }}>
         {config.choices.map((choice) => {
-          const isCorrect = choice === config.correctAnswer;
           const isSelected = choice === selected;
-          let bg = C.surfaceHigh, border = C.border, color = C.text;
+          let bg = C.surfaceHigh, border = C.border;
+          const color = C.text;
           if (submitted && isSelected) {
             bg = C.selected; border = C.primary;
           } else if (isSelected) {

@@ -51,13 +51,14 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
   const idx = leagueIndex(totalXP);
   const league = LEAGUES[idx];
 
-  const ranked = hasJoined
+  type RankedUser = { initials: string; name: string; xp: number; isUser?: boolean; rank: number };
+  const ranked: RankedUser[] = hasJoined
     ? [...FAKE_USERS, { initials, name: displayName, xp: totalXP, isUser: true }]
         .sort((a, b) => b.xp - a.xp)
         .map((u, i) => ({ ...u, rank: i + 1 }))
     : [];
 
-  const userEntry = ranked.find((u: any) => u.isUser);
+  const userEntry = ranked.find((u) => u.isUser);
 
   return (
     <div style={{ paddingTop: 28, paddingBottom: 32 }}>
@@ -125,7 +126,7 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
       {/* List */}
       <div style={{ borderRadius: 16, border: `2px solid ${C.border}`, overflow: "hidden", marginBottom: 12 }}>
         {hasJoined ? (
-          ranked.map((u: any, i) => (
+          ranked.map((u, i) => (
             <div
               key={u.name}
               style={{

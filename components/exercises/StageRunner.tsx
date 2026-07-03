@@ -86,18 +86,22 @@ export function StageRunner({ stage, difficulty }: Props) {
         xpReward={lesson.xpReward}
         lessonSlug={lesson.slug}
         onComplete={async (score) => {
+          let serverXp: number | null = null;
           try {
-            await fetch("/api/progress", {
+            const res = await fetch("/api/progress", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ lessonId: lesson.id, score }),
             });
+            const data = await res.json().catch(() => null);
+            if (typeof data?.xpEarned === "number") serverXp = data.xpEarned;
           } catch (e) {
             console.error("Failed to save progress:", e);
           }
           if (score >= lesson.passingScore) {
             setCompletedIds((prev) => new Set([...prev, lesson.id]));
           }
+          return serverXp;
         }}
         onExit={() => { setBackLabel(null); setView({ phase: "browse" }); }}
       />
