@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ExerciseType, ExerciseConfig, IntervalName } from "@/types/music";
+import type { ExerciseType, ExerciseConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
-import { DIFFICULTY_SETTINGS, INTERVAL_POOLS } from "@/lib/curriculum/content";
-import { INTERVALS } from "@/lib/music/intervals";
+import type { ConceptCategory } from "@/lib/curriculum/concepts";
+import { generateFreePracticeSession } from "@/lib/curriculum/freePractice";
 import { ExerciseEngine, type ExerciseResult } from "@/components/exercises/ExerciseEngine";
 
 const C = {
@@ -31,12 +31,15 @@ const PRACTICE_LEVELS: PracticeLevel[] = [
   { id: "advanced", label: "Advanced", difficulty: "advanced", notePool: ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C#4", "D#4", "F#4", "G#4", "A#4", "C5", "D5", "E5", "F5", "G5", "A5"] },
 ];
 
-const EXERCISE_TYPES: { value: ExerciseType; label: string; icon: string }[] = [
-  { value: "EAR_SINGLE", label: "Ear Training", icon: "hearing" },
-  { value: "EAR_MULTI", label: "Chord ID", icon: "queue_music" },
-  { value: "INTERVAL_ID", label: "Interval ID", icon: "piano" },
-  { value: "PITCH_MATCH", label: "Pitch Match", icon: "mic" },
-  { value: "SIGHT_READ_PIANO", label: "Sight Read", icon: "music_note" },
+// Each button is a domain filter: the session generator draws from the
+// domain's whole pool of exercise components (see CONCEPT_TYPE_POOL).
+const PRACTICE_DOMAINS: { value: ConceptCategory; label: string; icon: string }[] = [
+  { value: "ear-note", label: "Ear Training", icon: "hearing" },
+  { value: "ear-chord", label: "Chord ID", icon: "queue_music" },
+  { value: "ear-interval", label: "Interval ID", icon: "piano" },
+  { value: "sing-note", label: "Pitch Match", icon: "mic" },
+  { value: "staff-note", label: "Sight Read", icon: "music_note" },
+  { value: "rhythm-symbol", label: "Rhythm", icon: "graphic_eq" },
 ];
 
 const SESSION_LENGTHS = [
@@ -45,75 +48,6 @@ const SESSION_LENGTHS = [
   { value: 20 as const, label: "Long", sub: "20 questions" },
 ];
 
-// ── Exercise generation ─────────────────────────────────────────────────────
-
-function rndPick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
-function rndShuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-const CHROMATIC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-function noteToMidi(note: string): number {
-  const m = note.match(/^([A-G]#?)(\d)$/);
-  if (!m) throw new Error(`Bad note: ${note}`);
-  return (parseInt(m[2]) + 1) * 12 + CHROMATIC.indexOf(m[1]);
-}
-function midiToNote(midi: number): string {
-  return `${CHROMATIC[midi % 12]}${Math.floor(midi / 12) - 1}`;
-}
-
-function generateFreeExercise(type: ExerciseType, level: PracticeLevel): { type: ExerciseType; config: ExerciseConfig } {
-  const { notePool, difficulty } = level;
-  const s = DIFFICULTY_SETTINGS[difficulty];
-  const noteNames = [...new Set(notePool.map(n => n.replace(/\d$/, "")))];
-
-  switch (type) {
-    case "EAR_SINGLE": {
-      const targetNote = rndPick(notePool);
-      const correct = targetNote.replace(/\d$/, "");
-      const distractors = rndShuffled(noteNames.filter(n => n !== correct)).slice(0, s.choiceCount - 1);
-      return { type, config: { targetNote, choices: rndShuffled([correct, ...distractors]), correctAnswer: correct } };
-    }
-    case "PITCH_MATCH": {
-      const targetNote = rndPick(notePool);
-      return { type, config: { targetNote, displayNote: targetNote.replace(/\d$/, ""), confidenceThreshold: s.confidenceThreshold, timeoutSeconds: s.timeoutSeconds } };
-    }
-    case "SIGHT_READ_PIANO": {
-      const targetNote = rndPick(notePool);
-      const m = targetNote.match(/^([A-G]#?)(\d)$/);
-      return { type, config: { targetNote, vexKey: m ? `${m[1].toLowerCase()}/${m[2]}` : targetNote, octaveRange: [3, 5] as [number, number] } };
-    }
-    case "EAR_MULTI": {
-      const count = Math.min(difficulty === "advanced" ? 4 : difficulty === "intermediate" ? 3 : 2, notePool.length);
-      const targetNotes = rndShuffled(notePool).slice(0, count);
-      const correctAnswers = targetNotes.map(n => n.replace(/\d$/, ""));
-      const extras = rndShuffled(noteNames.filter(n => !correctAnswers.includes(n))).slice(0, Math.max(s.choiceCount - count, 2));
-      return { type, config: { targetNotes, choices: rndShuffled([...correctAnswers, ...extras]), correctAnswers } };
-    }
-    case "INTERVAL_ID": {
-      const intervalPool = INTERVAL_POOLS[difficulty];
-      const interval = rndPick(intervalPool) as IntervalName;
-      const semitones = INTERVALS.find(i => i.name === interval)!.semitones;
-      const safePool = notePool.filter(n => noteToMidi(n) + semitones <= 84);
-      const noteA = rndPick(safePool.length ? safePool : notePool);
-      const noteB = midiToNote(noteToMidi(noteA) + semitones);
-      const distractors = rndShuffled((intervalPool as IntervalName[]).filter(i => i !== interval)).slice(0, s.choiceCount - 1);
-      return { type, config: { noteA, noteB, choices: rndShuffled([interval, ...distractors]) as IntervalName[], correctAnswer: interval } };
-    }
-    default:
-      throw new Error(`FreePractice doesn't support exercise type ${type}. Restrict selectableTypes in the UI.`);
-  }
-}
-
-function buildSession(types: ExerciseType[], count: number, level: PracticeLevel) {
-  return Array.from({ length: count }, () => generateFreeExercise(rndPick(types), level));
-}
-
 // ── Component ───────────────────────────────────────────────────────────────
 
 type SessionEx = { type: ExerciseType; config: ExerciseConfig };
@@ -121,7 +55,7 @@ type SessionEx = { type: ExerciseType; config: ExerciseConfig };
 export default function FreePractice() {
   // Config
   const [practiceLevel, setPracticeLevel] = useState<PracticeLevel>(PRACTICE_LEVELS[0]);
-  const [selectedTypes, setSelectedTypes] = useState<Set<ExerciseType>>(new Set(["EAR_SINGLE"]));
+  const [selectedDomains, setSelectedDomains] = useState<Set<ConceptCategory>>(new Set(["ear-note"]));
   const [sessionLength, setSessionLength] = useState<5 | 10 | 20>(10);
 
   // Session
@@ -133,17 +67,23 @@ export default function FreePractice() {
   const [pendingResult, setPendingResult] = useState<ExerciseResult | null>(null);
   const [results, setResults] = useState<ExerciseResult[]>([]);
 
-  const toggleType = (type: ExerciseType) => {
-    setSelectedTypes(prev => {
+  const toggleDomain = (domain: ConceptCategory) => {
+    setSelectedDomains(prev => {
       const next = new Set(prev);
-      if (next.has(type) && next.size === 1) return prev;
-      next.has(type) ? next.delete(type) : next.add(type);
+      if (next.has(domain) && next.size === 1) return prev;
+      next.has(domain) ? next.delete(domain) : next.add(domain);
       return next;
     });
   };
 
   const startSession = (exs?: SessionEx[]) => {
-    const session = exs ?? buildSession([...selectedTypes], sessionLength, practiceLevel);
+    const session = exs ?? generateFreePracticeSession({
+      domains: [...selectedDomains],
+      difficulty: practiceLevel.difficulty,
+      notePool: practiceLevel.notePool,
+      slotCount: sessionLength,
+      seed: Date.now(),
+    });
     setExercises(session);
     setCurrentIndex(0);
     setSubmitted(false);
@@ -210,12 +150,12 @@ export default function FreePractice() {
       <section style={{ marginBottom: 28 }}>
         <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>Exercise Type</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {EXERCISE_TYPES.map(et => {
-            const active = selectedTypes.has(et.value);
+          {PRACTICE_DOMAINS.map(et => {
+            const active = selectedDomains.has(et.value);
             return (
               <button
                 key={et.value}
-                onClick={() => toggleType(et.value)}
+                onClick={() => toggleDomain(et.value)}
                 style={{
                   padding: "12px 16px", borderRadius: 12,
                   backgroundColor: active ? C.selected : C.surfaceHigh,

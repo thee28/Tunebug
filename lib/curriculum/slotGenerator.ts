@@ -67,13 +67,13 @@ function shuffled<T>(arr: T[], rng: () => number): T[] {
 // ─── Difficulty escalation ──────────────────────────────────────────
 // progress ∈ [0,1] = position in lesson. Drives distractor closeness & choice count.
 // masteryScore ∈ [0,1] (optional) adapts difficulty per concept.
-interface SlotDifficulty {
+export interface SlotDifficulty {
   choiceCount: number;
   distractorCloseness: "far" | "adjacent" | "mixed";
 }
 const STRONG_MASTERY = 0.75;
 const WEAK_MASTERY = 0.4;
-function slotDifficulty(
+export function slotDifficulty(
   progress: number,
   base: Difficulty,
   isReview: boolean,
@@ -144,7 +144,7 @@ function distractorsForInterval(correct: IntervalName, pool: IntervalName[], n: 
 }
 
 // ─── Slot fill: build an ExerciseStep for a given concept at given difficulty ─
-function fillSlot(
+export function fillSlot(
   concept: Concept,
   type: ExerciseType,
   diff: SlotDifficulty,
@@ -336,6 +336,7 @@ function fillSlot(
         prompt: isAudio ? "Listen and answer" : "Look and answer",
         claim: isAudio ? `The note you just heard is ${claimedLetter}` : `This note is ${claimedLetter}`,
         audioNote: isAudio ? audioNote : undefined,
+        vexKey: isAudio ? undefined : (concept.config as { vexKey?: string }).vexKey,
         correctAnswer: isTrue,
       };
       return { kind: "exercise", type: "TRUE_FALSE", config: cfg };

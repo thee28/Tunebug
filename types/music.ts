@@ -163,10 +163,12 @@ export interface NameItConfig {
 }
 
 // Generic claim/T-F. audioNote, if set, plays before the claim is shown.
+// vexKey, if set, renders the note on a staff (the visual variant).
 export interface TrueFalseConfig {
   prompt: string;            // e.g. "Listen and answer"
   claim: string;             // e.g. "The note you just heard is a D"
   audioNote?: string;        // e.g. "C4" — optional playback
+  vexKey?: string;           // e.g. "e/4" — optional staff display
   correctAnswer: boolean;    // is the claim true?
 }
 

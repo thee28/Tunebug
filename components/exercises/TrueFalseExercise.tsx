@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { TrueFalseConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
+import { StaffRenderer } from "./StaffRenderer";
 
 interface Props {
   config: TrueFalseConfig;
@@ -66,6 +67,10 @@ export function TrueFalseExercise({ config, submitted, onAnswerChange, onComplet
       <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, margin: 0, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {config.prompt}
       </p>
+
+      {config.vexKey && !config.audioNote && (
+        <StaffRenderer vexKey={config.vexKey} />
+      )}
 
       {config.audioNote && (
         <button
