@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { saveProgress, getUserProgress } from "@/lib/db/progress";
 import { updateStreak } from "@/lib/db/streak";
+import { syncAchievements } from "@/lib/db/achievements";
 import { prisma } from "@/lib/prisma";
 import { readJson, isValidScore } from "@/lib/api/validation";
 import { rateLimit, tooManyRequests } from "@/lib/api/rateLimit";
@@ -60,7 +61,10 @@ export async function POST(request: NextRequest) {
       await updateStreak(session.user.id);
     }
 
-    return Response.json({ progress, xpEarned, passed });
+    // Non-fatal: a failed achievement sync must not fail the progress save.
+    const unlocked = await syncAchievements(session.user.id).catch(() => [] as string[]);
+
+    return Response.json({ progress, xpEarned, passed, unlockedAchievements: unlocked });
   } catch (e) {
     console.error("POST /api/progress failed:", e);
     return Response.json({ error: "Internal server error" }, { status: 500 });

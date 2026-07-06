@@ -40,8 +40,11 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
   }, []);
 
   useEffect(() => {
+    // schedule() pushes into this same array instance, so capturing it here
+    // still sees every timer at cleanup time.
+    const timers = timersRef.current;
     return () => {
-      timersRef.current.forEach(clearTimeout);
+      timers.forEach(clearTimeout);
       (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
     };
   }, []);

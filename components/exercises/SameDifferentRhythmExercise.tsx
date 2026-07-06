@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { SameDifferentRhythmConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
-import { NoteSymbolSVG, NOTE_BEATS } from "./NoteSymbolSVG";
+import { NOTE_BEATS } from "./NoteSymbolSVG";
 
 interface Props {
   config: SameDifferentRhythmConfig;

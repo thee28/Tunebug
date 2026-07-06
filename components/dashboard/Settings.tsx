@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   surface: "var(--c-surface-alt)", surfaceHigh: "var(--c-surface-high)",
   border: "var(--c-border)", muted: "var(--c-muted)", text: "var(--c-text)",
   accent: "#574eb1",
+  danger: "#ef4444",
 };
 
 const INPUT = {
@@ -20,6 +23,11 @@ const LABEL = {
   color: C.text, fontFamily: "'Nunito', sans-serif",
   fontSize: 14, fontWeight: 700, marginBottom: 8, display: "block" as const,
 };
+
+export interface PrivacySettings {
+  publicProfile: boolean;
+  personalizedRecs: boolean;
+}
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -41,27 +49,6 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       }}>
         <div style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: on ? "#c5c0ff" : "#bbb" }} />
       </div>
-    </div>
-  );
-}
-
-function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <div
-      onClick={onChange}
-      style={{
-        width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-        backgroundColor: checked ? C.accent : "transparent",
-        border: checked ? "none" : `2px solid ${C.border}`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        cursor: "pointer",
-      }}
-    >
-      {checked && (
-        <span className="material-symbols-outlined" style={{ fontSize: 18, color: "white", fontVariationSettings: "'FILL' 1" }}>
-          check
-        </span>
-      )}
     </div>
   );
 }
@@ -106,53 +93,57 @@ function ToggleRow({ label, description, on, onToggle }: { label: string; descri
   );
 }
 
-function CheckboxRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "16px 0", borderBottom: `1px solid ${C.border}`,
-    }}>
-      <span style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 600 }}>
-        {label}
-      </span>
-      <Checkbox checked={checked} onChange={onChange} />
-    </div>
-  );
-}
-
-function SaveButton({ disabled }: { disabled?: boolean }) {
+function SaveButton({ disabled, saving, onClick }: { disabled?: boolean; saving?: boolean; onClick: () => void }) {
+  const inactive = disabled || saving;
   return (
     <button
-      disabled={disabled}
+      disabled={inactive}
+      onClick={onClick}
       style={{
         padding: "12px 28px", borderRadius: 12, border: "none",
-        backgroundColor: disabled ? "rgba(255,255,255,0.08)" : C.primary,
-        boxShadow: disabled ? "none" : `0 4px 0 0 ${C.primaryDark}`,
-        color: disabled ? C.muted : "white",
+        backgroundColor: inactive ? "rgba(255,255,255,0.08)" : C.primary,
+        boxShadow: inactive ? "none" : `0 4px 0 0 ${C.primaryDark}`,
+        color: inactive ? C.muted : "white",
         fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800,
-        letterSpacing: "0.06em", textTransform: "uppercase", cursor: disabled ? "default" : "pointer",
+        letterSpacing: "0.06em", textTransform: "uppercase", cursor: inactive ? "default" : "pointer",
         transition: "background-color 0.15s",
       }}
     >
-      Save Changes
+      {saving ? "Saving…" : "Save Changes"}
     </button>
   );
 }
 
+function StatusMessage({ status }: { status: { kind: "success" | "error"; text: string } | null }) {
+  if (!status) return null;
+  return (
+    <p style={{
+      color: status.kind === "success" ? "#83f5c6" : "#ffb4ab",
+      fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
+      margin: "12px 0 0",
+    }}>
+      {status.text}
+    </p>
+  );
+}
+
+type Status = { kind: "success" | "error"; text: string } | null;
+
 // ── Sub-views ──────────────────────────────────────────────────────────────
 
-function Preferences() {
-  const [soundEffects, setSoundEffects] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const stored = localStorage.getItem("pref_soundEffects");
-    return stored === null ? true : stored !== "false";
-  });
-  const [motivational, setMotivational] = useState(true);
+function readPref(key: string, fallback: boolean): boolean {
+  if (typeof window === "undefined") return fallback;
+  const stored = localStorage.getItem(key);
+  return stored === null ? fallback : stored !== "false";
+}
 
-  function toggleSound() {
-    const next = !soundEffects;
-    setSoundEffects(next);
-    localStorage.setItem("pref_soundEffects", String(next));
+function Preferences() {
+  const [soundEffects, setSoundEffects] = useState(() => readPref("pref_soundEffects", true));
+  const [motivational, setMotivational] = useState(() => readPref("pref_motivational", true));
+
+  function togglePref(key: string, value: boolean, setter: (v: boolean) => void) {
+    setter(value);
+    localStorage.setItem(key, String(value));
   }
 
   return (
@@ -163,23 +154,178 @@ function Preferences() {
 
       <div style={{ marginBottom: 28 }}>
         <SectionHeader title="Lesson experience" />
-        <ToggleRow label="Sound effects" on={soundEffects} onToggle={toggleSound} />
-        <ToggleRow label="Motivational messages" on={motivational} onToggle={() => setMotivational(v => !v)} />
+        <ToggleRow
+          label="Sound effects"
+          on={soundEffects}
+          onToggle={() => togglePref("pref_soundEffects", !soundEffects, setSoundEffects)}
+        />
+        <ToggleRow
+          label="Motivational messages"
+          on={motivational}
+          onToggle={() => togglePref("pref_motivational", !motivational, setMotivational)}
+        />
       </div>
+    </div>
+  );
+}
 
+function DeleteAccountModal({ onClose }: { onClose: () => void }) {
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const confirmed = confirmText.trim().toUpperCase() === "DELETE";
+
+  async function handleDelete() {
+    if (!confirmed || deleting) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/user", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Failed to delete account");
+      }
+      await signOut({ callbackUrl: "/" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete account");
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 440, borderRadius: 20, padding: 28,
+          backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
+        }}
+      >
+        <h2 style={{ color: C.danger, fontFamily: "'Nunito', sans-serif", fontSize: 20, fontWeight: 900, margin: "0 0 12px" }}>
+          Delete account
+        </h2>
+        <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 14, lineHeight: 1.6, margin: "0 0 8px" }}>
+          This permanently deletes your account and all of your data — XP, streaks,
+          lesson progress, achievements, and practice history. This cannot be undone.
+        </p>
+        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: "0 0 16px" }}>
+          Type <strong style={{ color: C.text }}>DELETE</strong> to confirm.
+        </p>
+        <input
+          value={confirmText}
+          onChange={e => setConfirmText(e.target.value)}
+          placeholder="DELETE"
+          autoFocus
+          style={{ ...INPUT, marginBottom: 16 }}
+        />
+        {error && (
+          <p style={{ color: "#ffb4ab", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, margin: "0 0 12px" }}>
+            {error}
+          </p>
+        )}
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "12px 24px", borderRadius: 12, border: `2px solid ${C.border}`,
+              backgroundColor: "transparent", color: C.muted,
+              fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800,
+              letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!confirmed || deleting}
+            style={{
+              padding: "12px 24px", borderRadius: 12, border: "none",
+              backgroundColor: confirmed && !deleting ? C.danger : "rgba(255,255,255,0.08)",
+              color: confirmed && !deleting ? "white" : C.muted,
+              fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800,
+              letterSpacing: "0.06em", textTransform: "uppercase",
+              cursor: confirmed && !deleting ? "pointer" : "default",
+            }}
+          >
+            {deleting ? "Deleting…" : "Delete Forever"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 function ProfileSettings({ displayName, email }: { displayName: string; email: string }) {
+  const router = useRouter();
   const initials = displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const [name, setName] = useState(displayName);
   const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<Status>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const dirty = name !== displayName || currentPass.length > 0;
+  const nameDirty = name.trim() !== displayName && name.trim().length > 0;
+  const passDirty = newPass.length > 0 || currentPass.length > 0;
+  const dirty = nameDirty || passDirty;
+
+  async function handleSave() {
+    if (!dirty || saving) return;
+    setSaving(true);
+    setStatus(null);
+    try {
+      if (nameDirty) {
+        const res = await fetch("/api/user/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim() }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error ?? "Failed to update name");
+        }
+      }
+
+      if (passDirty) {
+        if (newPass.length < 8) {
+          throw new Error("New password must be at least 8 characters");
+        }
+        const res = await fetch("/api/user/password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentPassword: currentPass, newPassword: newPass }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error ?? "Failed to change password");
+        }
+        setCurrentPass("");
+        setNewPass("");
+      }
+
+      setStatus({ kind: "success", text: "Changes saved." });
+      if (nameDirty) router.refresh();
+    } catch (e) {
+      setStatus({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleExport() {
+    // Navigating to the endpoint triggers the file download via
+    // Content-Disposition — no client-side blob juggling needed.
+    window.location.href = "/api/user/export";
+  }
 
   return (
     <div>
@@ -200,14 +346,6 @@ function ProfileSettings({ displayName, email }: { displayName: string; email: s
               {initials}
             </span>
           </div>
-          <div style={{
-            position: "absolute", bottom: 0, right: 0,
-            width: 22, height: 22, borderRadius: "50%",
-            backgroundColor: C.accent, border: "2px solid #0F0F13",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 12, color: "white" }}>edit</span>
-          </div>
         </div>
       </div>
 
@@ -216,6 +354,7 @@ function ProfileSettings({ displayName, email }: { displayName: string; email: s
         <input
           value={name}
           onChange={e => setName(e.target.value)}
+          maxLength={50}
           style={INPUT}
         />
       </div>
@@ -236,6 +375,7 @@ function ProfileSettings({ displayName, email }: { displayName: string; email: s
             type={showCurrent ? "text" : "password"}
             value={currentPass}
             onChange={e => setCurrentPass(e.target.value)}
+            autoComplete="current-password"
             style={{ ...INPUT, paddingRight: 48 }}
           />
           <button
@@ -256,6 +396,7 @@ function ProfileSettings({ displayName, email }: { displayName: string; email: s
             type={showNew ? "text" : "password"}
             value={newPass}
             onChange={e => setNewPass(e.target.value)}
+            autoComplete="new-password"
             style={{ ...INPUT, paddingRight: 48 }}
           />
           <button
@@ -270,73 +411,60 @@ function ProfileSettings({ displayName, email }: { displayName: string; email: s
       </div>
 
       <div style={{ marginBottom: 40 }}>
-        <SaveButton disabled={!dirty} />
+        <SaveButton disabled={!dirty} saving={saving} onClick={handleSave} />
+        <StatusMessage status={status} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "flex-start" }}>
-        <button style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        <button
+          onClick={handleExport}
+          style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", padding: 0 }}
+        >
           Export my data
         </button>
-        <button style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          style={{ background: "none", border: "none", cursor: "pointer", color: C.danger, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", padding: 0 }}
+        >
           Delete my account
         </button>
       </div>
+
+      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
     </div>
   );
 }
 
-const TIMES = ["6AM", "7AM", "8AM", "9AM", "10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM", "5PM", "6PM", "7PM", "8PM", "9PM", "10PM"];
+function Privacy({ initial }: { initial: PrivacySettings }) {
+  const router = useRouter();
+  const [publicProfile, setPublicProfile] = useState(initial.publicProfile);
+  const [personalizedRecs, setPersonalizedRecs] = useState(initial.personalizedRecs);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<Status>(null);
 
-function Notifications() {
-  const [productUpdates, setProductUpdates] = useState(true);
-  const [weeklyProgress, setWeeklyProgress] = useState(true);
-  const [specialPromos, setSpecialPromos] = useState(false);
-  const [practiceReminder, setPracticeReminder] = useState(true);
-  const [reminderTime, setReminderTime] = useState("5PM");
+  const dirty = publicProfile !== initial.publicProfile || personalizedRecs !== initial.personalizedRecs;
 
-  return (
-    <div>
-      <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900, margin: "0 0 28px" }}>
-        Notifications
-      </h1>
-
-      <div style={{ marginBottom: 28 }}>
-        <SectionHeader title="General" right="Email" />
-        <CheckboxRow label="Product updates + learning tips" checked={productUpdates} onChange={() => setProductUpdates(v => !v)} />
-        <CheckboxRow label="Weekly progress" checked={weeklyProgress} onChange={() => setWeeklyProgress(v => !v)} />
-        <CheckboxRow label="Special promotions" checked={specialPromos} onChange={() => setSpecialPromos(v => !v)} />
-      </div>
-
-      <div style={{ marginBottom: 28 }}>
-        <SectionHeader title="Daily reminders" right="Email" />
-        <CheckboxRow label="Practice reminder" checked={practiceReminder} onChange={() => setPracticeReminder(v => !v)} />
-        {practiceReminder && (
-          <div style={{ paddingTop: 14, position: "relative" }}>
-            <select
-              value={reminderTime}
-              onChange={e => setReminderTime(e.target.value)}
-              style={{ ...INPUT, appearance: "none", WebkitAppearance: "none", paddingRight: 40, cursor: "pointer" }}
-            >
-              {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <span className="material-symbols-outlined" style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 22, color: C.muted, pointerEvents: "none" }}>
-              expand_more
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Privacy() {
-  const [publicProfile, setPublicProfile] = useState(true);
-  const [personalizedRecs, setPersonalizedRecs] = useState(true);
-  const [dirty, setDirty] = useState(false);
-
-  function toggle(setter: React.Dispatch<React.SetStateAction<boolean>>) {
-    setter(v => !v);
-    setDirty(true);
+  async function handleSave() {
+    if (!dirty || saving) return;
+    setSaving(true);
+    setStatus(null);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicProfile, personalizedRecs }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Failed to save settings");
+      }
+      setStatus({ kind: "success", text: "Privacy settings saved." });
+      router.refresh();
+    } catch (e) {
+      setStatus({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -347,19 +475,20 @@ function Privacy() {
 
       <ToggleRow
         label="Make my profile public"
-        description="Allow others to find your profile. Enrolls you in public leaderboards."
+        description="Show your name and weekly XP on the public leaderboard."
         on={publicProfile}
-        onToggle={() => toggle(setPublicProfile)}
+        onToggle={() => setPublicProfile(v => !v)}
       />
       <ToggleRow
         label="Personalized recommendations"
         description="Tailor content and suggestions based on your learning activity."
         on={personalizedRecs}
-        onToggle={() => toggle(setPersonalizedRecs)}
+        onToggle={() => setPersonalizedRecs(v => !v)}
       />
 
       <div style={{ marginTop: 28 }}>
-        <SaveButton disabled={!dirty} />
+        <SaveButton disabled={!dirty} saving={saving} onClick={handleSave} />
+        <StatusMessage status={status} />
       </div>
     </div>
   );
@@ -371,15 +500,15 @@ interface Props {
   settingsSub: string;
   displayName: string;
   email: string;
+  privacy: PrivacySettings;
 }
 
-export default function Settings({ settingsSub, displayName, email }: Props) {
+export default function Settings({ settingsSub, displayName, email, privacy }: Props) {
   return (
     <div style={{ paddingTop: 28, paddingBottom: 48 }}>
       {settingsSub === "profile" && <ProfileSettings displayName={displayName} email={email} />}
-      {settingsSub === "notifications" && <Notifications />}
-      {settingsSub === "privacy" && <Privacy />}
-      {settingsSub !== "profile" && settingsSub !== "notifications" && settingsSub !== "privacy" && <Preferences />}
+      {settingsSub === "privacy" && <Privacy initial={privacy} />}
+      {settingsSub !== "profile" && settingsSub !== "privacy" && <Preferences />}
     </div>
   );
 }

@@ -99,8 +99,10 @@ export function IntervalIdExercise({ config, difficulty, submitted, onAnswerChan
           const isCorrect = choice === config.correctAnswer;
           const isSelected = choice === selected;
           let bg = C.surfaceHigh, border = C.border;
-          if (submitted && isSelected) {
-            bg = C.selected; border = C.primary;
+          if (submitted && isCorrect) {
+            bg = "rgba(0,108,78,0.25)"; border = "#006c4e";
+          } else if (submitted && isSelected) {
+            bg = "rgba(139,40,40,0.25)"; border = "#8b2828";
           } else if (isSelected) {
             bg = C.selected; border = C.primary;
           }

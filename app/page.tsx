@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useInView, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 
@@ -32,20 +33,6 @@ const stagger = (delayChildren = 0.05) => ({
   hidden: {},
   visible: { transition: { staggerChildren: 0.1, delayChildren } },
 });
-
-// col/row are 0-indexed on the 3×3 sprite sheet
-function BugSprite({ col, row, className }: { col: 0|1|2; row: 0|1|2; className?: string }) {
-  const x = col === 0 ? "0%" : col === 1 ? "50%" : "100%";
-  const y = row === 0 ? "0%" : row === 1 ? "50%" : "100%";
-  return (
-    <div className={className} style={{
-      backgroundImage: "url('/tunebug.png')",
-      backgroundSize: "300% 300%",
-      backgroundPosition: `${x} ${y}`,
-      backgroundRepeat: "no-repeat",
-    }} />
-  );
-}
 
 const glassStyle = {
   background: C.surface,
@@ -153,7 +140,7 @@ function HeroSection({ heroCtaRef }: { heroCtaRef: React.RefObject<HTMLDivElemen
             initial={{ opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease, delay: 0.15 }}>
-            <img alt="Tunebug character" src="https://i.imgur.com/QQirykv.png" className="w-full max-w-[440px] object-contain" />
+            <Image alt="Tunebug character" src="/tunebug-hero.png" width={853} height={835} priority className="w-full max-w-[440px] object-contain" />
           </motion.div>
 
           {/* Copy + CTAs */}
@@ -287,7 +274,7 @@ function FeaturePrecision() {
   return (
     <section className="max-w-[1200px] mx-auto px-5 md:px-10 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
       <ScrollReveal from="left" delay={0.1} className="order-2 md:order-1 flex justify-center">
-        <img alt="Tunebug singing" src="https://i.imgur.com/p7J15zR.png" className="w-full max-w-[440px] object-contain" />
+        <Image alt="Tunebug singing" src="/tunebug-singing.png" width={735} height={735} className="w-full max-w-[440px] object-contain" />
       </ScrollReveal>
       <ScrollReveal from="right" className="order-1 md:order-2">
         <div className="space-y-6">
@@ -505,7 +492,7 @@ export default function LandingPage() {
   const [showNavCTA, setShowNavCTA] = useState(false);
   const { scrollY } = useScroll();
 
-  useMotionValueEvent(scrollY, "change", (y) => {
+  useMotionValueEvent(scrollY, "change", () => {
     const el = heroCtaRef.current;
     if (!el) return;
     const bottom = el.getBoundingClientRect().bottom;

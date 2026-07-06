@@ -1,5 +1,7 @@
 "use client";
 
+import type { AchievementView } from "@/lib/achievements";
+
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   secondary: "#006c4e", secondaryDim: "#83f5c6",
@@ -32,39 +34,9 @@ function leagueFromXP(xp: number): string {
   return "Bronze";
 }
 
-export default function Profile({ data }: { data: ProfileData }) {
-  const { displayName, initials, email, totalXP, currentStreak, level, completedStages, totalStages } = data;
+export default function Profile({ data, achievements }: { data: ProfileData; achievements: AchievementView[] }) {
+  const { displayName, initials, email, totalXP, currentStreak, level } = data;
   const league = leagueFromXP(totalXP);
-
-  const achievements = [
-    {
-      name: "Wildfire",
-      description: "Reach a 7 day streak",
-      icon: "local_fire_department",
-      iconBg: "#c62828",
-      iconColor: "#ffb4ab",
-      current: Math.min(currentStreak, 7),
-      goal: 7,
-    },
-    {
-      name: "Sage",
-      description: "Earn 250 XP",
-      icon: "auto_awesome",
-      iconBg: "#2e7d32",
-      iconColor: "#83f5c6",
-      current: Math.min(totalXP, 250),
-      goal: 250,
-    },
-    {
-      name: "Scholar",
-      description: "Complete all 5 stages",
-      icon: "school",
-      iconBg: "#4527a0",
-      iconColor: C.primaryDim,
-      current: Math.min(completedStages, 5),
-      goal: 5,
-    },
-  ];
 
   const stats = [
     { icon: "local_fire_department", iconColor: C.tertiary, value: currentStreak, label: "Day streak" },
@@ -197,6 +169,12 @@ export default function Profile({ data }: { data: ProfileData }) {
                 </div>
                 <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, margin: 0 }}>
                   {a.description}
+                  {a.unlockedAt && (
+                    <span style={{ color: C.secondaryDim, fontWeight: 700 }}>
+                      {" · Unlocked "}
+                      {new Date(a.unlockedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

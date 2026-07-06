@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import LessonPath from "./LessonPath";
 import SectionList from "./SectionList";
@@ -14,6 +14,9 @@ import Settings from "./Settings";
 import type { Stage } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { QuestProgress } from "@/lib/db/quests";
+import type { LeaderboardData } from "@/lib/db/leaderboard";
+import type { AchievementView } from "@/lib/achievements";
+import type { PrivacySettings } from "./Settings";
 
 const C = {
   muted: "var(--c-muted)",
@@ -28,13 +31,26 @@ interface Props {
   stageTitle: string;
   profile: ProfileData;
   questProgress: QuestProgress;
+  claimedQuestIds: string[];
+  leaderboard: LeaderboardData | null;
+  achievements: AchievementView[] | null;
+  privacySettings: PrivacySettings;
 }
 
 type View = "path" | "sections" | "guidebook";
 
-export default function DashboardContent({ stages, difficulties, stageTitle, profile, questProgress }: Props) {
+export default function DashboardContent({
+  stages,
+  difficulties,
+  stageTitle,
+  profile,
+  questProgress,
+  claimedQuestIds,
+  leaderboard,
+  achievements,
+  privacySettings,
+}: Props) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [view, setView] = useState<View>("path");
   const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
   const [scrollToUnit, setScrollToUnit] = useState<string | undefined>();
@@ -109,6 +125,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
               totalXP={profile.totalXP}
               displayName={profile.displayName}
               initials={profile.initials}
+              data={leaderboard}
             />
           </motion.div>
         )}
@@ -121,7 +138,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            <Quests questProgress={questProgress} />
+            <Quests questProgress={questProgress} claimedQuestIds={claimedQuestIds} />
           </motion.div>
         )}
 
@@ -137,6 +154,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
               settingsSub={settingsSub}
               displayName={profile.displayName}
               email={profile.email}
+              privacy={privacySettings}
             />
           </motion.div>
         )}
@@ -149,7 +167,7 @@ export default function DashboardContent({ stages, difficulties, stageTitle, pro
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            <Profile data={profile} />
+            <Profile data={profile} achievements={achievements ?? []} />
           </motion.div>
         )}
 

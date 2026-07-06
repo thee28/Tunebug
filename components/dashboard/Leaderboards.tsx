@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { LEAGUES, leagueIndex } from "@/lib/leagues";
+import type { LeaderboardData } from "@/lib/db/leaderboard";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
@@ -11,54 +14,25 @@ const C = {
   tertiary: "#ffb95d",
 };
 
-const LEAGUES = [
-  { name: "Bronze",  color: "#cd7f32", bg: "rgba(205,127,50,0.18)",  icon: "military_tech", minXP: 0    },
-  { name: "Silver",  color: "#9e9e9e", bg: "rgba(158,158,158,0.12)", icon: "military_tech", minXP: 800  },
-  { name: "Gold",    color: "#ffd700", bg: "rgba(255,215,0,0.15)",   icon: "emoji_events",  minXP: 2000 },
-  { name: "Diamond", color: "#7df9ff", bg: "rgba(125,249,255,0.12)", icon: "diamond",       minXP: 5000 },
-];
-
 const GHOST_WIDTHS = [110, 140, 95, 125, 108, 130, 100];
-
-const FAKE_USERS = [
-  { initials: "AM", name: "Alex M.",    xp: 340 },
-  { initials: "JK", name: "Jordan K.",  xp: 290 },
-  { initials: "SR", name: "Sam R.",     xp: 255 },
-  { initials: "CL", name: "Chris L.",   xp: 210 },
-  { initials: "MN", name: "Morgan N.",  xp: 180 },
-  { initials: "TW", name: "Taylor W.",  xp: 145 },
-  { initials: "RB", name: "Riley B.",   xp: 120 },
-  { initials: "KP", name: "Kim P.",     xp: 95  },
-  { initials: "DC", name: "Drew C.",    xp: 60  },
-];
-
-function leagueIndex(xp: number) {
-  if (xp >= 5000) return 3;
-  if (xp >= 2000) return 2;
-  if (xp >= 800)  return 1;
-  return 0;
-}
 
 interface Props {
   totalXP: number;
   displayName: string;
   initials: string;
+  data: LeaderboardData | null;
 }
 
-export default function Leaderboards({ totalXP, displayName, initials }: Props) {
+export default function Leaderboards({ totalXP, displayName, initials, data }: Props) {
   const router = useRouter();
-  const hasJoined = totalXP > 0;
   const idx = leagueIndex(totalXP);
   const league = LEAGUES[idx];
 
-  type RankedUser = { initials: string; name: string; xp: number; isUser?: boolean; rank: number };
-  const ranked: RankedUser[] = hasJoined
-    ? [...FAKE_USERS, { initials, name: displayName, xp: totalXP, isUser: true }]
-        .sort((a, b) => b.xp - a.xp)
-        .map((u, i) => ({ ...u, rank: i + 1 }))
-    : [];
-
-  const userEntry = ranked.find((u) => u.isUser);
+  const entries = data?.entries ?? [];
+  const userEntry = entries.find((u) => u.isUser);
+  const hasJoined = (data?.userWeeklyXP ?? 0) > 0;
+  const isPublic = data?.userIsPublic ?? true;
+  const boardEmpty = entries.length === 0;
 
   return (
     <div style={{ paddingTop: 28, paddingBottom: 32 }}>
@@ -101,9 +75,12 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
         <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 900, margin: "0 0 8px" }}>
           {league.name} League
         </h1>
+        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: "0 0 4px" }}>
+          Weekly XP · resets Monday
+        </p>
         {!hasJoined && (
           <>
-            <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: "0 0 18px" }}>
+            <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: "10px 0 18px" }}>
               Complete a lesson to join this week&apos;s leaderboard
             </p>
             <motion.button
@@ -123,15 +100,36 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
         )}
       </div>
 
+      {/* Private-profile notice */}
+      {!isPublic && (
+        <div style={{
+          borderRadius: 14, border: `2px solid ${C.border}`,
+          backgroundColor: "rgba(255,185,93,0.08)",
+          padding: "14px 18px", marginBottom: 16,
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 22, color: C.tertiary, flexShrink: 0 }}>
+            visibility_off
+          </span>
+          <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+            Your profile is private, so other learners can&apos;t see you here.{" "}
+            <Link href="/dashboard?view=settings&sub=privacy" style={{ color: C.primaryDim, fontWeight: 800 }}>
+              Make it public
+            </Link>{" "}
+            to compete on the leaderboard.
+          </p>
+        </div>
+      )}
+
       {/* List */}
       <div style={{ borderRadius: 16, border: `2px solid ${C.border}`, overflow: "hidden", marginBottom: 12 }}>
-        {hasJoined ? (
-          ranked.map((u, i) => (
+        {!boardEmpty ? (
+          entries.map((u, i) => (
             <div
-              key={u.name}
+              key={u.userId}
               style={{
                 padding: "13px 18px",
-                borderBottom: i < ranked.length - 1 ? `1px solid ${C.border}` : "none",
+                borderBottom: i < entries.length - 1 ? `1px solid ${C.border}` : "none",
                 backgroundColor: u.isUser ? "rgba(87,78,177,0.12)" : C.surfaceHigh,
                 display: "flex", alignItems: "center", gap: 14,
                 outline: u.isUser ? `2px solid rgba(87,78,177,0.35)` : undefined,
@@ -170,31 +168,39 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
             </div>
           ))
         ) : (
-          GHOST_WIDTHS.map((w, i) => (
-            <div
-              key={i}
-              style={{
-                padding: "14px 18px",
-                borderBottom: i < GHOST_WIDTHS.length - 1 ? `1px solid ${C.border}` : "none",
-                backgroundColor: C.surfaceHigh,
-                display: "flex", alignItems: "center", gap: 14,
-              }}
-            >
-              <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: C.border, flexShrink: 0 }} />
-              <div style={{
-                width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                backgroundColor: `rgba(255,255,255,${Math.max(0.03, 0.07 - i * 0.008)})`,
-              }} />
-              <div style={{
-                height: 11, borderRadius: 6, flexShrink: 0,
-                backgroundColor: `rgba(255,255,255,${Math.max(0.03, 0.07 - i * 0.008)})`,
-                width: w,
-              }} />
-              <div style={{ marginLeft: "auto", height: 10, width: 44, borderRadius: 5, flexShrink: 0, backgroundColor: C.border }} />
-            </div>
-          ))
+          <>
+            {GHOST_WIDTHS.map((w, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: i < GHOST_WIDTHS.length - 1 ? `1px solid ${C.border}` : "none",
+                  backgroundColor: C.surfaceHigh,
+                  display: "flex", alignItems: "center", gap: 14,
+                }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: C.border, flexShrink: 0 }} />
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+                  backgroundColor: `rgba(255,255,255,${Math.max(0.03, 0.07 - i * 0.008)})`,
+                }} />
+                <div style={{
+                  height: 11, borderRadius: 6, flexShrink: 0,
+                  backgroundColor: `rgba(255,255,255,${Math.max(0.03, 0.07 - i * 0.008)})`,
+                  width: w,
+                }} />
+                <div style={{ marginLeft: "auto", height: 10, width: 44, borderRadius: 5, flexShrink: 0, backgroundColor: C.border }} />
+              </div>
+            ))}
+          </>
         )}
       </div>
+
+      {boardEmpty && (
+        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, textAlign: "center", margin: "0 0 12px" }}>
+          No one has earned XP this week yet — be the first!
+        </p>
+      )}
 
       {/* Sticky user row */}
       <div style={{
@@ -210,7 +216,7 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
           width: 22, textAlign: "center", flexShrink: 0,
           color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800,
         }}>
-          {hasJoined && userEntry ? userEntry.rank : "—"}
+          {userEntry ? userEntry.rank : "—"}
         </span>
         <div style={{
           width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
@@ -225,7 +231,7 @@ export default function Leaderboards({ totalXP, displayName, initials }: Props) 
           {displayName}
         </span>
         <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800 }}>
-          {totalXP} XP
+          {data?.userWeeklyXP ?? 0} XP this week
         </span>
       </div>
     </div>

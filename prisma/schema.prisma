@@ -15,6 +15,8 @@ model User {
   passwordHash  String?
   xp            Int       @default(0)
   bannerColor   String?
+  publicProfile    Boolean @default(true)
+  personalizedRecs Boolean @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -25,6 +27,7 @@ model User {
   achievements Achievement[]
   dailyStages  DailyStage[]
   mastery      ConceptMastery[]
+  questClaims  QuestClaim[]
 }
 
 model Account {
@@ -166,6 +169,8 @@ enum AchievementType {
   STREAK_30
   STAGE_COMPLETE
   ALL_STAGES
+  XP_250
+  XP_1000
 }
 
 // Per-user, per-concept mastery state for the spaced-repetition / adaptive engine.
@@ -209,5 +214,21 @@ model DailyStage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// One row per claimed daily-quest reward. `date` is the UTC day the quest was
+// claimed for; the unique constraint makes claims idempotent.
+model QuestClaim {
+  id       String   @id @default(cuid())
+  userId   String
+  questId  String
+  date     DateTime
+  xpAwarded Int     @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId, date])
   @@index([userId, date])
 }

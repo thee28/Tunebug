@@ -12,6 +12,25 @@ function isSoundEnabled() {
   return stored === null ? true : stored !== "false";
 }
 
+function isMotivationalEnabled() {
+  if (typeof window === "undefined") return true;
+  const stored = localStorage.getItem("pref_motivational");
+  return stored === null ? true : stored !== "false";
+}
+
+const MOTIVATION_PASS = [
+  "Your ears are getting sharper every day!",
+  "That's how it's done — keep the streak alive!",
+  "Beautiful work. The music is starting to stick!",
+  "You're building real musician instincts!",
+];
+
+const MOTIVATION_FAIL = [
+  "Every great musician missed plenty of notes. Try it again!",
+  "Tough one — but repetition is how ears are trained.",
+  "Almost there. One more run and it'll click!",
+];
+
 function playCorrectSound() {
   if (!isSoundEnabled()) return;
   try {
@@ -71,7 +90,7 @@ const C = {
   text: "var(--c-text)", tertiary: "#ffb95d",
 };
 
-export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, onComplete, onExit }: Props) {
+export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComplete, onExit }: Props) {
   const [index, setIndex] = useState(0);
   const [scores, setScores] = useState<number[]>([]);
   const [phase, setPhase] = useState<"exercise" | "result">("exercise");
@@ -136,9 +155,7 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
     // step with its conceptId; if a step came from some other path it lacks
     // a tag and we skip the write.
     const step = steps[index];
-    // PITCH_MATCH is a stub that always reports a pass — keep it out of
-    // mastery tracking until real pitch detection lands.
-    if (step?.kind === "exercise" && step.conceptId && step.type !== "PITCH_MATCH") {
+    if (step?.kind === "exercise" && step.conceptId) {
       fetch("/api/mastery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -183,12 +200,6 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
       return;
     }
     if (!pendingResult) return;
-    // PITCH_MATCH auto-passes (stub) — exclude it from the lesson score
-    // so it can't inflate XP.
-    if (step.kind === "exercise" && step.type === "PITCH_MATCH") {
-      advanceStep(scores);
-      return;
-    }
     const newScores = [...scores, pendingResult.score];
     setScores(newScores);
     advanceStep(newScores);
@@ -357,6 +368,13 @@ export function LessonRunner({ title, steps, difficulty, xpReward, lessonSlug, o
               <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 15, margin: 0 }}>
                 Score: {avgScore}%
               </p>
+              {isMotivationalEnabled() && (
+                <p style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, margin: "10px 0 0" }}>
+                  {avgScore >= 70
+                    ? MOTIVATION_PASS[Math.floor(avgScore) % MOTIVATION_PASS.length]
+                    : MOTIVATION_FAIL[Math.floor(avgScore) % MOTIVATION_FAIL.length]}
+                </p>
+              )}
             </div>
 
             {earnedXP > 0 && (

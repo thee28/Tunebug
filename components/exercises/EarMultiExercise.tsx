@@ -52,7 +52,8 @@ export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange
     if (submitted) return;
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(choice) ? next.delete(choice) : next.add(choice);
+      if (next.has(choice)) next.delete(choice);
+      else next.add(choice);
       const hasAnswer = next.size > 0;
       onAnswerChange(hasAnswer);
       return next;
@@ -98,8 +99,10 @@ export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange
           const isCorrect = config.correctAnswers.includes(choice);
           const isSelected = selected.has(choice);
           let bg = C.surfaceHigh, border = C.border;
-          if (submitted && isSelected) {
-            bg = C.selected; border = C.primary;
+          if (submitted && isCorrect) {
+            bg = "rgba(0,108,78,0.25)"; border = "#006c4e";
+          } else if (submitted && isSelected) {
+            bg = "rgba(139,40,40,0.25)"; border = "#8b2828";
           } else if (isSelected) {
             bg = C.selected; border = C.primary;
           }

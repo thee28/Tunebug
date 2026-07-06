@@ -71,7 +71,8 @@ export default function FreePractice() {
     setSelectedDomains(prev => {
       const next = new Set(prev);
       if (next.has(domain) && next.size === 1) return prev;
-      next.has(domain) ? next.delete(domain) : next.add(domain);
+      if (next.has(domain)) next.delete(domain);
+      else next.add(domain);
       return next;
     });
   };
@@ -94,6 +95,8 @@ export default function FreePractice() {
   };
 
   const handleCheck = () => { if (hasAnswer) setSubmitted(true); };
+  // Skip resolves the exercise as a fail (exercises watch `submitted`).
+  const handleSkip = () => setSubmitted(true);
 
   const handleContinue = () => {
     if (!pendingResult) return;
@@ -352,7 +355,23 @@ export default function FreePractice() {
                         )}
                       </div>
                     </div>
-                  ) : <div />}
+                  ) : (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSkip}
+                      style={{
+                        padding: "14px 32px", borderRadius: 14,
+                        backgroundColor: "transparent",
+                        border: `2px solid ${C.border}`,
+                        color: C.muted,
+                        fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 800,
+                        textTransform: "uppercase" as const, letterSpacing: "0.06em",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Skip
+                    </motion.button>
+                  )}
 
                   {pendingResult ? (
                     <motion.button

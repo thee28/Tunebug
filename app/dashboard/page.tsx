@@ -6,7 +6,10 @@ import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getStagesWithProgress } from "@/lib/db/stages";
 import { getStreak } from "@/lib/db/streak";
-import { getTodayQuestProgress } from "@/lib/db/quests";
+import { getTodayQuestProgress, getTodayClaimedQuestIds } from "@/lib/db/quests";
+import { getWeeklyLeaderboard } from "@/lib/db/leaderboard";
+import { getAchievementViews } from "@/lib/db/achievements";
+import { leagueForXP } from "@/lib/leagues";
 import { CURRICULUM } from "@/lib/curriculum/config";
 import type { Difficulty } from "@/lib/curriculum/content";
 import DashboardContent from "@/components/dashboard/DashboardContent";
@@ -55,22 +58,32 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [stages, streak, questProgress] = await Promise.all([
-    getStagesWithProgress(session.user.id),
-    getStreak(session.user.id),
-    getTodayQuestProgress(session.user.id),
-  ]);
-
-  const userWithXP = await import("@/lib/prisma").then(({ prisma }) =>
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { xp: true, createdAt: true },
-    })
-  );
-  const totalXP = userWithXP?.xp ?? 0;
+  const [stages, streak, questProgress, dbUser, claimedQuestIds, leaderboard, achievements] =
+    await Promise.all([
+      getStagesWithProgress(session.user.id),
+      getStreak(session.user.id),
+      getTodayQuestProgress(session.user.id),
+      import("@/lib/prisma").then(({ prisma }) =>
+        prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: {
+            xp: true,
+            createdAt: true,
+            name: true,
+            publicProfile: true,
+            personalizedRecs: true,
+          },
+        })
+      ),
+      isQuests ? getTodayClaimedQuestIds(session.user.id) : Promise.resolve([]),
+      isLeaderboards ? getWeeklyLeaderboard(session.user.id) : Promise.resolve(null),
+      isProfile ? getAchievementViews(session.user.id) : Promise.resolve(null),
+    ]);
+  const totalXP = dbUser?.xp ?? 0;
   const currentStreak = streak?.currentStreak ?? 0;
 
-  const displayName = session.user.name ?? session.user.email ?? "Musician";
+  // Prefer the DB name — the JWT session copy goes stale after a rename.
+  const displayName = dbUser?.name ?? session.user.name ?? session.user.email ?? "Musician";
   const initials = displayName
     .split(" ")
     .map((w: string) => w[0])
@@ -188,7 +201,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 {[
                   { label: "Preferences", sub: "" },
                   { label: "Profile", sub: "profile" },
-                  { label: "Notifications", sub: "notifications" },
                   { label: "Privacy settings", sub: "privacy" },
                 ].map(item => {
                   const active = settingsSub === item.sub;
@@ -199,8 +211,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       className="nav-link"
                       style={{
                         display: "block", padding: "10px 12px", borderRadius: 10,
-                        backgroundColor: "transparent",
-                        color: C.muted,
+                        backgroundColor: active ? "rgba(87,78,177,0.15)" : "transparent",
+                        color: active ? C.primaryDim : C.muted,
                         fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500,
                         textDecoration: "none",
                       }}
@@ -368,7 +380,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   className="font-bold text-xs uppercase tracking-widest"
                   style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}
                 >
-                  Bronze League
+                  {leagueForXP(totalXP).name} League
                 </h3>
                 <Link
                   href="/dashboard?view=leaderboards"
@@ -414,9 +426,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               level,
               completedStages,
               totalStages,
-              joinedAt: (userWithXP?.createdAt ?? new Date()).toISOString(),
+              joinedAt: (dbUser?.createdAt ?? new Date()).toISOString(),
             }}
             questProgress={questProgress}
+            claimedQuestIds={claimedQuestIds}
+            leaderboard={leaderboard}
+            achievements={achievements}
+            privacySettings={{
+              publicProfile: dbUser?.publicProfile ?? true,
+              personalizedRecs: dbUser?.personalizedRecs ?? true,
+            }}
           />
         </Suspense>
       </main>

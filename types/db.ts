@@ -1,4 +1,4 @@
-import type { User, LessonProgress, DailyStreak, Achievement } from "@prisma/client";
+import type { User, LessonProgress, DailyStreak } from "@prisma/client";
 
 export type UserPublic = Pick<User, "id" | "name" | "image" | "xp">;
 

@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tunebug
 
-## Getting Started
+A gamified music-theory and ear-training web app — think Duolingo for music.
+Learn notes, intervals, rhythm, and pitch through short lessons, daily
+challenges, streaks, XP, quests, and weekly leaderboards.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **PostgreSQL** via Prisma 7
+- **NextAuth v5** — email/password (bcrypt) and Google OAuth
+- **Tone.js** for audio playback, **pitchy** for microphone pitch detection,
+  **VexFlow** for staff notation
+- Tailwind CSS 4 + Framer Motion
+- Vitest for unit tests
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Copy `.env.example` to `.env.local` and fill in the values (a local or
+   hosted PostgreSQL database, an `AUTH_SECRET`, and optionally Google OAuth
+   credentials).
 
-To learn more about Next.js, take a look at the following resources:
+3. Set up the database:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run db:migrate   # apply migrations
+   npm run db:seed      # load the curriculum (stages, units, lessons)
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Run the dev server:
 
-## Deploy on Vercel
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   Open [http://localhost:3000](http://localhost:3000).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm start` | Serve the production build |
+| `npm test` | Run the Vitest suite |
+| `npm run lint` | ESLint |
+| `npm run db:migrate` | Apply Prisma migrations (dev) |
+| `npm run db:seed` | Seed the curriculum |
+| `npm run db:studio` | Browse the database in Prisma Studio |
+
+## Architecture notes
+
+- `app/` — routes. Server components fetch data and pass serialisable props to
+  client components. API routes live under `app/api/`.
+- `lib/curriculum/` — lesson/exercise generation: seeded RNG, concept slot
+  generator, spaced-repetition mastery model, free-practice session builder.
+- `lib/db/` — Prisma query helpers (progress, streaks, quests, achievements,
+  leaderboard, daily stages).
+- `components/exercises/` — the 20 exercise types plus the lesson/stage
+  runners. The pitch-match exercise uses the microphone (requires a secure
+  context: localhost or HTTPS).
+- `lib/api/rateLimit.ts` — in-memory fixed-window rate limiter. Fine for a
+  single-node deployment; swap for a shared store (e.g. Upstash Redis) before
+  scaling horizontally.
+
+## Deployment
+
+Any Node-compatible host works (Vercel is the path of least resistance).
+Checklist:
+
+1. Provision PostgreSQL and set `DATABASE_URL` / `DIRECT_URL`.
+2. Set `AUTH_SECRET` (generate a fresh one per environment) and `AUTH_URL` to
+   the public URL.
+3. Set Google OAuth credentials and add the deployment's callback URL
+   (`https://<domain>/api/auth/callback/google`) in the Google console, or
+   omit them to run with email/password only.
+4. Run migrations against the production database:
+   `npx prisma migrate deploy`
+5. Seed the curriculum once: `npm run db:seed`.
+
+The app serves everything over standard HTTP(S) — no websockets, no
+background workers.

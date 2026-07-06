@@ -1,15 +1,12 @@
 "use client";
 
-// TODO: integrate pitchy for real-time mic pitch detection
-// API: import { PitchDetector } from "pitchy"
-// Get microphone stream via navigator.mediaDevices.getUserMedia
-// Feed audio frames to PitchDetector, compare cents deviation to config.allowedDeviation
-
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PitchDetector } from "pitchy";
 import type { PitchMatchConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
 import { DIFFICULTY_SETTINGS } from "@/lib/curriculum/content";
+import { noteStringToFrequency, frequencyToNote } from "@/lib/music/notes";
 
 interface Props {
   config: PitchMatchConfig;
@@ -20,88 +17,373 @@ interface Props {
 }
 
 const C = {
-  primary: "#574eb1", primaryDark: "#41379b",
+  primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
   surfaceHigh: "var(--c-surface-high)", border: "var(--c-border)", muted: "var(--c-muted)",
-  success: "#006c4e", text: "var(--c-text)",
+  success: "#006c4e", successDim: "#83f5c6", text: "var(--c-text)",
+  error: "#ffb4ab", tertiary: "#ffb95d",
 };
 
-export function PitchMatchExercise({ config, difficulty, onComplete }: Props) {
-  const [phase, setPhase] = useState<"idle" | "listening" | "done">("idle");
+// Voiced-pitch plausibility window — rejects rumble and whistle-register noise.
+const MIN_HZ = 50;
+const MAX_HZ = 1500;
+// Brief dropouts (breath, consonants) shouldn't reset the hold.
+const GRACE_MS = 250;
+
+/**
+ * Cents from the target note, octave-folded into [-600, 600).
+ * Octave-agnostic on purpose: singers match pitch class in their own
+ * comfortable register (a C3 counts for a C4 target).
+ */
+function foldedCents(frequency: number, targetHz: number): number {
+  const cents = 1200 * Math.log2(frequency / targetHz);
+  return cents - 1200 * Math.round(cents / 1200);
+}
+
+type Phase = "idle" | "listening" | "passed" | "failed" | "mic-error";
+
+export function PitchMatchExercise({ config, difficulty, submitted, onComplete }: Props) {
   const settings = DIFFICULTY_SETTINGS[difficulty];
+  const targetHz = noteStringToFrequency(config.targetNote);
+  const holdNeededMs = settings.holdDuration * 1000;
+  const timeoutMs = settings.timeoutSeconds * 1000;
 
-  const handleStart = () => setPhase("listening");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [liveCents, setLiveCents] = useState<number | null>(null);
+  const [liveNoteName, setLiveNoteName] = useState<string | null>(null);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(settings.timeoutSeconds);
+  const [notePlaying, setNotePlaying] = useState(false);
+  const [requestingMic, setRequestingMic] = useState(false);
 
-  const handleSimulatePass = () => {
-    setPhase("done");
-    setTimeout(() => onComplete({ score: 100, passed: true }), 600);
-  };
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number>(0);
+  const synthRef = useRef<unknown>(null);
+  const completedRef = useRef(false);
+
+  function stopAudio() {
+    cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+  }
+
+  useEffect(() => {
+    return () => {
+      stopAudio();
+      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
+    };
+  }, []);
+
+  function finish(result: ExerciseResult, nextPhase: Phase) {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    stopAudio();
+    setPhase(nextPhase);
+    onComplete(result);
+  }
+
+  // Skip pressed in the runner before the exercise resolved — report a fail.
+  // finish() no-ops via completedRef when the exercise already resolved.
+  useEffect(() => {
+    if (!submitted) return;
+    finish(
+      { score: 0, passed: false, correctAnswerText: `${config.displayNote} (${config.targetNote})` },
+      "failed"
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted]);
+
+  async function playTargetNote() {
+    if (notePlaying) return;
+    setNotePlaying(true);
+    try {
+      const Tone = await import("tone");
+      await Tone.start();
+      if (!synthRef.current) {
+        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
+      }
+      (synthRef.current as InstanceType<typeof Tone.Synth>).triggerAttackRelease(config.targetNote, "1");
+      setTimeout(() => setNotePlaying(false), 1100);
+    } catch {
+      setNotePlaying(false);
+    }
+  }
+
+  async function startListening() {
+    if (requestingMic) return;
+    setRequestingMic(true);
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        // Processing designed for speech calls distorts sung pitch.
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+    } catch {
+      setPhase("mic-error");
+      return;
+    } finally {
+      setRequestingMic(false);
+    }
+    // Skip may have fired while the permission prompt was open.
+    if (completedRef.current) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+
+    const audioCtx = new AudioContext();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+    streamRef.current = stream;
+    audioCtxRef.current = audioCtx;
+
+    const detector = PitchDetector.forFloat32Array(analyser.fftSize);
+    const buf = new Float32Array(analyser.fftSize);
+
+    setPhase("listening");
+    setHoldProgress(0);
+    setTimeLeft(settings.timeoutSeconds);
+
+    const startTime = performance.now();
+    let lastFrame = startTime;
+    let holdMs = 0;
+    let bestHoldMs = 0;
+    let offTargetMs = 0;
+
+    const tick = () => {
+      const now = performance.now();
+      const dt = now - lastFrame;
+      lastFrame = now;
+
+      analyser.getFloatTimeDomainData(buf);
+      const [pitch, clarity] = detector.findPitch(buf, audioCtx.sampleRate);
+
+      const voiced = clarity >= config.confidenceThreshold && pitch >= MIN_HZ && pitch <= MAX_HZ;
+      if (voiced) {
+        const cents = foldedCents(pitch, targetHz);
+        setLiveCents(cents);
+        setLiveNoteName(frequencyToNote(pitch).name);
+        if (Math.abs(cents) <= settings.allowedDeviation) {
+          holdMs += dt;
+          offTargetMs = 0;
+        } else {
+          offTargetMs += dt;
+          if (offTargetMs > GRACE_MS) holdMs = 0;
+        }
+      } else {
+        setLiveCents(null);
+        setLiveNoteName(null);
+        offTargetMs += dt;
+        if (offTargetMs > GRACE_MS) holdMs = 0;
+      }
+
+      bestHoldMs = Math.max(bestHoldMs, holdMs);
+      setHoldProgress(Math.min(holdMs / holdNeededMs, 1));
+      setTimeLeft(Math.max(0, Math.ceil((timeoutMs - (now - startTime)) / 1000)));
+
+      if (holdMs >= holdNeededMs) {
+        finish({ score: 100, passed: true }, "passed");
+        return;
+      }
+      if (now - startTime >= timeoutMs) {
+        // Partial credit for sustained near-misses, always below passing.
+        const score = Math.min(65, Math.round(70 * (bestHoldMs / holdNeededMs)));
+        finish(
+          { score, passed: false, correctAnswerText: `${config.displayNote} (${config.targetNote})` },
+          "failed"
+        );
+        return;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  }
+
+  const inTune = liveCents !== null && Math.abs(liveCents) <= settings.allowedDeviation;
+  // Needle position: clamp to ±50¢ so the meter stays readable.
+  const needlePct = liveCents === null ? null : 50 + (Math.max(-50, Math.min(50, liveCents)) / 50) * 50;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
       <div style={{ textAlign: "center" }}>
         <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: "0 0 8px" }}>
           Sing this note into your microphone
         </p>
-        <div style={{
-          width: 120, height: 120, borderRadius: "50%",
-          backgroundColor: C.surfaceHigh, border: `3px solid ${C.border}`,
-          display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto",
-        }}>
-          <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 52, fontWeight: 900, color: C.text }}>
-            {config.displayNote}
-          </span>
+
+        {/* Target note circle with hold-progress ring */}
+        <div style={{ position: "relative", width: 128, height: 128, margin: "0 auto" }}>
+          <svg width="128" height="128" viewBox="0 0 128 128" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
+            <circle cx="64" cy="64" r="58" fill="none" stroke="var(--c-border)" strokeWidth="6" />
+            <circle
+              cx="64" cy="64" r="58" fill="none"
+              stroke={phase === "passed" ? C.successDim : C.primaryDim}
+              strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 58}
+              strokeDashoffset={2 * Math.PI * 58 * (1 - (phase === "passed" ? 1 : holdProgress))}
+              style={{ transition: "stroke-dashoffset 0.1s linear" }}
+            />
+          </svg>
+          <div style={{
+            position: "absolute", inset: 8, borderRadius: "50%",
+            backgroundColor: C.surfaceHigh,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 46, fontWeight: 900, color: C.text }}>
+              {config.displayNote}
+            </span>
+          </div>
         </div>
-        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, marginTop: 8 }}>
+
+        <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, marginTop: 10 }}>
           {config.targetNote} · hold for {settings.holdDuration}s · ±{settings.allowedDeviation}¢
         </p>
       </div>
 
       {phase === "idle" && (
-        <button
-          onClick={handleStart}
-          style={{
-            padding: "16px 48px", borderRadius: 14,
-            backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
-            color: "white", border: "none",
-            fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 8,
-          }}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: 20 }}>mic</span>
-          Start Listening
-        </button>
-      )}
-
-      {phase === "listening" && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: "50%",
-            backgroundColor: "#8b2828", border: "3px solid #f87171",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            animation: "pulse 1s infinite",
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 36, color: "white" }}>mic</span>
-          </div>
-          <p style={{ color: "#f87171", fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: 0 }}>
-            Listening… (pitch detection coming soon)
-          </p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <button
-            onClick={handleSimulatePass}
+            onClick={playTargetNote}
             style={{
-              padding: "10px 32px", borderRadius: 12,
-              backgroundColor: C.success, color: "white", border: "none",
+              padding: "12px 32px", borderRadius: 12,
+              backgroundColor: "transparent", border: `2px solid ${C.border}`,
+              color: C.primaryDim,
               fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8,
             }}
           >
-            Mark as done
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+              {notePlaying ? "graphic_eq" : "volume_up"}
+            </span>
+            Hear the Note
+          </button>
+          <button
+            onClick={startListening}
+            disabled={requestingMic}
+            style={{
+              padding: "16px 48px", borderRadius: 14,
+              backgroundColor: requestingMic ? C.surfaceHigh : C.primary,
+              boxShadow: requestingMic ? "none" : `0 4px 0 0 ${C.primaryDark}`,
+              color: requestingMic ? C.muted : "white", border: "none",
+              fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700,
+              cursor: requestingMic ? "default" : "pointer",
+              display: "flex", alignItems: "center", gap: 8,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>mic</span>
+            {requestingMic ? "Waiting for microphone…" : "Start Singing"}
           </button>
         </div>
       )}
 
-      {phase === "done" && (
+      {phase === "listening" && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%", maxWidth: 340 }}>
+          {/* Tuner meter */}
+          <div style={{ width: "100%" }}>
+            <div style={{ position: "relative", height: 14, borderRadius: 7, backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}>
+              {/* In-tune zone — meter spans ±50¢, so deviation maps 1:1 to percent */}
+              <div style={{
+                position: "absolute", top: 0, bottom: 0,
+                left: `${50 - settings.allowedDeviation}%`,
+                width: `${settings.allowedDeviation * 2}%`,
+                backgroundColor: "rgba(0,108,78,0.35)", borderRadius: 5,
+              }} />
+              {/* Needle */}
+              {needlePct !== null && (
+                <div style={{
+                  position: "absolute", top: -6, bottom: -6,
+                  left: `${needlePct}%`, width: 4, marginLeft: -2, borderRadius: 2,
+                  backgroundColor: inTune ? C.successDim : C.tertiary,
+                  transition: "left 0.08s linear",
+                }} />
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+              <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 11 }}>♭ flat</span>
+              <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 11 }}>♯ sharp</span>
+            </div>
+          </div>
+
+          {/* Live readout */}
+          <div style={{ textAlign: "center", minHeight: 44 }}>
+            {liveNoteName ? (
+              <>
+                <p style={{
+                  color: inTune ? C.successDim : C.text,
+                  fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 900, margin: 0,
+                }}>
+                  {liveNoteName}
+                  <span style={{ fontSize: 14, fontWeight: 700, color: C.muted, marginLeft: 8 }}>
+                    {liveCents! > 0 ? "+" : ""}{Math.round(liveCents!)}¢
+                  </span>
+                </p>
+                <p style={{ color: inTune ? C.successDim : C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: "2px 0 0", fontWeight: 700 }}>
+                  {inTune ? "Hold it…" : liveCents! > 0 ? "A little lower" : "A little higher"}
+                </p>
+              </>
+            ) : (
+              <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
+                Listening for your voice…
+              </p>
+            )}
+          </div>
+
+          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, margin: 0 }}>
+            {timeLeft}s left
+          </p>
+        </div>
+      )}
+
+      {phase === "passed" && (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span className="material-symbols-outlined" style={{ color: "#4ade80", fontSize: 28 }}>check_circle</span>
-          <span style={{ color: "#4ade80", fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>Done!</span>
+          <span style={{ color: "#4ade80", fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>Nailed it!</span>
+        </div>
+      )}
+
+      {phase === "failed" && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="material-symbols-outlined" style={{ color: C.error, fontSize: 26 }}>timer_off</span>
+            <span style={{ color: C.error, fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>
+              Time&apos;s up
+            </span>
+          </div>
+          <button
+            onClick={playTargetNote}
+            style={{
+              padding: "10px 24px", borderRadius: 12,
+              backgroundColor: "transparent", border: `2px solid ${C.border}`,
+              color: C.primaryDim,
+              fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>volume_up</span>
+            Hear the Note
+          </button>
+        </div>
+      )}
+
+      {phase === "mic-error" && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", maxWidth: 320 }}>
+          <span className="material-symbols-outlined" style={{ color: C.error, fontSize: 34 }}>mic_off</span>
+          <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+            Microphone access is blocked. Allow it in your browser&apos;s site settings, then try again.
+          </p>
+          <button
+            onClick={startListening}
+            style={{
+              padding: "12px 32px", borderRadius: 12,
+              backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
+              color: "white", border: "none",
+              fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            Try Again
+          </button>
         </div>
       )}
     </div>

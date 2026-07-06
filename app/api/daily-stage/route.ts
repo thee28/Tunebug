@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getTodaysDailyStage, completeDailyStage } from "@/lib/db/daily";
 import { updateStreak } from "@/lib/db/streak";
+import { syncAchievements } from "@/lib/db/achievements";
 import { readJson, isValidScore } from "@/lib/api/validation";
 import { rateLimit, tooManyRequests } from "@/lib/api/rateLimit";
 
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
     if (score >= 70) {
       await updateStreak(session.user.id);
     }
+
+    // Non-fatal: a failed achievement sync must not fail the completion.
+    await syncAchievements(session.user.id).catch(() => {});
 
     return Response.json({ xpEarned, passed: score >= 70 });
   } catch (e) {

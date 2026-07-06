@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { QuestProgress } from "@/lib/db/quests";
+import { QUEST_DEFS } from "@/lib/quests";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
@@ -10,23 +13,11 @@ const C = {
   tertiary: "#ffb95d",
 };
 
-interface Quest {
-  id: string;
-  label: string;
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  current: number;
-  goal: number;
-}
-
-function buildQuests(qp: QuestProgress): Quest[] {
-  return [
-    { id: "xp", label: "Earn 10 XP today", icon: "bolt", iconBg: "rgba(255,185,93,0.2)", iconColor: C.tertiary, current: Math.min(qp.xpToday, 10), goal: 10 },
-    { id: "lessons", label: "Complete 2 lessons", icon: "school", iconBg: "rgba(87,78,177,0.2)", iconColor: C.primaryDim, current: Math.min(qp.lessonsToday, 2), goal: 2 },
-    { id: "score", label: "Score 80% or higher in a lesson", icon: "gps_fixed", iconBg: "rgba(0,108,78,0.2)", iconColor: C.secondaryDim, current: qp.highScoreToday, goal: 1 },
-  ];
-}
+const QUEST_STYLE: Record<string, { iconBg: string; iconColor: string }> = {
+  xp: { iconBg: "rgba(255,185,93,0.2)", iconColor: C.tertiary },
+  lessons: { iconBg: "rgba(87,78,177,0.2)", iconColor: C.primaryDim },
+  score: { iconBg: "rgba(0,108,78,0.2)", iconColor: C.secondaryDim },
+};
 
 function hoursUntilMidnight(): number {
   const now = new Date();
@@ -35,10 +26,38 @@ function hoursUntilMidnight(): number {
   return Math.ceil((midnight.getTime() - now.getTime()) / 3600000);
 }
 
-export default function Quests({ questProgress }: { questProgress: QuestProgress }) {
-  const DAILY_QUESTS = buildQuests(questProgress);
-  const completed = DAILY_QUESTS.filter(q => q.current >= q.goal).length;
+interface Props {
+  questProgress: QuestProgress;
+  claimedQuestIds: string[];
+}
+
+export default function Quests({ questProgress, claimedQuestIds }: Props) {
+  const router = useRouter();
+  const [claimed, setClaimed] = useState<Set<string>>(new Set(claimedQuestIds));
+  const [claiming, setClaiming] = useState<string | null>(null);
+
+  const completed = QUEST_DEFS.filter(q => q.progress(questProgress) >= q.goal).length;
   const hours = hoursUntilMidnight();
+
+  async function handleClaim(questId: string) {
+    if (claiming || claimed.has(questId)) return;
+    setClaiming(questId);
+    try {
+      const res = await fetch("/api/quests/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questId }),
+      });
+      if (res.ok || res.status === 409) {
+        // 409 = already claimed (e.g. another tab) — reflect that too.
+        setClaimed(prev => new Set(prev).add(questId));
+        // Refresh the server-rendered XP counters in the header/sidebar.
+        router.refresh();
+      }
+    } finally {
+      setClaiming(null);
+    }
+  }
 
   return (
     <div style={{ paddingTop: 28, paddingBottom: 40 }}>
@@ -56,7 +75,7 @@ export default function Quests({ questProgress }: { questProgress: QuestProgress
             Earn rewards with quests!
           </h1>
           <p style={{ color: "rgba(255,255,255,0.75)", fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
-            You&apos;ve completed <strong style={{ color: "white" }}>{completed} out of {DAILY_QUESTS.length}</strong> quests today.
+            You&apos;ve completed <strong style={{ color: "white" }}>{completed} out of {QUEST_DEFS.length}</strong> quests today.
           </p>
         </div>
 
@@ -88,15 +107,19 @@ export default function Quests({ questProgress }: { questProgress: QuestProgress
       </div>
 
       <div style={{ borderRadius: 16, border: `2px solid ${C.border}`, overflow: "hidden" }}>
-        {DAILY_QUESTS.map((quest, i) => {
-          const progress = Math.min(quest.current / quest.goal, 1);
-          const done = quest.current >= quest.goal;
+        {QUEST_DEFS.map((quest, i) => {
+          const current = quest.progress(questProgress);
+          const progress = Math.min(current / quest.goal, 1);
+          const done = current >= quest.goal;
+          const isClaimed = claimed.has(quest.id);
+          const claimable = done && !isClaimed;
+          const style = QUEST_STYLE[quest.id] ?? QUEST_STYLE.xp;
           return (
             <div
               key={quest.id}
               style={{
                 padding: "20px 20px",
-                borderBottom: i < DAILY_QUESTS.length - 1 ? `2px solid ${C.border}` : "none",
+                borderBottom: i < QUEST_DEFS.length - 1 ? `2px solid ${C.border}` : "none",
                 backgroundColor: done ? "rgba(0,108,78,0.08)" : C.surfaceHigh,
                 display: "flex", alignItems: "center", gap: 16,
               }}
@@ -104,12 +127,12 @@ export default function Quests({ questProgress }: { questProgress: QuestProgress
               {/* Icon */}
               <div style={{
                 width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                backgroundColor: done ? "rgba(0,108,78,0.2)" : quest.iconBg,
+                backgroundColor: done ? "rgba(0,108,78,0.2)" : style.iconBg,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: 26, color: done ? C.secondaryDim : quest.iconColor, fontVariationSettings: "'FILL' 1" }}
+                  style={{ fontSize: 26, color: done ? C.secondaryDim : style.iconColor, fontVariationSettings: "'FILL' 1" }}
                 >
                   {done ? "check_circle" : quest.icon}
                 </span>
@@ -130,25 +153,52 @@ export default function Quests({ questProgress }: { questProgress: QuestProgress
                     }} />
                   </div>
                   <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                    {quest.current} / {quest.goal}
+                    {current} / {quest.goal}
                   </span>
                 </div>
               </div>
 
-              {/* Reward badge */}
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                backgroundColor: done ? "rgba(255,185,93,0.2)" : "rgba(255,255,255,0.04)",
-                border: `2px solid ${done ? "rgba(255,185,93,0.4)" : C.border}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 20, color: done ? C.tertiary : C.muted, fontVariationSettings: "'FILL' 1" }}
+              {/* Reward: claim button, claimed check, or pending badge */}
+              {claimable ? (
+                <button
+                  onClick={() => handleClaim(quest.id)}
+                  disabled={claiming === quest.id}
+                  style={{
+                    flexShrink: 0, padding: "10px 14px", borderRadius: 10, border: "none",
+                    backgroundColor: C.tertiary, boxShadow: "0 3px 0 0 #b37b2c",
+                    color: "#3a2a00", fontFamily: "'Nunito', sans-serif",
+                    fontSize: 12, fontWeight: 900, letterSpacing: "0.04em",
+                    textTransform: "uppercase", cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}
                 >
-                  emoji_events
-                </span>
-              </div>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>
+                    emoji_events
+                  </span>
+                  {claiming === quest.id ? "…" : `+${quest.rewardXP} XP`}
+                </button>
+              ) : (
+                <div style={{
+                  flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10,
+                    backgroundColor: isClaimed ? "rgba(0,108,78,0.2)" : "rgba(255,255,255,0.04)",
+                    border: `2px solid ${isClaimed ? "rgba(0,108,78,0.4)" : C.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: 20, color: isClaimed ? C.secondaryDim : C.muted, fontVariationSettings: "'FILL' 1" }}
+                    >
+                      {isClaimed ? "check" : "emoji_events"}
+                    </span>
+                  </div>
+                  <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 10, fontWeight: 800 }}>
+                    {isClaimed ? "CLAIMED" : `+${quest.rewardXP} XP`}
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}
