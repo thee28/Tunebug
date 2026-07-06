@@ -14,6 +14,7 @@ import { CURRICULUM } from "@/lib/curriculum/config";
 import type { Difficulty } from "@/lib/curriculum/content";
 import DashboardContent from "@/components/dashboard/DashboardContent";
 import LogoutButton from "@/components/LogoutButton";
+import DebugExercisePicker from "@/components/dashboard/DebugExercisePicker";
 
 const C = {
   dark: "var(--c-dark)",
@@ -185,6 +186,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </Link>
           ))}
         </nav>
+        <DebugExercisePicker />
       </aside>
 
       {/* ── Right Sidebar — fixed to right edge ── */}
