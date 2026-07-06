@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import LessonPath from "./LessonPath";
 import SectionList from "./SectionList";
+import { SectionTestRunner } from "@/components/exercises/SectionTestRunner";
+import { generateSectionTestSteps } from "@/lib/curriculum/sectionTest";
 import Guidebook from "./Guidebook";
 import FreePractice from "./FreePractice";
 import Quests from "./Quests";
@@ -51,9 +53,64 @@ export default function DashboardContent({
   privacySettings,
 }: Props) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [view, setView] = useState<View>("path");
   const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
   const [scrollToUnit, setScrollToUnit] = useState<string | undefined>();
+
+  // Jump-ahead test, frozen at launch time so a post-pass router.refresh()
+  // can't yank the runner out from under the user mid-result-screen.
+  const [jumpTest, setJumpTest] = useState<{
+    fromIndex: number;
+    targetIndex: number;
+    targetSlug: string;
+    targetTitle: string;
+    plan: ReturnType<typeof generateSectionTestSteps>;
+    nonce: number; // remount key so retries reset the runner's internal state
+  } | null>(null);
+
+  // Remounts LessonPath after a successful jump so its cached completion
+  // state re-derives from the refreshed server data.
+  const passedCount = useMemo(
+    () => stages.flatMap((s) => s.units.flatMap((u) => u.lessons)).filter((l) => l.passed).length,
+    [stages]
+  );
+
+  function startJumpTest(targetIndex: number) {
+    // Test covers everything from the first unfinished stage up to the target.
+    const idx = stages.findIndex((s) => s.status !== "complete");
+    const fromIndex = idx === -1 ? stages.length : idx;
+    if (targetIndex <= fromIndex || targetIndex >= stages.length) return;
+    setJumpTest({
+      fromIndex,
+      targetIndex,
+      targetSlug: stages[targetIndex].slug,
+      targetTitle: stages[targetIndex].title,
+      plan: generateSectionTestSteps(fromIndex, targetIndex, Date.now()),
+      nonce: Date.now(),
+    });
+  }
+
+  function retryJumpTest() {
+    setJumpTest((prev) =>
+      prev
+        ? { ...prev, plan: generateSectionTestSteps(prev.fromIndex, prev.targetIndex, Date.now()), nonce: Date.now() }
+        : prev
+    );
+  }
+
+  async function handleTestPassed() {
+    if (!jumpTest) return;
+    try {
+      await fetch("/api/section-jump", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetStageSlug: jumpTest.targetSlug }),
+      });
+    } finally {
+      router.refresh();
+    }
+  }
 
   const urlView = searchParams.get("view");
   const settingsSub = searchParams.get("sub") ?? "";
@@ -100,6 +157,30 @@ export default function DashboardContent({
 
   return (
     <div style={{ width: "100%", maxWidth: 560 }}>
+      {/* Jump-ahead test overlay */}
+      <AnimatePresence>
+        {jumpTest && (
+          <motion.div
+            key={`jump-test-${jumpTest.nonce}`}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: C.dark, overflowY: "auto" }}
+          >
+            <SectionTestRunner
+              targetSectionNumber={jumpTest.targetIndex + 1}
+              targetSectionTitle={jumpTest.targetTitle}
+              steps={jumpTest.plan.steps}
+              difficulty={jumpTest.plan.difficulty}
+              onPassed={handleTestPassed}
+              onRetry={retryJumpTest}
+              onExit={() => setJumpTest(null)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait" initial={false}>
         {isPractice && (
           <motion.div
@@ -183,7 +264,7 @@ export default function DashboardContent({
             <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 20, fontWeight: 900, margin: "0 0 16px" }}>
               All Sections
             </h1>
-            <SectionList stages={stages} onBack={() => setView("path")} />
+            <SectionList stages={stages} onBack={() => setView("path")} onStartJumpTest={startJumpTest} />
           </motion.div>
         )}
 
@@ -214,10 +295,12 @@ export default function DashboardContent({
             style={{ width: "100%" }}
           >
             <LessonPath
+              key={passedCount}
               stages={stages}
               difficulties={difficulties}
               onShowSections={() => setView("sections")}
               onShowGuidebook={openGuidebook}
+              onStartJumpTest={startJumpTest}
               scrollToUnitSlug={scrollToUnit}
             />
           </motion.div>

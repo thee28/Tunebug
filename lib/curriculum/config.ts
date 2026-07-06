@@ -39,7 +39,7 @@ export const CURRICULUM: CurriculumStage[] = [
   {
     slug: "beginner",
     title: "Beginner",
-    description: "Your first steps in music — note names, basic singing, and reading the staff",
+    description: "Start with note names, basic singing, and reading the staff",
     order: 0,
     icon: "🌱",
     difficulty: "beginner",
@@ -243,7 +243,7 @@ export const CURRICULUM: CurriculumStage[] = [
       {
         slug: "elem-sharps-flats",
         title: "Sharps and Flats",
-        description: "Add the black keys — the notes between the notes",
+        description: "Add the black keys, the notes between the notes",
         order: 0,
         lessons: [
           {
@@ -284,7 +284,7 @@ export const CURRICULUM: CurriculumStage[] = [
       {
         slug: "elem-perfect-intervals",
         title: "Perfect Intervals",
-        description: "The foundation of harmony — P4, P5, and octave",
+        description: "The foundation of harmony: P4, P5, and the octave",
         order: 1,
         lessons: [
           { slug: "elem-pi-1", title: "Perfect Fourth", order: 0, exerciseType: "INTERVAL_ID", exerciseConfig: { noteA: "C4", noteB: "F4", choices: ["Major 3rd", "Perfect 4th", "Perfect 5th", "Octave"], correctAnswer: "Perfect 4th" }, passingScore: 70, xpReward: 20 },
@@ -414,7 +414,7 @@ export const CURRICULUM: CurriculumStage[] = [
       {
         slug: "int-triads",
         title: "Triads",
-        description: "Three-note chords — the heart of harmony",
+        description: "Three-note chords, the heart of harmony",
         order: 1,
         lessons: [
           { slug: "int-tr-1", title: "C Major Triad", order: 0, exerciseType: "EAR_MULTI", exerciseConfig: { targetNotes: ["C4", "E4", "G4"], choices: ["C", "D", "E", "F", "G", "A", "B"], correctAnswers: ["C", "E", "G"] }, passingScore: 70, xpReward: 20 },
@@ -515,7 +515,7 @@ export const CURRICULUM: CurriculumStage[] = [
       {
         slug: "upper-all-intervals",
         title: "All Interval Types",
-        description: "All 13 intervals — from unison to octave",
+        description: "All 13 intervals, from unison to octave",
         order: 0,
         lessons: [
           { slug: "upper-ai-1", title: "Major 2nd", order: 0, exerciseType: "INTERVAL_ID", exerciseConfig: { noteA: "C4", noteB: "D4", choices: ["Minor 2nd", "Major 2nd", "Minor 3rd", "Major 3rd"], correctAnswer: "Major 2nd" }, passingScore: 70, xpReward: 25 },
@@ -633,7 +633,7 @@ export const CURRICULUM: CurriculumStage[] = [
   {
     slug: "advanced",
     title: "Advanced",
-    description: "Complete mastery — all intervals, complex chords, chromatic singing, and expert ear",
+    description: "The final stretch: all intervals, complex chords, chromatic singing, and an expert ear",
     order: 4,
     icon: "🏆",
     difficulty: "advanced",
@@ -721,7 +721,7 @@ export const CURRICULUM: CurriculumStage[] = [
       {
         slug: "adv-expert-ear",
         title: "Expert Ear Training",
-        description: "Maximum speed, no hints — prove your ears",
+        description: "Maximum speed and no hints. Prove your ears.",
         order: 4,
         lessons: [
           {

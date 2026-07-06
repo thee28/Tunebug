@@ -40,7 +40,7 @@ const FAQ_GROUPS = [
       },
       {
         q: "How do I delete my account?",
-        a: "Go to Settings → Profile and scroll to the bottom. Click 'Delete my account'. This action is permanent and cannot be undone — all your progress and XP will be lost.",
+        a: "Go to Settings → Profile and scroll to the bottom. Click 'Delete my account'. This action is permanent and cannot be undone. All your progress and XP will be lost.",
       },
       {
         q: "How do I export my data?",

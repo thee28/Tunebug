@@ -51,10 +51,11 @@ interface Props {
   difficulties: Record<string, Difficulty>;
   onShowSections: () => void;
   onShowGuidebook: (unitSlug: string, unitTitle: string) => void;
+  onStartJumpTest: (targetStageIndex: number) => void;
   scrollToUnitSlug?: string;
 }
 
-export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, scrollToUnitSlug }: Props) {
+export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, onStartJumpTest, scrollToUnitSlug }: Props) {
   const mastery = useMastery();
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     () =>
@@ -500,7 +501,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
             </p>
 
             <button
-              onClick={onShowSections}
+              onClick={() => onStartJumpTest(currentStageIndex + 1)}
               style={{
                 width: "100%", padding: "13px 0", borderRadius: 14,
                 backgroundColor: "transparent",

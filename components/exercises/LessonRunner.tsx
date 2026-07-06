@@ -20,14 +20,14 @@ function isMotivationalEnabled() {
 
 const MOTIVATION_PASS = [
   "Your ears are getting sharper every day!",
-  "That's how it's done — keep the streak alive!",
+  "That's how it's done. Keep the streak alive!",
   "Beautiful work. The music is starting to stick!",
   "You're building real musician instincts!",
 ];
 
 const MOTIVATION_FAIL = [
   "Every great musician missed plenty of notes. Try it again!",
-  "Tough one — but repetition is how ears are trained.",
+  "Tough one, but repetition is how ears get trained.",
   "Almost there. One more run and it'll click!",
 ];
 

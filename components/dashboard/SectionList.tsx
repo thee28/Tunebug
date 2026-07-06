@@ -11,7 +11,15 @@ const C = {
 
 const SECTION_ICONS = ["school", "menu_book", "library_music", "piano", "workspace_premium"];
 
-export default function SectionList({ stages, onBack }: { stages: Stage[]; onBack?: () => void }) {
+export default function SectionList({
+  stages,
+  onBack,
+  onStartJumpTest,
+}: {
+  stages: Stage[];
+  onBack?: () => void;
+  onStartJumpTest?: (targetStageIndex: number) => void;
+}) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 560 }}>
       {stages.map((stage, i) => {
@@ -123,16 +131,18 @@ export default function SectionList({ stages, onBack }: { stages: Stage[]; onBac
             {/* Action button */}
             <div style={{ padding: "14px 18px 18px" }}>
               {isLocked ? (
-                <div
+                <button
+                  onClick={() => onStartJumpTest?.(i)}
                   style={{
                     width: "100%", padding: "12px 0", borderRadius: 14, textAlign: "center",
                     backgroundColor: "var(--c-surface-high)", border: `2px solid ${C.border}`,
                     color: C.muted, fontFamily: "'Nunito', sans-serif", fontWeight: 800,
                     fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em",
+                    cursor: "pointer",
                   }}
                 >
                   Jump to Section {i + 1}
-                </div>
+                </button>
               ) : (
                 <button
                   onClick={onBack}

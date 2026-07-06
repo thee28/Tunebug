@@ -559,7 +559,7 @@ function midTeach(): TeachStep {
   return {
     kind: "teach", icon: "tips_and_updates",
     title: "Halfway There",
-    body: "Keep going. Old material is mixed in with new — stay alert.",
+    body: "Keep going. Old material is mixed in with the new, so stay alert.",
   };
 }
 function finalTeach(): TeachStep {

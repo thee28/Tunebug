@@ -60,7 +60,7 @@ export function ErrorSpottingExercise({ config, submitted, onAnswerChange, onCom
     // if wrong, also need to pick correct letter
     const letterCorrect = !judgedWrong || pickedLetter === actualName;
     const passed = judgmentCorrect && letterCorrect;
-    const explain = isWrong ? `Wrong — actual is ${actualName}` : "Correct as labeled";
+    const explain = isWrong ? `Wrong, it's actually ${actualName}` : "Correct as labeled";
     onComplete({ score: passed ? 100 : 0, passed, correctAnswerText: explain });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);

@@ -212,7 +212,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
           Delete account
         </h2>
         <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 14, lineHeight: 1.6, margin: "0 0 8px" }}>
-          This permanently deletes your account and all of your data — XP, streaks,
+          This permanently deletes your account and all of your data: XP, streaks,
           lesson progress, achievements, and practice history. This cannot be undone.
         </p>
         <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: "0 0 16px" }}>

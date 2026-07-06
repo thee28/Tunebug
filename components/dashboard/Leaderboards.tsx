@@ -198,7 +198,7 @@ export default function Leaderboards({ totalXP, displayName, initials, data }: P
 
       {boardEmpty && (
         <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, textAlign: "center", margin: "0 0 12px" }}>
-          No one has earned XP this week yet — be the first!
+          No one has earned XP this week yet. Be the first!
         </p>
       )}
 
@@ -216,7 +216,7 @@ export default function Leaderboards({ totalXP, displayName, initials, data }: P
           width: 22, textAlign: "center", flexShrink: 0,
           color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800,
         }}>
-          {userEntry ? userEntry.rank : "—"}
+          {userEntry ? userEntry.rank : "-"}
         </span>
         <div style={{
           width: 38, height: 38, borderRadius: "50%", flexShrink: 0,

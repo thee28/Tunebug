@@ -3,9 +3,9 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TuneBug — Learn Music by Ear",
+  title: "TuneBug | Learn Music by Ear",
   description:
-    "Master pitch, sight reading, and ear training with interactive lessons and real-time pitch detection.",
+    "Learn pitch, sight reading, and ear training with short interactive lessons and real-time pitch detection.",
 };
 
 export default function RootLayout({

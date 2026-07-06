@@ -50,14 +50,13 @@ export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange
 
   const toggle = (choice: string) => {
     if (submitted) return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(choice)) next.delete(choice);
-      else next.add(choice);
-      const hasAnswer = next.size > 0;
-      onAnswerChange(hasAnswer);
-      return next;
-    });
+    // Compute outside the updater — notifying the parent from inside it is a
+    // setState-during-render violation.
+    const next = new Set(selected);
+    if (next.has(choice)) next.delete(choice);
+    else next.add(choice);
+    setSelected(next);
+    onAnswerChange(next.size > 0);
   };
 
   useEffect(() => {

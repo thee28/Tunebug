@@ -256,9 +256,9 @@ function FeatureVoice() {
             Master your voice.<br />Any time. Anywhere.
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
-            Unlock your singing potential with Tunebug. Our interactive platform provides{" "}
+            Sing into your mic and Tunebug listens. You get{" "}
             <span className="font-bold" style={{ color: C.secondaryDim }}>real-time pitch detection</span>{" "}
-            and instant feedback, helping you refine your technique through bite-sized vocal drills designed to fit into your daily routine.
+            and instant feedback on every note, in short vocal drills you can fit into a spare five minutes.
           </p>
         </div>
       </ScrollReveal>
@@ -283,7 +283,7 @@ function FeaturePrecision() {
             Tuned for Precision
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
-            Experience a smarter way to train. Tunebug leverages proprietary pitch-tracking technology and a vocal pedagogy framework designed by industry experts to ensure every note you sing is tracked with scientific accuracy, leading to faster results.
+            Tunebug tracks your pitch as you sing and shows exactly how close you are, note by note. No guessing whether you hit it. You hear it, you see it, you fix it.
           </p>
         </div>
       </ScrollReveal>
@@ -394,7 +394,7 @@ function FinalCTA() {
         className="relative text-center flex flex-col items-center gap-8 px-5 pb-2">
         <h2 className="text-4xl md:text-6xl font-extrabold text-white leading-tight"
           style={{ fontFamily: "'Nunito', sans-serif" }}>
-          Ready to start<br />your musical journey?
+          Ready to learn<br />music by ear?
         </h2>
         <Link href="/login?tab=signup" className="inline-block">
           <motion.span
