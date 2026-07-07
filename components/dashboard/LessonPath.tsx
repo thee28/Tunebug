@@ -143,8 +143,12 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
 
   const firstActiveLessonId = useMemo(() => {
     for (const stage of stages) {
-      for (const unit of stage.units) {
-        if (unit.status === "locked") continue;
+      for (let ui = 0; ui < stage.units.length; ui++) {
+        const unit = stage.units[ui];
+        const prevUnitComplete =
+          ui === 0 ||
+          stage.units[ui - 1].lessons.every((l) => completedIds.has(l.id));
+        if (unit.status === "locked" && !prevUnitComplete) continue;
         for (let i = 0; i < unit.lessons.length; i++) {
           const lesson = unit.lessons[i];
           const prevOk = i === 0 || completedIds.has(unit.lessons[i - 1].id);
@@ -284,7 +288,12 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
             <div key={stage.id} style={{ width: "100%" }}>
               {/* Units */}
               {stage.units.map((unit, ui) => {
-                const unitLocked = unit.status === "locked";
+                // Derive unlock from live completedIds so finishing the last
+                // lesson of a unit unlocks the next unit without a page refresh.
+                const prevUnitComplete =
+                  ui === 0 ||
+                  stage.units[ui - 1].lessons.every((l) => completedIds.has(l.id));
+                const unitLocked = unit.status === "locked" && !prevUnitComplete;
                 const sentinelKey = `${si},${ui}`;
 
                 return (
