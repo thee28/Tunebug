@@ -244,6 +244,7 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
       }}>
         <button
           onClick={onExit}
+          className="btn-ghost-hover"
           style={{
             width: 36, height: 36, borderRadius: "50%",
             background: "none", border: "none", cursor: "pointer",
@@ -502,6 +503,7 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
                 <motion.button
                   onClick={handleSkip}
                   whileTap={{ scale: 0.95 }}
+                  className="btn-ghost-hover"
                   style={{
                     padding: "16px 40px", borderRadius: 14,
                     backgroundColor: "transparent",

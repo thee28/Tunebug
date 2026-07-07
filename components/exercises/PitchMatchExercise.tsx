@@ -246,6 +246,7 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <button
             onClick={playTargetNote}
+            className="btn-ghost-hover"
             style={{
               padding: "12px 32px", borderRadius: 12,
               backgroundColor: "transparent", border: `2px solid ${C.border}`,
@@ -353,6 +354,7 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
           </div>
           <button
             onClick={playTargetNote}
+            className="btn-ghost-hover"
             style={{
               padding: "10px 24px", borderRadius: 12,
               backgroundColor: "transparent", border: `2px solid ${C.border}`,

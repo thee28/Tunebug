@@ -378,6 +378,7 @@ export default function Guidebook({ unitSlug, unitTitle, stageTitle }: Props) {
             >
               <div
                 onClick={toneNote ? () => playNote(toneNote, item.term) : undefined}
+                className={toneNote ? "btn-ghost-hover" : undefined}
                 style={{
                   backgroundColor: C.surfaceHigh,
                   border: `2px solid ${isPlaying ? CATEGORY_COLOR["Note"] : C.border}`,
@@ -385,7 +386,7 @@ export default function Guidebook({ unitSlug, unitTitle, stageTitle }: Props) {
                   padding: "14px 16px",
                   display: "flex", alignItems: "flex-start", gap: 12,
                   cursor: toneNote ? "pointer" : "default",
-                  transition: "border-color 0.15s",
+                  transition: "border-color 0.15s, background-color 120ms ease",
                 }}
               >
                 <div style={{

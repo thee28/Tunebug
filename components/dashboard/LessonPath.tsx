@@ -222,6 +222,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
           {/* Left: clickable section/unit label → opens sections view */}
           <button
             onClick={onShowSections}
+            className="no-hover"
             style={{
               background: "none", border: "none", cursor: "pointer",
               textAlign: "left", flex: 1, minWidth: 0, padding: 0,
@@ -389,6 +390,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                                 : `0 ${Math.max(6 - dy, 0)}px 0 0 ${C.primaryDark}`;
                               return (
                             <button
+                              className="no-hover"
                               onClick={() =>
                                 !isLocked &&
                                 setExercise({
@@ -502,6 +504,7 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
 
             <button
               onClick={() => onStartJumpTest(currentStageIndex + 1)}
+              className="btn-ghost-hover"
               style={{
                 width: "100%", padding: "13px 0", borderRadius: 14,
                 backgroundColor: "transparent",

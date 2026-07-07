@@ -297,7 +297,7 @@ export default function FreePractice() {
                 {/* Header with progress */}
                 <div style={{ padding: "14px 20px 12px", borderBottom: `2px solid ${C.border}`, flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                    <button onClick={() => setMode("config")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0 }}>
+                    <button onClick={() => setMode("config")} className="btn-ghost-hover" style={{ background: "none", border: "none", borderRadius: 8, padding: 4, cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0 }}>
                       <span className="material-symbols-outlined" style={{ color: C.muted, fontSize: 24 }}>close</span>
                     </button>
                     <div style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: C.border, overflow: "hidden" }}>
@@ -359,6 +359,7 @@ export default function FreePractice() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={handleSkip}
+                      className="btn-ghost-hover"
                       style={{
                         padding: "14px 32px", borderRadius: 14,
                         backgroundColor: "transparent",

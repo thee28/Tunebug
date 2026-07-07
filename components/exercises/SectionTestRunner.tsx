@@ -137,10 +137,12 @@ export function SectionTestRunner({
         }}>
           <button
             onClick={onExit}
+            className="btn-ghost-hover"
             style={{
               background: "none", border: "none", cursor: "pointer",
               color: C.primaryDim, fontFamily: "'Nunito', sans-serif",
               fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em",
+              padding: "12px 16px", borderRadius: 12,
             }}
           >
             Maybe Later
@@ -209,6 +211,7 @@ export function SectionTestRunner({
           <motion.button
             onClick={onExit}
             whileTap={{ scale: 0.97 }}
+            className={passed ? undefined : "btn-ghost-hover"}
             style={{
               padding: "14px 40px", borderRadius: 14,
               backgroundColor: passed ? C.primary : "transparent",
@@ -233,6 +236,7 @@ export function SectionTestRunner({
       <div style={{ display: "flex", alignItems: "center", padding: "0 72px", height: 64, gap: 8, flexShrink: 0 }}>
         <button
           onClick={onExit}
+          className="btn-ghost-hover"
           style={{
             width: 36, height: 36, borderRadius: "50%",
             background: "none", border: "none", cursor: "pointer",

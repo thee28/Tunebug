@@ -50,6 +50,31 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
 
+/* ── Universal button hover ──
+   Every enabled button brightens slightly on hover so nothing feels flat.
+   Specific button classes below (.btn-white etc.) override this where they
+   define their own hover. */
+button:not(:disabled) {
+  transition: filter 120ms ease, background-color 120ms ease;
+}
+button:not(:disabled):hover {
+  filter: brightness(1.22);
+}
+
+/* Transparent and outline buttons: brightness alone is too subtle, so give
+   them a faint background wash on hover. !important beats the inline
+   backgroundColor these buttons carry. */
+.btn-ghost-hover:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Opt out of the universal hover — for buttons that already carry their own
+   press/drop feedback (lesson nodes) or that are plain navigation (back
+   arrows, breadcrumb-style labels). */
+.no-hover:hover:not(:disabled) {
+  filter: none;
+}
+
 /* Sidebar nav link hover */
 .nav-link {
   transition: background-color 120ms ease, color 120ms ease;

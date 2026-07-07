@@ -233,6 +233,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
           <button
             onClick={onClose}
+            className="btn-ghost-hover"
             style={{
               padding: "12px 24px", borderRadius: 12, border: `2px solid ${C.border}`,
               backgroundColor: "transparent", color: C.muted,

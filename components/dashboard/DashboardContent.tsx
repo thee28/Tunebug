@@ -139,6 +139,7 @@ export default function DashboardContent({
     }}>
       <button
         onClick={onClick}
+        className="no-hover"
         style={{
           display: "flex", alignItems: "center", gap: 6,
           background: "none", border: "none", cursor: "pointer",

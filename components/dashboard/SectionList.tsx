@@ -133,6 +133,7 @@ export default function SectionList({
               {isLocked ? (
                 <button
                   onClick={() => onStartJumpTest?.(i)}
+                  className="btn-ghost-hover"
                   style={{
                     width: "100%", padding: "12px 0", borderRadius: 14, textAlign: "center",
                     backgroundColor: "var(--c-surface-high)", border: `2px solid ${C.border}`,
