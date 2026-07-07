@@ -516,12 +516,13 @@ function introTeachFor(concept: Concept): TeachStep {
       };
     }
     case "SIGHT_READ_PIANO": {
-      const c = concept.config as { targetNote: string };
+      const c = concept.config as { targetNote: string; vexKey?: string };
       const name = c.targetNote.replace(/\d$/, "");
       return {
         kind: "teach", icon: "music_note",
         title: `Reading ${name} on the Staff`,
-        body: `Find note ${name} on the staff, then click the matching piano key.`,
+        body: `This is ${name} on the staff. Find it, then click the matching piano key.`,
+        vexKey: c.vexKey,
       };
     }
     case "INTERVAL_ID": {
@@ -547,7 +548,8 @@ function introTeachFor(concept: Concept): TeachStep {
       return {
         kind: "teach", icon: "music_note",
         title: `The ${c.correctAnswer}`,
-        body: `Learn to recognize this symbol on sight.`,
+        body: `This is what a ${c.correctAnswer.toLowerCase()} looks like. Learn to recognize it on sight.`,
+        symbol: c.symbol,
       };
     }
     default:

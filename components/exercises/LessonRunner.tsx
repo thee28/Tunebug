@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { LessonStep } from "@/types/lesson";
 import { ExerciseEngine, type ExerciseResult } from "./ExerciseEngine";
+import { NoteSymbolSVG } from "./NoteSymbolSVG";
+import { StaffRenderer } from "./StaffRenderer";
 
 function isSoundEnabled() {
   if (typeof window === "undefined") return true;
@@ -294,16 +296,39 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
             const hasAudio = step.playNote || step.playNotes || step.playInterval;
             return (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28, textAlign: "center", maxWidth: 420 }}>
-                <div style={{
-                  width: 80, height: 80, borderRadius: "50%",
-                  backgroundColor: C.primary,
-                  boxShadow: `0 6px 0 0 ${C.primaryDark}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 40, color: "white", fontVariationSettings: "'FILL' 1" }}>
-                    {step.icon}
-                  </span>
-                </div>
+                {step.symbol ? (
+                  /* Rhythm-symbol intro: show the actual glyph being taught */
+                  <div style={{
+                    minWidth: 150, minHeight: 130, borderRadius: 20,
+                    backgroundColor: C.surfaceHigh,
+                    border: `2px solid ${C.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "16px 24px",
+                  }}>
+                    <NoteSymbolSVG symbol={step.symbol} size={96} />
+                  </div>
+                ) : step.vexKey ? (
+                  /* Staff-note intro: show the note where it sits on the staff */
+                  <div style={{
+                    borderRadius: 20,
+                    backgroundColor: C.surfaceHigh,
+                    border: `2px solid ${C.border}`,
+                    padding: "8px 12px",
+                  }}>
+                    <StaffRenderer vexKey={step.vexKey} width={260} height={130} />
+                  </div>
+                ) : (
+                  <div style={{
+                    width: 80, height: 80, borderRadius: "50%",
+                    backgroundColor: C.primary,
+                    boxShadow: `0 6px 0 0 ${C.primaryDark}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 40, color: "white", fontVariationSettings: "'FILL' 1" }}>
+                      {step.icon}
+                    </span>
+                  </div>
+                )}
                 <div>
                   <h2 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900, margin: "0 0 12px" }}>
                     {step.title}

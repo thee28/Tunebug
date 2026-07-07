@@ -7,7 +7,9 @@ const csp = [
   // Next.js requires inline scripts for hydration; dev needs eval for HMR.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  // data: is required for VexFlow, which ships its music font (Bravura) as a
+  // base64 data URL. Without it every staff renders placeholder squares.
+  "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://lh3.googleusercontent.com",
   "connect-src 'self'",
   "media-src 'self' blob:",

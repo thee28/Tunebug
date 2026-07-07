@@ -45,6 +45,10 @@ export function StaffRenderer({ vexKey, width = 280, height = 130, label }: Prop
         keys: [vexKey],
         duration: "q",
       });
+      // The context fill/stroke above only covers the stave and clef; the
+      // note and its stem carry their own styles and default to black.
+      note.setStyle({ fillStyle: "#e0e0ff", strokeStyle: "#e0e0ff" });
+      note.setStemStyle({ fillStyle: "#e0e0ff", strokeStyle: "#e0e0ff" });
       if (isSharp) note.addModifier(new Accidental("#"), 0);
 
       const voice = new Voice({ numBeats: 1, beatValue: 4 }).addTickables([note]);

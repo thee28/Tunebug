@@ -1,4 +1,4 @@
-import type { ExerciseType, ExerciseConfig } from "./music";
+import type { ExerciseType, ExerciseConfig, NoteSymbol } from "./music";
 
 export type StageStatus = "locked" | "available" | "complete";
 
@@ -12,6 +12,10 @@ export interface TeachStep {
   playNote?: string;
   playNotes?: string[];
   playInterval?: [string, string];
+  // When set, the slide shows the actual notation being introduced instead
+  // of the generic icon: a rhythm symbol glyph, or a note on the staff.
+  symbol?: NoteSymbol;
+  vexKey?: string;
 }
 
 export interface ExerciseStep {
