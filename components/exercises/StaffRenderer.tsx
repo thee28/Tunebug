@@ -27,6 +27,22 @@ export function StaffRenderer({ vexKey, width = 280, height = 130, label }: Prop
       if (cancelled || !containerRef.current) return;
       const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = vf;
 
+      // VexFlow's font entry fires the Bravura FontFace load but does not await
+      // it, and glyph widths (which decide where the stem attaches) are measured
+      // via canvas measureText. If we draw before Bravura is ready, the notehead
+      // is measured against the fallback font, so the stem lands at the wrong x
+      // and renders detached from the head. Wait for the font before drawing —
+      // this only actually blocks on the first staff of a session.
+      if (typeof document !== "undefined" && document.fonts) {
+        try {
+          await document.fonts.load('30pt "Bravura"');
+          await document.fonts.ready;
+        } catch {
+          /* fall through and draw anyway */
+        }
+        if (cancelled || !containerRef.current) return;
+      }
+
       // Clear any previous render
       el.innerHTML = "";
 
