@@ -179,13 +179,15 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
   const nextStage = isReviewing ? null : stages[currentStageIndex + 1] ?? null;
 
   // Keep the sticky banner in sync with the section being shown (avoids a flash
-  // of the wrong section number before scroll observers fire).
-  useEffect(() => {
-    const stage = stages[currentStageIndex];
-    const unit = stage?.units[0];
+  // of the wrong section number before scroll observers fire). Resetting state
+  // during render is the React-recommended pattern for "adjust state when a
+  // prop changes" — cheaper and safer than a setState-in-effect.
+  const [bannerStageIndex, setBannerStageIndex] = useState(currentStageIndex);
+  if (bannerStageIndex !== currentStageIndex) {
+    setBannerStageIndex(currentStageIndex);
+    const unit = stages[currentStageIndex]?.units[0];
     if (unit) setBannerInfo({ section: currentStageIndex + 1, unit: 1, unitTitle: unit.title, unitSlug: unit.slug });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStageIndex]);
+  }
 
   let globalIdx = 0;
 
