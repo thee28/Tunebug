@@ -57,6 +57,16 @@ export default function DashboardContent({
   const [view, setView] = useState<View>("path");
   const [guidebookUnit, setGuidebookUnit] = useState<{ slug: string; title: string } | null>(null);
   const [scrollToUnit, setScrollToUnit] = useState<string | undefined>();
+  // When set, the path shows this completed section for review instead of the
+  // current in-progress one. null = normal (current section).
+  const [reviewStageIndex, setReviewStageIndex] = useState<number | null>(null);
+
+  function openSection(index: number, isActive: boolean) {
+    // Resuming the current section clears review mode; opening a completed
+    // section reviews it.
+    setReviewStageIndex(isActive ? null : index);
+    setView("path");
+  }
 
   // Jump-ahead test, frozen at launch time so a post-pass router.refresh()
   // can't yank the runner out from under the user mid-result-screen.
@@ -265,7 +275,7 @@ export default function DashboardContent({
             <h1 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 20, fontWeight: 900, margin: "0 0 16px" }}>
               All Sections
             </h1>
-            <SectionList stages={stages} onBack={() => setView("path")} onStartJumpTest={startJumpTest} />
+            <SectionList stages={stages} onOpenSection={openSection} onStartJumpTest={startJumpTest} />
           </motion.div>
         )}
 
@@ -303,6 +313,8 @@ export default function DashboardContent({
               onShowGuidebook={openGuidebook}
               onStartJumpTest={startJumpTest}
               scrollToUnitSlug={scrollToUnit}
+              reviewStageIndex={reviewStageIndex}
+              onExitReview={() => setReviewStageIndex(null)}
             />
           </motion.div>
         )}

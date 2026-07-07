@@ -13,11 +13,13 @@ const SECTION_ICONS = ["school", "menu_book", "library_music", "piano", "workspa
 
 export default function SectionList({
   stages,
-  onBack,
+  onOpenSection,
   onStartJumpTest,
 }: {
   stages: Stage[];
-  onBack?: () => void;
+  // isActive = the current in-progress section (resume it); otherwise it's a
+  // completed section being reviewed.
+  onOpenSection?: (index: number, isActive: boolean) => void;
   onStartJumpTest?: (targetStageIndex: number) => void;
 }) {
   return (
@@ -146,7 +148,7 @@ export default function SectionList({
                 </button>
               ) : (
                 <button
-                  onClick={onBack}
+                  onClick={() => onOpenSection?.(i, isActive)}
                   style={{
                     width: "100%", padding: "12px 0", borderRadius: 14, textAlign: "center",
                     backgroundColor: isActive ? C.primary : C.secondary,

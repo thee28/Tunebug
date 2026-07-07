@@ -53,9 +53,11 @@ interface Props {
   onShowGuidebook: (unitSlug: string, unitTitle: string) => void;
   onStartJumpTest: (targetStageIndex: number) => void;
   scrollToUnitSlug?: string;
+  reviewStageIndex?: number | null;
+  onExitReview?: () => void;
 }
 
-export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, onStartJumpTest, scrollToUnitSlug }: Props) {
+export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, onStartJumpTest, scrollToUnitSlug, reviewStageIndex, onExitReview }: Props) {
   const mastery = useMastery();
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     () =>
@@ -159,17 +161,31 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
     return null;
   }, [stages, completedIds]);
 
-  // Only show the section the user is currently in
+  const isReviewing = reviewStageIndex != null;
+
+  // Only show the section the user is currently in — unless reviewing a
+  // completed section, which forces that section into view instead.
   const currentStageIndex = useMemo(() => {
+    if (reviewStageIndex != null) return reviewStageIndex;
     for (let i = 0; i < stages.length; i++) {
       const allLessons = stages[i].units.flatMap((u) => u.lessons);
       if (!allLessons.every((l) => completedIds.has(l.id))) return i;
     }
     return stages.length - 1;
-  }, [stages, completedIds]);
+  }, [stages, completedIds, reviewStageIndex]);
 
   const currentStage = stages[currentStageIndex];
-  const nextStage = stages[currentStageIndex + 1] ?? null;
+  // Hide the "Up Next" jump card while reviewing an already-cleared section.
+  const nextStage = isReviewing ? null : stages[currentStageIndex + 1] ?? null;
+
+  // Keep the sticky banner in sync with the section being shown (avoids a flash
+  // of the wrong section number before scroll observers fire).
+  useEffect(() => {
+    const stage = stages[currentStageIndex];
+    const unit = stage?.units[0];
+    if (unit) setBannerInfo({ section: currentStageIndex + 1, unit: 1, unitTitle: unit.title, unitSlug: unit.slug });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStageIndex]);
 
   let globalIdx = 0;
 
@@ -277,6 +293,26 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
           </button>
         </div>
       </div>
+
+      {/* Reviewing banner — lets the user drop back to their current section */}
+      {isReviewing && (
+        <button
+          onClick={onExitReview}
+          className="no-hover"
+          style={{
+            width: "100%", marginBottom: 16,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "10px 14px", borderRadius: 12,
+            backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}`,
+            color: C.muted, fontFamily: "'Nunito', sans-serif",
+            fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em",
+            cursor: "pointer",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>history</span>
+          Back to current lesson
+        </button>
+      )}
 
       {/* Lesson path — current section only */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", paddingBottom: 80 }}>
