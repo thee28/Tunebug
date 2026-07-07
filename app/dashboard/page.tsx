@@ -111,7 +111,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         style={{ backgroundColor: C.dark, borderBottom: `2px solid ${C.border}` }}
       >
         <Link
-          href="/"
+          href="/dashboard"
           className="text-xl font-extrabold tracking-tight"
           style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}
         >
