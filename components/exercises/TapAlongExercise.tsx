@@ -137,7 +137,11 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
   }, [phase, computeTargets, beatMs, config.toleranceMs, onAnswerChange, schedule]);
 
   const tap = useCallback(() => {
-    if (phase !== "running") return;
+    // Allow taps during the countdown too — the first note fires the instant
+    // phase flips to "running", so locking until then makes on-beat early taps
+    // impossible. Early taps get a negative offset (see startedAtRef) and are
+    // scored as misses / extra taps, which accounts for jumping the gun.
+    if (phase !== "countdown" && phase !== "running") return;
     tapTimesRef.current.push(performance.now());
   }, [phase]);
 
@@ -254,15 +258,14 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
           className="tap-button"
           onMouseDown={tap}
           onTouchStart={tap}
-          disabled={phase !== "running"}
           style={{
             // CSS custom prop consumed by the :active rule above
             ["--tap-shadow" as string]: C.primaryDark,
             width: 160, height: 160, borderRadius: "50%",
-            backgroundColor: phase === "running" ? C.primary : "rgba(87,78,177,0.35)",
+            backgroundColor: C.primary,
             boxShadow: `0 6px 0 0 ${C.primaryDark}`,
             color: "white", border: "none",
-            cursor: phase === "running" ? "pointer" : "not-allowed",
+            cursor: "pointer",
             fontFamily: "'Nunito', sans-serif", fontSize: 24, fontWeight: 900,
             letterSpacing: "0.08em",
           }}
