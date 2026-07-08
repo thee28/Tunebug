@@ -10,6 +10,7 @@ import { getTodayQuestProgress, getTodayClaimedQuestIds } from "@/lib/db/quests"
 import { getWeeklyLeaderboard } from "@/lib/db/leaderboard";
 import { getAchievementViews } from "@/lib/db/achievements";
 import { leagueForXP } from "@/lib/leagues";
+import { levelInfo } from "@/lib/leveling";
 import { CURRICULUM } from "@/lib/curriculum/config";
 import type { Difficulty } from "@/lib/curriculum/content";
 import DashboardContent from "@/components/dashboard/DashboardContent";
@@ -92,9 +93,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     .slice(0, 2)
     .toUpperCase();
 
-  const level = Math.floor(totalXP / 500) + 1;
-  const xpInLevel = totalXP % 500;
-  const xpProgress = Math.round((xpInLevel / 500) * 100);
+  const { level, xpInLevel, xpForNext, progress: xpProgress, isMax: isMaxLevel } = levelInfo(totalXP);
   const completedStages = stages.filter((s) => s.status === "complete").length;
   const totalStages = stages.length;
 
@@ -309,7 +308,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     />
                   </div>
                   <p className="text-xs mt-1 text-right" style={{ color: C.muted, fontFamily: "'Nunito', sans-serif" }}>
-                    {xpInLevel} / 500 to next level
+                    {isMaxLevel ? "Max level reached" : `${xpInLevel} / ${xpForNext} to next level`}
                   </p>
                 </div>
               </div>
