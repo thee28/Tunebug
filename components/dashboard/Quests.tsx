@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { QuestProgress } from "@/lib/db/quests";
-import { QUEST_DEFS } from "@/lib/quests";
+import { buildQuestDefs } from "@/lib/quests";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
@@ -29,14 +29,16 @@ function hoursUntilMidnight(): number {
 interface Props {
   questProgress: QuestProgress;
   claimedQuestIds: string[];
+  dailyXpGoal: number;
 }
 
-export default function Quests({ questProgress, claimedQuestIds }: Props) {
+export default function Quests({ questProgress, claimedQuestIds, dailyXpGoal }: Props) {
   const router = useRouter();
   const [claimed, setClaimed] = useState<Set<string>>(new Set(claimedQuestIds));
   const [claiming, setClaiming] = useState<string | null>(null);
 
-  const completed = QUEST_DEFS.filter(q => q.progress(questProgress) >= q.goal).length;
+  const questDefs = buildQuestDefs(dailyXpGoal);
+  const completed = questDefs.filter(q => q.progress(questProgress) >= q.goal).length;
   const hours = hoursUntilMidnight();
 
   async function handleClaim(questId: string) {
@@ -75,7 +77,7 @@ export default function Quests({ questProgress, claimedQuestIds }: Props) {
             Earn rewards with quests!
           </h1>
           <p style={{ color: "rgba(255,255,255,0.75)", fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0 }}>
-            You&apos;ve completed <strong style={{ color: "white" }}>{completed} out of {QUEST_DEFS.length}</strong> quests today.
+            You&apos;ve completed <strong style={{ color: "white" }}>{completed} out of {questDefs.length}</strong> quests today.
           </p>
         </div>
 
@@ -107,7 +109,7 @@ export default function Quests({ questProgress, claimedQuestIds }: Props) {
       </div>
 
       <div style={{ borderRadius: 16, border: `2px solid ${C.border}`, overflow: "hidden" }}>
-        {QUEST_DEFS.map((quest, i) => {
+        {questDefs.map((quest, i) => {
           const current = quest.progress(questProgress);
           const progress = Math.min(current / quest.goal, 1);
           const done = current >= quest.goal;
@@ -119,7 +121,7 @@ export default function Quests({ questProgress, claimedQuestIds }: Props) {
               key={quest.id}
               style={{
                 padding: "20px 20px",
-                borderBottom: i < QUEST_DEFS.length - 1 ? `2px solid ${C.border}` : "none",
+                borderBottom: i < questDefs.length - 1 ? `2px solid ${C.border}` : "none",
                 backgroundColor: done ? "rgba(0,108,78,0.08)" : C.surfaceHigh,
                 display: "flex", alignItems: "center", gap: 16,
               }}

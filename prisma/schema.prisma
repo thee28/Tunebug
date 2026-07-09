@@ -17,6 +17,11 @@ model User {
   bannerColor   String?
   publicProfile    Boolean @default(true)
   personalizedRecs Boolean @default(true)
+  // Placement survey state. onboardedAt null = survey not completed yet, which
+  // bounces the user into /onboarding. dailyXpGoal drives the "Earn X XP" quest.
+  dailyXpGoal   Int       @default(10)
+  skillLevel    String?
+  onboardedAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

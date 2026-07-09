@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { readJson } from "@/lib/api/validation";
 import { rateLimit, tooManyRequests } from "@/lib/api/rateLimit";
-import { updateStreak } from "@/lib/db/streak";
-import { syncAchievements } from "@/lib/db/achievements";
+import { unlockPriorSections } from "@/lib/db/sectionJump";
 
 // Called after the client-side jump test is passed. Marks every lesson in the
 // stages BEFORE the target stage as passed so the normal unlock logic opens
@@ -26,48 +24,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const target = await prisma.stage.findUnique({
-      where: { slug: body.targetStageSlug },
-      select: { id: true, order: true },
-    });
-    if (!target) {
-      return Response.json({ error: "Stage not found" }, { status: 404 });
+    const result = await unlockPriorSections(session.user.id, body.targetStageSlug);
+    if (!result) {
+      return Response.json({ error: "Nothing to skip before that section" }, { status: 400 });
     }
-    if (target.order === 0) {
-      return Response.json({ error: "Nothing to skip before the first section" }, { status: 400 });
-    }
-
-    const priorLessons = await prisma.lesson.findMany({
-      where: { unit: { stage: { order: { lt: target.order } } } },
-      select: { id: true },
-    });
-    const priorIds = priorLessons.map((l) => l.id);
-
-    const alreadyPassed = await prisma.lessonProgress.findMany({
-      where: { userId: session.user.id, passed: true, lessonId: { in: priorIds } },
-      select: { lessonId: true },
-    });
-    const passedIds = new Set(alreadyPassed.map((p) => p.lessonId));
-    const toMark = priorIds.filter((id) => !passedIds.has(id));
-
-    if (toMark.length > 0) {
-      await prisma.lessonProgress.createMany({
-        data: toMark.map((lessonId) => ({
-          userId: session.user.id,
-          lessonId,
-          score: 100,
-          passed: true,
-          attempts: 1,
-          xpEarned: 0,
-        })),
-      });
-      await updateStreak(session.user.id);
-    }
-
-    // Non-fatal, same as the progress route.
-    const unlocked = await syncAchievements(session.user.id).catch(() => [] as string[]);
-
-    return Response.json({ skippedLessons: toMark.length, unlockedAchievements: unlocked });
+    return Response.json(result);
   } catch (e) {
     console.error("POST /api/section-jump failed:", e);
     return Response.json({ error: "Internal server error" }, { status: 500 });

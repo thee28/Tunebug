@@ -74,6 +74,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             name: true,
             publicProfile: true,
             personalizedRecs: true,
+            dailyXpGoal: true,
+            onboardedAt: true,
           },
         })
       ),
@@ -81,8 +83,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       isLeaderboards ? getWeeklyLeaderboard(session.user.id) : Promise.resolve(null),
       isProfile ? getAchievementViews(session.user.id) : Promise.resolve(null),
     ]);
+  // New accounts land on the dashboard first; bounce them into the placement
+  // survey until they finish it.
+  if (dbUser && !dbUser.onboardedAt) redirect("/onboarding");
+
   const totalXP = dbUser?.xp ?? 0;
   const currentStreak = streak?.currentStreak ?? 0;
+  const dailyXpGoal = dbUser?.dailyXpGoal ?? 10;
 
   // Prefer the DB name — the JWT session copy goes stale after a rename.
   const displayName = dbUser?.name ?? session.user.name ?? session.user.email ?? "Musician";
@@ -348,16 +355,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm mb-1" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
-                    Earn 10 XP
+                    Earn {dailyXpGoal} XP
                   </p>
                   <div className="w-full h-2.5 rounded-full" style={{ backgroundColor: C.border }}>
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${Math.min((questProgress.xpToday / 10) * 100, 100)}%`, backgroundColor: C.tertiary }}
+                      style={{ width: `${Math.min((questProgress.xpToday / dailyXpGoal) * 100, 100)}%`, backgroundColor: C.tertiary }}
                     />
                   </div>
                   <p className="text-xs mt-1" style={{ color: C.muted }}>
-                    {Math.min(questProgress.xpToday, 10)} / 10
+                    {Math.min(questProgress.xpToday, dailyXpGoal)} / {dailyXpGoal}
                   </p>
                 </div>
                 <div
@@ -431,6 +438,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             }}
             questProgress={questProgress}
             claimedQuestIds={claimedQuestIds}
+            dailyXpGoal={dailyXpGoal}
             leaderboard={leaderboard}
             achievements={achievements}
             privacySettings={{

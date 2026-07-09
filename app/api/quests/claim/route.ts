@@ -25,13 +25,20 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid payload" }, { status: 400 });
   }
   const { questId } = body;
-
-  const def = typeof questId === "string" ? getQuestDef(questId) : undefined;
-  if (!def) {
+  if (typeof questId !== "string") {
     return Response.json({ error: "Unknown quest" }, { status: 400 });
   }
 
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { dailyXpGoal: true },
+    });
+    const def = getQuestDef(questId, user?.dailyXpGoal ?? undefined);
+    if (!def) {
+      return Response.json({ error: "Unknown quest" }, { status: 400 });
+    }
+
     const progress = await getTodayQuestProgress(userId);
     if (!isQuestComplete(def, progress)) {
       return Response.json({ error: "Quest not complete yet" }, { status: 409 });

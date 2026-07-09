@@ -34,6 +34,7 @@ interface Props {
   profile: ProfileData;
   questProgress: QuestProgress;
   claimedQuestIds: string[];
+  dailyXpGoal: number;
   leaderboard: LeaderboardData | null;
   achievements: AchievementView[] | null;
   privacySettings: PrivacySettings;
@@ -48,6 +49,7 @@ export default function DashboardContent({
   profile,
   questProgress,
   claimedQuestIds,
+  dailyXpGoal,
   leaderboard,
   achievements,
   privacySettings,
@@ -230,7 +232,7 @@ export default function DashboardContent({
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.18 }}
           >
-            <Quests questProgress={questProgress} claimedQuestIds={claimedQuestIds} />
+            <Quests questProgress={questProgress} claimedQuestIds={claimedQuestIds} dailyXpGoal={dailyXpGoal} />
           </motion.div>
         )}
 
