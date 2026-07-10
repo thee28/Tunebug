@@ -132,15 +132,7 @@ export default function OnboardingFlow({ firstName, sectionTitles }: Props) {
       <div style={{ flex: 1, width: "100%", maxWidth: 620, margin: "0 auto", padding: "24px 24px 140px" }}>
         {/* Mascot + speech bubble */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 40 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 20, flexShrink: 0,
-            backgroundColor: C.primary, boxShadow: `0 5px 0 0 ${C.primaryDark}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 40, color: "white", fontVariationSettings: "'FILL' 1" }}>
-              music_note
-            </span>
-          </div>
+          <MascotHead step={step} />
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -273,6 +265,35 @@ export default function OnboardingFlow({ firstName, sectionTitles }: Props) {
 }
 
 // ── Sub-components ──
+
+// Tunebug head "speaker". Swaps between eyes-open and eyes-closed on each
+// survey step so it looks like a different reaction per question. Both frames
+// are the same 735² asset with transparent padding, so we scale + crop the
+// head (antennae included) into the small box.
+function MascotHead({ step }: { step: number }) {
+  const eyesOpen = step % 2 === 0;
+
+  const frame: React.CSSProperties = {
+    position: "absolute",
+    width: 140,
+    maxWidth: "none",
+    height: "auto",
+    left: -30,
+    top: -28,
+    transition: "opacity 0.2s ease",
+    pointerEvents: "none",
+    userSelect: "none",
+  };
+
+  return (
+    <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0, overflow: "hidden" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/tunebug-talk-open.png" alt="Tunebug" style={{ ...frame, opacity: eyesOpen ? 1 : 0 }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/tunebug-talk-closed.png" alt="" aria-hidden style={{ ...frame, opacity: eyesOpen ? 0 : 1 }} />
+    </div>
+  );
+}
 
 function OptionRow({
   selected,
