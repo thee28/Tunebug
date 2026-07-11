@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import type { SequenceRecallConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -23,27 +24,16 @@ const C = {
 export function SequenceRecallExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [userSeq, setUserSeq] = useState<string[]>([]);
   const [playing, setPlaying] = useState(false);
-  const synthRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    return () => {
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
-  }, []);
 
   const playSequence = useCallback(async () => {
     if (playing) return;
     setPlaying(true);
     try {
       const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
+      const piano = await getPiano();
       const now = Tone.now();
       config.sequence.forEach((n, i) => {
-        synth.triggerAttackRelease(n, "0.4", now + i * 0.6);
+        piano.triggerAttackRelease(n, "0.4", now + i * 0.6);
       });
       setTimeout(() => setPlaying(false), config.sequence.length * 600 + 200);
     } catch {
@@ -57,11 +47,8 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
     try {
       // brief audio feedback for the tap
       (async () => {
-        const Tone = await import("tone");
-        await Tone.start();
-        if (!synthRef.current) synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-        const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
-        synth.triggerAttackRelease(note, "0.3");
+        const piano = await getPiano();
+        piano.triggerAttackRelease(note, "0.3");
       })();
     } catch {}
     setUserSeq((s) => [...s, note]);

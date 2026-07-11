@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import { PitchDetector } from "pitchy";
 import type { PitchMatchConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
@@ -58,7 +59,6 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
   const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number>(0);
-  const synthRef = useRef<unknown>(null);
   const completedRef = useRef(false);
 
   function stopAudio() {
@@ -72,7 +72,6 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
   useEffect(() => {
     return () => {
       stopAudio();
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
     };
   }, []);
 
@@ -99,12 +98,8 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
     if (notePlaying) return;
     setNotePlaying(true);
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      (synthRef.current as InstanceType<typeof Tone.Synth>).triggerAttackRelease(config.targetNote, "1");
+      const piano = await getPiano();
+      piano.triggerAttackRelease(config.targetNote, "1");
       setTimeout(() => setNotePlaying(false), 1100);
     } catch {
       setNotePlaying(false);

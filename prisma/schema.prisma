@@ -22,6 +22,10 @@ model User {
   dailyXpGoal   Int       @default(10)
   skillLevel    String?
   onboardedAt   DateTime?
+  // Hearts: lose 1 per wrong lesson answer, refill 1 every 3h (lazily computed).
+  // heartsUpdatedAt anchors the refill clock; only meaningful while hearts < max.
+  hearts          Int      @default(5)
+  heartsUpdatedAt DateTime @default(now())
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

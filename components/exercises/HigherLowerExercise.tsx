@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import type { HigherLowerConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -24,27 +25,16 @@ const CHOICES: Array<HigherLowerConfig["correctAnswer"]> = ["Higher", "Lower"];
 export function HigherLowerExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<HigherLowerConfig["correctAnswer"] | null>(null);
   const [playing, setPlaying] = useState(false);
-  const synthRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    return () => {
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
-  }, []);
 
   const playPair = useCallback(async () => {
     if (playing) return;
     setPlaying(true);
     try {
       const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
+      const piano = await getPiano();
       const now = Tone.now();
-      synth.triggerAttackRelease(config.noteA, "0.5", now);
-      synth.triggerAttackRelease(config.noteB, "0.5", now + 0.7);
+      piano.triggerAttackRelease(config.noteA, "0.5", now);
+      piano.triggerAttackRelease(config.noteB, "0.5", now + 0.7);
       setTimeout(() => setPlaying(false), 1400);
     } catch {
       setPlaying(false);

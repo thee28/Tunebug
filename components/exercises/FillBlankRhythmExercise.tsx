@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { getPiano, RHYTHM_TAP_NOTE } from "@/lib/audio/piano";
 import type { FillBlankRhythmConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -26,29 +27,18 @@ const BEAT_MS = (60 / BPM) * 1000;
 export function FillBlankRhythmExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<FillBlankRhythmConfig["correctAnswer"] | null>(null);
   const [playing, setPlaying] = useState(false);
-  const synthRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    return () => {
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
-  }, []);
 
   const playPattern = useCallback(async () => {
     if (playing) return;
     setPlaying(true);
     try {
       const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.MembraneSynth().toDestination();
-      }
-      const synth = synthRef.current as InstanceType<typeof Tone.MembraneSynth>;
+      const piano = await getPiano();
       const now = Tone.now();
       let t = 0;
       for (const sym of config.pattern) {
         const isRest = sym.includes("rest");
-        if (!isRest) synth.triggerAttackRelease("C3", "8n", now + t / 1000);
+        if (!isRest) piano.triggerAttackRelease(RHYTHM_TAP_NOTE, "8n", now + t / 1000);
         t += NOTE_BEATS[sym] * BEAT_MS;
       }
       setTimeout(() => setPlaying(false), t + 200);

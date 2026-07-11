@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import { motion } from "framer-motion";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { LessonStep } from "@/types/lesson";
 import { ExerciseEngine, type ExerciseResult } from "./ExerciseEngine";
+import type { HeartsState } from "@/lib/hearts";
 import { NoteSymbolSVG } from "./NoteSymbolSVG";
 import { StaffRenderer } from "./StaffRenderer";
 
@@ -103,15 +105,42 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
   const [hasAnswer, setHasAnswer] = useState(false);
   const [pendingResult, setPendingResult] = useState<ExerciseResult | null>(null);
 
-  // Teach-slide audio
-  const [teachPlaying, setTeachPlaying] = useState(false);
-  const teachSynthRef = useRef<unknown>(null);
+  // Hearts. null = not loaded (or unauthenticated) — no heart tracking then.
+  // Wrong answers cost 1 heart; section tests have their own separate hearts.
+  const [hearts, setHearts] = useState<number | null>(null);
+  const [nextRefillAt, setNextRefillAt] = useState<string | null>(null);
+  const [outOfHearts, setOutOfHearts] = useState(false);
+  const [refillMsg, setRefillMsg] = useState("");
+
+  const applyHeartsState = (d: HeartsState | null) => {
+    if (!d || typeof d.hearts !== "number") return;
+    setHearts(d.hearts);
+    setNextRefillAt(d.nextRefillAt);
+  };
+
+  // Snapshot the countdown text at trigger time — render must stay pure.
+  const triggerOutOfHearts = (refillAt: string | null) => {
+    const ms = refillAt ? new Date(refillAt).getTime() - Date.now() : 0;
+    const mins = Math.max(1, Math.ceil(ms / 60_000));
+    setRefillMsg(ms > 0
+      ? `Next heart in ${mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`}.`
+      : "A heart should be ready any moment.");
+    setOutOfHearts(true);
+  };
 
   useEffect(() => {
-    return () => {
-      (teachSynthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
+    fetch("/api/hearts")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: HeartsState | null) => {
+        applyHeartsState(d);
+        // Can't start a lesson with no hearts left.
+        if (d && d.hearts <= 0) triggerOutOfHearts(d.nextRefillAt);
+      })
+      .catch(() => {});
   }, []);
+
+  // Teach-slide audio
+  const [teachPlaying, setTeachPlaying] = useState(false);
 
   const playTeachAudio = useCallback(async (
     note?: string,
@@ -121,24 +150,16 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
     if (teachPlaying) return;
     setTeachPlaying(true);
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!teachSynthRef.current) {
-        teachSynthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      const synth = teachSynthRef.current as InstanceType<typeof Tone.Synth>;
+      const piano = await getPiano();
       if (interval) {
-        synth.triggerAttackRelease(interval[0], "0.6");
-        setTimeout(() => synth.triggerAttackRelease(interval[1], "0.6"), 800);
+        piano.triggerAttackRelease(interval[0], "0.6");
+        setTimeout(() => piano.triggerAttackRelease(interval[1], "0.6"), 800);
         setTimeout(() => setTeachPlaying(false), 1600);
       } else if (notes && notes.length > 1) {
-        const poly = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" } }).toDestination();
-        poly.triggerAttackRelease(notes, "1.2");
+        piano.triggerAttackRelease(notes, "1.2");
         setTimeout(() => setTeachPlaying(false), 1400);
-        // Dispose after the release tail; otherwise each playback leaks a node.
-        setTimeout(() => poly.dispose(), 3000);
       } else if (note) {
-        synth.triggerAttackRelease(note, "0.8");
+        piano.triggerAttackRelease(note, "0.8");
         setTimeout(() => setTeachPlaying(false), 900);
       } else {
         setTeachPlaying(false);
@@ -152,6 +173,16 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
     setPendingResult(result);
     if (result.passed) playCorrectSound();
     else playIncorrectSound();
+
+    if (!result.passed && hearts !== null) {
+      // Optimistic decrement; the server response reconciles (it also applies
+      // any refill that happened since the last fetch).
+      setHearts((h) => (h === null ? h : Math.max(0, h - 1)));
+      fetch("/api/hearts", { method: "POST" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then(applyHeartsState)
+        .catch(() => {});
+    }
 
     // Fire-and-forget mastery recording. The slot generator tags each exercise
     // step with its conceptId; if a step came from some other path it lacks
@@ -202,6 +233,12 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
       return;
     }
     if (!pendingResult) return;
+    // Out of hearts mid-lesson: the run ends here (the final step still counts
+    // if this was it — the lesson completes normally in that case).
+    if (!pendingResult.passed && hearts === 0 && index < steps.length - 1) {
+      triggerOutOfHearts(nextRefillAt);
+      return;
+    }
     const newScores = [...scores, pendingResult.score];
     setScores(newScores);
     advanceStep(newScores);
@@ -233,6 +270,44 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
   const currentStep = steps[index];
   const isTeachStep = phase === "exercise" && currentStep?.kind === "teach";
   const isCorrect = pendingResult?.passed ?? false;
+
+  if (outOfHearts) {
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        height: "100vh", gap: 24, backgroundColor: C.surface, textAlign: "center", padding: 20,
+      }}>
+        <div style={{
+          width: 100, height: 100, borderRadius: "50%",
+          backgroundColor: C.surfaceHigh, boxShadow: "0 8px 0 0 rgba(0,0,0,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 52, color: C.errorDim, fontVariationSettings: "'FILL' 1" }}>
+            heart_broken
+          </span>
+        </div>
+        <div>
+          <h2 style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 26, fontWeight: 900, margin: "0 0 8px" }}>
+            Out of hearts
+          </h2>
+          <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 15, lineHeight: 1.6, margin: 0, maxWidth: 360 }}>
+            {refillMsg}
+          </p>
+        </div>
+        <button
+          onClick={onExit}
+          style={{
+            padding: "14px 56px", borderRadius: 14,
+            backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
+            color: "white", border: "none",
+            fontFamily: "'Nunito', sans-serif", fontSize: 16, fontWeight: 700, cursor: "pointer",
+          }}
+        >
+          Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor: C.surface, overflow: "hidden" }}>
@@ -267,8 +342,8 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
 
         {/* Hearts */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 28, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}>favorite</span>
-          <span style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 18, fontWeight: 700 }}>∞</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 28, color: hearts === 0 ? C.muted : "#ffb4ab", fontVariationSettings: "'FILL' 1" }}>favorite</span>
+          <span style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 18, fontWeight: 700 }}>{hearts ?? "∞"}</span>
         </div>
 
         {/* Debug: auto-advance (dev only) */}
@@ -340,8 +415,6 @@ export function LessonRunner({ steps, difficulty, xpReward, lessonSlug, onComple
                 </div>
                 {hasAudio && (
                   <button
-                    // playTeachAudio reads teachSynthRef.current lazily inside the async body — only ever fires on click.
-                    // eslint-disable-next-line react-hooks/refs
                     onClick={() => playTeachAudio(step.playNote, step.playNotes, step.playInterval)}
                     style={{
                       width: 80, height: 80, borderRadius: "50%",

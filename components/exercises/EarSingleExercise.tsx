@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import type { EarSingleConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -23,25 +24,13 @@ const C = {
 export function EarSingleExercise({ config, difficulty, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
-  const synthRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    return () => {
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
-  }, []);
 
   const playNote = useCallback(async () => {
     if (playing) return;
     setPlaying(true);
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
-      synth.triggerAttackRelease(config.targetNote, "0.6");
+      const piano = await getPiano();
+      piano.triggerAttackRelease(config.targetNote, "0.6");
       setTimeout(() => setPlaying(false), 700);
     } catch {
       setPlaying(false);

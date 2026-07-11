@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import type { EarMultiConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -23,25 +24,13 @@ const C = {
 export function EarMultiExercise({ config, difficulty, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [playing, setPlaying] = useState(false);
-  const synthRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    return () => {
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
-  }, []);
 
   const playChord = useCallback(async () => {
     if (playing) return;
     setPlaying(true);
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" } }).toDestination();
-      }
-      const poly = synthRef.current as InstanceType<typeof Tone.PolySynth>;
-      poly.triggerAttackRelease(config.targetNotes, "0.8");
+      const piano = await getPiano();
+      piano.triggerAttackRelease(config.targetNotes, "0.8");
       setTimeout(() => setPlaying(false), 900);
     } catch {
       setPlaying(false);

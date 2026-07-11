@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import type { MatchingPairsConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -45,13 +46,6 @@ function buildTiles(notes: string[]): Tile[] {
 export function MatchingPairsExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [tiles, setTiles] = useState<Tile[]>(() => buildTiles(config.notes));
   const [revealed, setRevealed] = useState<number[]>([]); // tile ids currently shown
-  const synthRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    return () => {
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
-    };
-  }, []);
 
   const allMatched = useMemo(() => tiles.every((t) => t.matched), [tiles]);
 
@@ -59,13 +53,8 @@ export function MatchingPairsExercise({ config, submitted, onAnswerChange, onCom
 
   const play = useCallback(async (note: string) => {
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
-      synth.triggerAttackRelease(note, "0.5");
+      const piano = await getPiano();
+      piano.triggerAttackRelease(note, "0.5");
     } catch {}
   }, []);
 

@@ -6,6 +6,7 @@ import type { TapAlongConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
 import { NoteSymbolSVG, NOTE_BEATS } from "./NoteSymbolSVG";
+import { getPiano, RHYTHM_TAP_NOTE, RHYTHM_TICK_NOTE, RHYTHM_GO_NOTE } from "@/lib/audio/piano";
 
 interface Props {
   config: TapAlongConfig;
@@ -32,7 +33,6 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
   const targetTimesRef = useRef<number[]>([]);
   const tapTimesRef = useRef<number[]>([]);
   const startedAtRef = useRef<number>(0);
-  const synthRef = useRef<unknown>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const schedule = useCallback((fn: () => void, ms: number) => {
@@ -45,7 +45,6 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
     const timers = timersRef.current;
     return () => {
       timers.forEach(clearTimeout);
-      (synthRef.current as { dispose?: () => void } | null)?.dispose?.();
     };
   }, []);
 
@@ -66,13 +65,9 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
     tapTimesRef.current = [];
     targetTimesRef.current = computeTargets();
 
-    // Pre-warm synth so countdown clicks fire instantly.
+    // Pre-warm the piano so countdown clicks fire instantly.
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.MembraneSynth().toDestination();
-      }
+      await getPiano();
     } catch {}
 
     // Countdown: tick at beat tempo, 3 → 2 → 1 → GO, then start.
@@ -81,25 +76,22 @@ export function TapAlongExercise({ config, submitted, onAnswerChange, onComplete
     setCountdownN(3);
 
     const playClick = (pitch: string) => {
-      try {
-        const synth = synthRef.current as InstanceType<typeof import("tone").MembraneSynth> | null;
-        synth?.triggerAttackRelease(pitch, "16n");
-      } catch {}
+      getPiano().then((piano) => piano.triggerAttackRelease(pitch, "16n")).catch(() => {});
     };
-    playClick("G2");
+    playClick(RHYTHM_TICK_NOTE);
 
-    schedule(() => { setCountdownN(2); playClick("G2"); }, tickMs);
-    schedule(() => { setCountdownN(1); playClick("G2"); }, tickMs * 2);
-    schedule(() => { setCountdownN(0); playClick("C3"); }, tickMs * 3); // GO marker
+    schedule(() => { setCountdownN(2); playClick(RHYTHM_TICK_NOTE); }, tickMs);
+    schedule(() => { setCountdownN(1); playClick(RHYTHM_TICK_NOTE); }, tickMs * 2);
+    schedule(() => { setCountdownN(0); playClick(RHYTHM_GO_NOTE); }, tickMs * 3); // GO marker
 
     schedule(async () => {
       // Schedule the pattern clicks
       try {
         const Tone = await import("tone");
-        const synth = synthRef.current as InstanceType<typeof Tone.MembraneSynth>;
+        const piano = await getPiano();
         const now = Tone.now();
         for (let i = 0; i < targetTimesRef.current.length; i++) {
-          synth.triggerAttackRelease("C2", "16n", now + targetTimesRef.current[i] / 1000);
+          piano.triggerAttackRelease(RHYTHM_TAP_NOTE, "16n", now + targetTimesRef.current[i] / 1000);
         }
       } catch {}
 

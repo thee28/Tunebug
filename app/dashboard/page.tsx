@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getStagesWithProgress } from "@/lib/db/stages";
 import { getStreak } from "@/lib/db/streak";
+import { getHearts } from "@/lib/db/hearts";
 import { getTodayQuestProgress, getTodayClaimedQuestIds } from "@/lib/db/quests";
 import { getWeeklyLeaderboard } from "@/lib/db/leaderboard";
 import { getAchievementViews } from "@/lib/db/achievements";
@@ -60,7 +61,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [stages, streak, questProgress, dbUser, claimedQuestIds, leaderboard, achievements] =
+  const [stages, streak, questProgress, dbUser, claimedQuestIds, leaderboard, achievements, heartsState] =
     await Promise.all([
       getStagesWithProgress(session.user.id),
       getStreak(session.user.id),
@@ -82,6 +83,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       isQuests ? getTodayClaimedQuestIds(session.user.id) : Promise.resolve([]),
       isLeaderboards ? getWeeklyLeaderboard(session.user.id) : Promise.resolve(null),
       isProfile ? getAchievementViews(session.user.id) : Promise.resolve(null),
+      getHearts(session.user.id),
     ]);
   // New accounts land on the dashboard first; bounce them into the placement
   // survey until they finish it.
@@ -152,12 +154,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-default select-none">
             <span
               className="material-symbols-outlined"
-              style={{ fontSize: 22, color: "#ffb4ab", fontVariationSettings: "'FILL' 1" }}
+              style={{ fontSize: 22, color: heartsState.hearts === 0 ? C.muted : "#ffb4ab", fontVariationSettings: "'FILL' 1" }}
             >
               favorite
             </span>
             <span className="font-bold text-sm" style={{ color: C.text, fontFamily: "'Nunito', sans-serif" }}>
-              &#8734;
+              {heartsState.hearts}
             </span>
           </div>
         </div>

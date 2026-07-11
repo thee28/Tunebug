@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import { motion } from "framer-motion";
 
 const C = {
@@ -311,19 +312,13 @@ interface Props {
 export default function Guidebook({ unitSlug, unitTitle, stageTitle }: Props) {
   const guide = GLOSSARY[unitSlug] ?? FALLBACK;
   const [playingTerm, setPlayingTerm] = useState<string | null>(null);
-  const synthRef = useRef<unknown>(null);
 
   const playNote = useCallback(async (toneNote: string, termKey: string) => {
     if (playingTerm) return;
     setPlayingTerm(termKey);
     try {
-      const Tone = await import("tone");
-      await Tone.start();
-      if (!synthRef.current) {
-        synthRef.current = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-      }
-      const synth = synthRef.current as InstanceType<typeof Tone.Synth>;
-      synth.triggerAttackRelease(toneNote, "0.6");
+      const piano = await getPiano();
+      piano.triggerAttackRelease(toneNote, "0.6");
       setTimeout(() => setPlayingTerm(null), 700);
     } catch {
       setPlayingTerm(null);
