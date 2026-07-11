@@ -52,6 +52,7 @@ export function SightReadExercise({ config, submitted, onAnswerChange, onComplet
 
       <Keyboard
         octaveRange={config.octaveRange}
+        focusNotes={[config.targetNote]}
         selectedNote={selected}
         disabled={submitted}
         onSelect={handleSelect}

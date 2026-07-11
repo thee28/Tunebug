@@ -113,6 +113,7 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
 
       <Keyboard
         octaveRange={config.octaveRange}
+        focusNotes={config.sequence}
         disabled={submitted || userSeq.length >= config.sequence.length}
         onSelect={tapKey}
       />

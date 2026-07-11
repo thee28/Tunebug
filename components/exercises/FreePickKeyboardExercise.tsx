@@ -74,6 +74,7 @@ export function FreePickKeyboardExercise({ config, submitted, onAnswerChange, on
 
       <Keyboard
         octaveRange={config.octaveRange}
+        focusNotes={[config.targetNote]}
         selectedNote={selected}
         disabled={submitted}
         onSelect={handleSelect}
