@@ -12,24 +12,24 @@ export interface DifficultySettings {
 
 export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
   beginner: {
-    allowedDeviation: 25,
+    allowedDeviation: 45,
     holdDuration: 1,
     confidenceThreshold: 0.80,
-    timeoutSeconds: 10,
+    timeoutSeconds: 12,
     choiceCount: 4,
   },
   intermediate: {
-    allowedDeviation: 15,
+    allowedDeviation: 30,
     holdDuration: 2,
     confidenceThreshold: 0.85,
-    timeoutSeconds: 10,
+    timeoutSeconds: 12,
     choiceCount: 4,
   },
   advanced: {
-    allowedDeviation: 8,
+    allowedDeviation: 20,
     holdDuration: 3,
     confidenceThreshold: 0.88,
-    timeoutSeconds: 12,
+    timeoutSeconds: 14,
     choiceCount: 6,
   },
 };

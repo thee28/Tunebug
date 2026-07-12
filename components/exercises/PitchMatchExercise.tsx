@@ -28,7 +28,16 @@ const C = {
 const MIN_HZ = 50;
 const MAX_HZ = 1500;
 // Brief dropouts (breath, consonants) shouldn't reset the hold.
-const GRACE_MS = 250;
+const GRACE_MS = 400;
+// Meter display span. Wider than the pass window so the needle has room
+// to approach the green zone instead of pinning at the edges.
+const METER_RANGE_CENTS = 120;
+// Time constant for the exponential smoothing of the cents readout (ms).
+// Larger = slower, calmer needle.
+const SMOOTHING_MS = 180;
+// Median window (frames) — swallows single-frame octave/fifth misdetections
+// from the pitch detector that would otherwise fling the needle to an edge.
+const MEDIAN_WINDOW = 5;
 
 /**
  * Cents from the target note, octave-folded into [-600, 600).
@@ -147,6 +156,9 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
     let holdMs = 0;
     let bestHoldMs = 0;
     let offTargetMs = 0;
+    let unvoicedMs = 0;
+    const centsHistory: number[] = [];
+    let smoothedCents: number | null = null;
 
     const tick = () => {
       const now = performance.now();
@@ -158,10 +170,19 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
 
       const voiced = clarity >= config.confidenceThreshold && pitch >= MIN_HZ && pitch <= MAX_HZ;
       if (voiced) {
-        const cents = foldedCents(pitch, targetHz);
-        setLiveCents(cents);
+        unvoicedMs = 0;
+        const rawCents = foldedCents(pitch, targetHz);
+        // Median-of-recent kills one-frame octave/fifth detector blips,
+        // then exponential smoothing calms the remaining jitter.
+        centsHistory.push(rawCents);
+        if (centsHistory.length > MEDIAN_WINDOW) centsHistory.shift();
+        const median = [...centsHistory].sort((a, b) => a - b)[Math.floor(centsHistory.length / 2)];
+        const alpha = Math.min(1, dt / SMOOTHING_MS);
+        smoothedCents = smoothedCents === null ? median : smoothedCents + (median - smoothedCents) * alpha;
+
+        setLiveCents(smoothedCents);
         setLiveNoteName(frequencyToNote(pitch).name);
-        if (Math.abs(cents) <= settings.allowedDeviation) {
+        if (Math.abs(smoothedCents) <= settings.allowedDeviation) {
           holdMs += dt;
           offTargetMs = 0;
         } else {
@@ -169,8 +190,15 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
           if (offTargetMs > GRACE_MS) holdMs = 0;
         }
       } else {
-        setLiveCents(null);
-        setLiveNoteName(null);
+        // Keep the needle where it was through brief dropouts (breaths,
+        // consonants) instead of blanking and re-slamming it on re-entry.
+        unvoicedMs += dt;
+        if (unvoicedMs > GRACE_MS) {
+          setLiveCents(null);
+          setLiveNoteName(null);
+          centsHistory.length = 0;
+          smoothedCents = null;
+        }
         offTargetMs += dt;
         if (offTargetMs > GRACE_MS) holdMs = 0;
       }
@@ -198,8 +226,11 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
   }
 
   const inTune = liveCents !== null && Math.abs(liveCents) <= settings.allowedDeviation;
-  // Needle position: clamp to ±50¢ so the meter stays readable.
-  const needlePct = liveCents === null ? null : 50 + (Math.max(-50, Math.min(50, liveCents)) / 50) * 50;
+  // Needle position: clamp to the meter span so the meter stays readable.
+  const needlePct = liveCents === null
+    ? null
+    : 50 + (Math.max(-METER_RANGE_CENTS, Math.min(METER_RANGE_CENTS, liveCents)) / METER_RANGE_CENTS) * 50;
+  const zoneHalfPct = (settings.allowedDeviation / METER_RANGE_CENTS) * 50;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
@@ -279,11 +310,11 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
           {/* Tuner meter */}
           <div style={{ width: "100%" }}>
             <div style={{ position: "relative", height: 14, borderRadius: 7, backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}>
-              {/* In-tune zone — meter spans ±50¢, so deviation maps 1:1 to percent */}
+              {/* In-tune zone, scaled to the meter's ±METER_RANGE_CENTS span */}
               <div style={{
                 position: "absolute", top: 0, bottom: 0,
-                left: `${50 - settings.allowedDeviation}%`,
-                width: `${settings.allowedDeviation * 2}%`,
+                left: `${50 - zoneHalfPct}%`,
+                width: `${zoneHalfPct * 2}%`,
                 backgroundColor: "rgba(0,108,78,0.35)", borderRadius: 5,
               }} />
               {/* Needle */}
@@ -292,7 +323,7 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
                   position: "absolute", top: -6, bottom: -6,
                   left: `${needlePct}%`, width: 4, marginLeft: -2, borderRadius: 2,
                   backgroundColor: inTune ? C.successDim : C.tertiary,
-                  transition: "left 0.08s linear",
+                  transition: "left 0.2s ease-out",
                 }} />
               )}
             </div>

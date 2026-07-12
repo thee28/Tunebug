@@ -28,29 +28,24 @@ const CHOICES: Array<SameDifferentRhythmConfig["correctAnswer"]> = ["Same", "Dif
 
 export function SameDifferentRhythmExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<SameDifferentRhythmConfig["correctAnswer"] | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState<"A" | "B" | null>(null);
 
-  const playPatterns = useCallback(async () => {
+  const playPattern = useCallback(async (which: "A" | "B") => {
     if (playing) return;
-    setPlaying(true);
+    setPlaying(which);
     try {
       const Tone = await import("tone");
       const piano = await getPiano();
       const now = Tone.now();
+      const pattern = which === "A" ? config.patternA : config.patternB;
       let t = 0;
-      for (const sym of config.patternA) {
+      for (const sym of pattern) {
         piano.triggerAttackRelease(RHYTHM_TAP_NOTE, "8n", now + t / 1000);
         t += NOTE_BEATS[sym] * BEAT_MS;
       }
-      // gap between patterns
-      t += BEAT_MS;
-      for (const sym of config.patternB) {
-        piano.triggerAttackRelease(RHYTHM_TAP_NOTE, "8n", now + t / 1000);
-        t += NOTE_BEATS[sym] * BEAT_MS;
-      }
-      setTimeout(() => setPlaying(false), t + 200);
+      setTimeout(() => setPlaying(null), t + 200);
     } catch {
-      setPlaying(false);
+      setPlaying(null);
     }
   }, [config.patternA, config.patternB, playing]);
 
@@ -73,20 +68,30 @@ export function SameDifferentRhythmExercise({ config, submitted, onAnswerChange,
         Are these two rhythms the same?
       </p>
 
-      <button
-        onClick={playPatterns}
-        style={{
-          width: 96, height: 96, borderRadius: "50%",
-          backgroundColor: playing ? C.primaryDark : C.primary,
-          boxShadow: `0 6px 0 0 ${C.primaryDark}`,
-          border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: 44, color: "white" }}>
-          {playing ? "graphic_eq" : "play_arrow"}
-        </span>
-      </button>
+      <div style={{ display: "flex", gap: 32 }}>
+        {(["A", "B"] as const).map((which, i) => (
+          <div key={which} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={() => playPattern(which)}
+              style={{
+                width: 84, height: 84, borderRadius: "50%",
+                backgroundColor: playing === which ? C.primaryDark : C.primary,
+                boxShadow: `0 6px 0 0 ${C.primaryDark}`,
+                border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: playing && playing !== which ? 0.5 : 1,
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 40, color: "white" }}>
+                {playing === which ? "graphic_eq" : "play_arrow"}
+              </span>
+            </button>
+            <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700 }}>
+              Rhythm {i + 1}
+            </span>
+          </div>
+        ))}
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%", maxWidth: 360 }}>
         {CHOICES.map((choice) => {
