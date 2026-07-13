@@ -86,6 +86,22 @@ export async function getStagesWithProgress(userId: string): Promise<Stage[]> {
   });
 }
 
+/**
+ * Server-side lock check for a single lesson. Reuses the exact unlock rules
+ * getStagesWithProgress computes for display, so API enforcement can never
+ * drift from what the UI shows. Unknown lesson ids report as locked.
+ */
+export async function isLessonUnlocked(userId: string, lessonId: string): Promise<boolean> {
+  const stages = await getStagesWithProgress(userId);
+  for (const stage of stages) {
+    for (const unit of stage.units) {
+      const lesson = unit.lessons.find((l) => l.id === lessonId);
+      if (lesson) return lesson.unlocked ?? false;
+    }
+  }
+  return false;
+}
+
 export async function getStageBySlug(slug: string) {
   return prisma.stage.findUnique({
     where: { slug },

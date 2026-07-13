@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { saveProgress, getUserProgress } from "@/lib/db/progress";
+import { isLessonUnlocked } from "@/lib/db/stages";
 import { updateStreak } from "@/lib/db/streak";
 import { syncAchievements } from "@/lib/db/achievements";
 import { prisma } from "@/lib/prisma";
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
     const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
     if (!lesson) {
       return Response.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    // Locked content must not be completable by hitting the API directly —
+    // the client UI is not the gatekeeper.
+    if (!(await isLessonUnlocked(session.user.id, lessonId))) {
+      return Response.json({ error: "Lesson locked" }, { status: 403 });
     }
 
     const passed = score >= lesson.passingScore;

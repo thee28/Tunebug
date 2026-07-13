@@ -7,7 +7,7 @@ import type { PitchMatchConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
 import { DIFFICULTY_SETTINGS } from "@/lib/curriculum/content";
-import { noteStringToFrequency, frequencyToNote } from "@/lib/music/notes";
+import { noteStringToFrequency, frequencyToNote, foldedCents } from "@/lib/music/notes";
 
 interface Props {
   config: PitchMatchConfig;
@@ -38,16 +38,6 @@ const SMOOTHING_MS = 180;
 // Median window (frames) — swallows single-frame octave/fifth misdetections
 // from the pitch detector that would otherwise fling the needle to an edge.
 const MEDIAN_WINDOW = 5;
-
-/**
- * Cents from the target note, octave-folded into [-600, 600).
- * Octave-agnostic on purpose: singers match pitch class in their own
- * comfortable register (a C3 counts for a C4 target).
- */
-function foldedCents(frequency: number, targetHz: number): number {
-  const cents = 1200 * Math.log2(frequency / targetHz);
-  return cents - 1200 * Math.round(cents / 1200);
-}
 
 type Phase = "idle" | "listening" | "passed" | "failed" | "mic-error";
 

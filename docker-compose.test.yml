@@ -1,0 +1,15 @@
+services:
+  test-db:
+    image: postgres:16-alpine
+    container_name: tunebug-test-db
+    environment:
+      POSTGRES_USER: tunebug_test
+      POSTGRES_PASSWORD: tunebug_test
+      POSTGRES_DB: tunebug_test
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tunebug_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15

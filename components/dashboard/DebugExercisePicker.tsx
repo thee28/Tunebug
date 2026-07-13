@@ -45,6 +45,10 @@ function findExercise(type: ExerciseType): { type: ExerciseType; config: Exercis
   return null;
 }
 
+// Dev-only tool. NODE_ENV is inlined at build time, so in production builds
+// this component renders nothing (and the debug UI is dead-code-eliminated).
+const IS_DEV = process.env.NODE_ENV === "development";
+
 export default function DebugExercisePicker() {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<{ type: ExerciseType; config: ExerciseConfig } | null>(null);
@@ -57,6 +61,8 @@ export default function DebugExercisePicker() {
     setResult(null);
     setCurrent(ex);
   };
+
+  if (!IS_DEV) return null;
 
   return (
     <>

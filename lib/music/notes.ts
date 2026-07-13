@@ -40,6 +40,16 @@ export function centDeviation(frequency: number, midi: number): number {
   return 1200 * Math.log2(frequency / idealFreq);
 }
 
+/**
+ * Cents from the target frequency, octave-folded into [-600, 600).
+ * Octave-agnostic on purpose: singers match pitch class in their own
+ * comfortable register (a C3 counts for a C4 target).
+ */
+export function foldedCents(frequency: number, targetHz: number): number {
+  const cents = 1200 * Math.log2(frequency / targetHz);
+  return cents - 1200 * Math.round(cents / 1200);
+}
+
 export function noteStringToMidi(noteStr: string): number {
   // e.g. "C4" → 60, "A#3" → 58
   const match = noteStr.match(/^([A-G]#?)(\d)$/);

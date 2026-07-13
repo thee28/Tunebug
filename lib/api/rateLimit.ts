@@ -31,9 +31,29 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
   return true;
 }
 
+// Number of trusted reverse proxies in front of the app (e.g. 1 on Vercel).
+// X-Forwarded-For is a list the client can prepend spoofed entries to; only the
+// entries appended by our own proxies are trustworthy. Reading the Nth value
+// from the right skips the client-controlled prefix. Default 1 = single proxy.
+const TRUSTED_PROXY_HOPS = Math.max(
+  1,
+  Number(process.env.TRUSTED_PROXY_HOPS ?? "1") || 1
+);
+
 export function clientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
+  if (forwarded) {
+    const ips = forwarded
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (ips.length) {
+      // Take the address the outermost trusted proxy actually observed, not the
+      // leftmost (spoofable, client-supplied) entry.
+      const idx = Math.max(0, ips.length - TRUSTED_PROXY_HOPS);
+      return ips[idx];
+    }
+  }
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
