@@ -56,7 +56,13 @@ export default function OnboardingFlow({ firstName, sectionTitles }: Props) {
       await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skillLevel: skillId, timeCommitment: timeId, startMethod: method }),
+        body: JSON.stringify({
+          skillLevel: skillId,
+          timeCommitment: timeId,
+          startMethod: method,
+          // Streak day boundaries are computed in the user's own timezone.
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
     } finally {
       // Even on failure we move on — the dashboard guard re-routes if needed.

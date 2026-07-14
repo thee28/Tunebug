@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { readJson } from "@/lib/api/validation";
 import { rateLimit, tooManyRequests } from "@/lib/api/rateLimit";
 import { getSkillLevel, getTimeCommitment, type StartMethod } from "@/lib/onboarding";
+import { isValidTimezone } from "@/lib/utils";
 import { unlockPriorSections } from "@/lib/db/sectionJump";
 import { CURRICULUM } from "@/lib/curriculum/config";
 
@@ -34,6 +35,15 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid skill level or time commitment" }, { status: 400 });
   }
 
+  // Optional IANA timezone from the browser; streak day boundaries use it.
+  // Anything Intl can't resolve is ignored (user stays on the UTC default).
+  const timezone =
+    typeof body.timezone === "string" &&
+    body.timezone.length <= 64 &&
+    isValidTimezone(body.timezone)
+      ? body.timezone
+      : undefined;
+
   try {
     await prisma.user.update({
       where: { id: userId },
@@ -41,6 +51,7 @@ export async function POST(request: NextRequest) {
         dailyXpGoal: time.dailyXpGoal,
         skillLevel: skill.id,
         onboardedAt: new Date(),
+        ...(timezone ? { timezone } : {}),
       },
     });
 

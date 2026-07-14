@@ -18,7 +18,8 @@ const C = {
   coral:        "#D85A30",
   surface:      "rgba(255,255,255,0.05)",
   border:       "rgba(255,255,255,0.1)",
-  muted:        "#474552",
+  // ≥4.5:1 on the #0f0f13 background (WCAG AA) — was #474552 at 2.04:1.
+  muted:        "#8f8c9c",
   mutedBorder:  "rgba(71,69,82,0.2)",
 };
 

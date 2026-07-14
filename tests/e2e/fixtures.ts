@@ -52,11 +52,18 @@ export const AUDIO_MOCK_INIT = `
     }
   };
 
-  navigator.mediaDevices = navigator.mediaDevices || {};
-  navigator.mediaDevices.getUserMedia = async () => ({
-    getTracks: () => [{ kind: "audio", readyState: "live", stop() {} }],
-    getAudioTracks: () => [{ kind: "audio", readyState: "live", stop() {} }],
+  const makeTrack = () => ({
+    kind: "audio",
+    readyState: "live",
+    stop() {},
+    addEventListener() {},
+    removeEventListener() {},
   });
+  navigator.mediaDevices = navigator.mediaDevices || {};
+  navigator.mediaDevices.getUserMedia = async () => {
+    const tracks = [makeTrack()];
+    return { getTracks: () => tracks, getAudioTracks: () => tracks };
+  };
 })();
 `;
 

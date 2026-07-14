@@ -46,3 +46,5 @@ next-env.d.ts
 # test artifacts
 /test-results
 /playwright-report
+# .env.test holds only dummy localhost values and is required by the test suite + CI
+!.env.test

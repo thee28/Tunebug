@@ -9,6 +9,15 @@ import {
   db,
 } from "./fixtures";
 
+// Day marker for the MACHINE's local calendar day + offset. E2E users onboard
+// with the browser's real timezone (same machine), so streak day math runs in
+// local days — seeding with UTC days would break when run in the evening.
+function localDayMarker(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+}
+
 test.describe("streak across a day boundary", () => {
   test("yesterday's streak increments on today's completion (server-side day math)", async ({ page }) => {
     const email = uniqueEmail("streak");
@@ -17,13 +26,12 @@ test.describe("streak across a day boundary", () => {
     await completeOnboarding(page);
     await passUnitsBefore(email, 3);
 
-    // Seed a 3-day streak whose last activity was YESTERDAY (UTC).
+    // Seed a 3-day streak whose last activity was YESTERDAY (local day).
     await db(
       `INSERT INTO "DailyStreak" (id, "userId", "currentStreak", "longestStreak", "lastActivityDate", "updatedAt")
-       SELECT substr(md5(random()::text), 1, 24), id, 3, 5,
-              date_trunc('day', now() at time zone 'utc') - interval '1 day', now()
+       SELECT substr(md5(random()::text), 1, 24), id, 3, 5, $2::timestamptz, now()
        FROM "User" WHERE email = $1`,
-      [email]
+      [email, localDayMarker(-1)]
     );
 
     // Complete today's first passing lesson through the API with the browser session.
@@ -53,10 +61,9 @@ test.describe("streak across a day boundary", () => {
 
     await db(
       `INSERT INTO "DailyStreak" (id, "userId", "currentStreak", "longestStreak", "lastActivityDate", "updatedAt")
-       SELECT substr(md5(random()::text), 1, 24), id, 7, 7,
-              date_trunc('day', now() at time zone 'utc') - interval '2 days', now()
+       SELECT substr(md5(random()::text), 1, 24), id, 7, 7, $2::timestamptz, now()
        FROM "User" WHERE email = $1`,
-      [email]
+      [email, localDayMarker(-2)]
     );
 
     const sv1 = await db<{ id: string }>(`SELECT id FROM "Lesson" WHERE slug = 'beg-sv-1'`);

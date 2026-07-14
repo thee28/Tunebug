@@ -18,12 +18,18 @@ export interface AudioTestController {
   streams: FakeMediaStream[];
 }
 
-export class FakeMediaStreamTrack {
+export class FakeMediaStreamTrack extends EventTarget {
   kind = "audio";
   readyState: "live" | "ended" = "live";
   stop = vi.fn(() => {
     this.readyState = "ended";
   });
+
+  /** Simulate the device disappearing (unplug / OS revoke / app steal). */
+  end() {
+    this.readyState = "ended";
+    this.dispatchEvent(new Event("ended"));
+  }
 }
 
 export class FakeMediaStream {
@@ -78,6 +84,10 @@ export class FakeAudioContext {
   createMediaStreamSource() {
     return { connect: vi.fn() };
   }
+
+  resume = vi.fn(async () => {
+    this.state = "running";
+  });
 
   close = vi.fn(async () => {
     this.state = "closed";

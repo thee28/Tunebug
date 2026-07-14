@@ -1,13 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { differenceInCalendarDays } from "date-fns";
-import { startOfDayUTC } from "@/lib/utils";
+import { dayMarkerInTZ, startOfDayUTC } from "@/lib/utils";
 
 export async function getStreak(userId: string) {
   return prisma.dailyStreak.findUnique({ where: { userId } });
 }
 
 export async function updateStreak(userId: string): Promise<void> {
-  const today = startOfDayUTC(new Date());
+  // Day boundaries live in the USER's timezone (captured at onboarding,
+  // default UTC): lessons at 11:58 PM and 12:02 AM local are consecutive
+  // days regardless of where the UTC boundary falls.
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true },
+  });
+  const today = dayMarkerInTZ(new Date(), user?.timezone ?? "UTC");
 
   const streak = await prisma.dailyStreak.upsert({
     where: { userId },

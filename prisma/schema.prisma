@@ -22,6 +22,9 @@ model User {
   dailyXpGoal   Int       @default(10)
   skillLevel    String?
   onboardedAt   DateTime?
+  // IANA timezone captured during onboarding; streak day boundaries are
+  // computed in this zone so late-evening users don't lose streaks to UTC.
+  timezone      String    @default("UTC")
   // Hearts: lose 1 per wrong lesson answer, refill 1 every 3h (lazily computed).
   // heartsUpdatedAt anchors the refill clock; only meaningful while hearts < max.
   hearts          Int      @default(5)

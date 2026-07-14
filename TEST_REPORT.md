@@ -1,97 +1,73 @@
 # Tunebug Pre-Deployment Test Report
 
-Date: 2026-07-13
-Suite: `npm run verify` → typecheck + lint + 198 unit/component + 43 DB + 12 E2E = **253 tests, all green**.
+Date: 2026-07-13 (updated after the fix pass)
+Suite: `npm run verify` → typecheck + lint + 199 unit/component + 46 DB + 12 E2E = **257 tests, all green**.
 
 ---
 
-## Verdict: **GO** — with three named caveats to fix soon (none data-destroying)
+## Verdict: **GO**
 
-The core loop is solid: auth is enforced server-side on every route, XP grants are
-race-safe, locked content is now enforced at the API (fixed during this audit),
-no secrets leak to the client bundle, and the microphone is provably released
-after every exercise. The caveats below are real but none corrupts data or
-exposes users.
+Every previously flagged should-fix item is now fixed and covered by tests or a
+Lighthouse re-run. Remaining known limitations are listed at the bottom — none
+blocks deploy.
 
 ---
 
-## Ship blockers — found AND fixed in this audit
+## Fixed in the audit + fix pass
 
-Both fixes are minimal and covered by tests that were verified to fail against
-the broken code (see Phase 7).
+### Blockers (found by the test suite, fixed immediately)
+1. **Locked lessons completable via direct API call** — `POST /api/progress`
+   now enforces `isLessonUnlocked()` server-side → 403. Mutation-verified.
+2. **Debug tool shipped to production** — `DebugExercisePicker` is dev-gated;
+   verified absent from the production build in a browser.
 
-### 1. Locked lessons completable via direct API call
-- **Where:** `POST /api/progress` ([app/api/progress/route.ts](app/api/progress/route.ts))
-- **Repro (pre-fix):** authenticate, POST `{ lessonId: <any locked lesson>, score: 100 }` → 200, XP granted, progression unlocked.
-- **Fix:** server-side `isLessonUnlocked()` ([lib/db/stages.ts:91](lib/db/stages.ts)) reusing the exact display unlock rules → 403 `Lesson locked`.
-- **Tests:** `tests/db/api.routes.test.ts` › "progression integrity" (2 tests, both failed pre-fix).
-
-### 2. Debug tool shipped to production users
-- **Where:** [DebugExercisePicker.tsx](components/dashboard/DebugExercisePicker.tsx) rendered unconditionally on the dashboard ("🐛 DEBUG EXERCISES" button).
-- **Fix:** dev-only gate (`NODE_ENV === "development"`); dead-code-eliminated from production builds.
+### Should-fixes (all fixed in the follow-up pass)
+3. **Streak timezone bug** — `User.timezone` column added (IANA id, default
+   UTC), captured during onboarding from the browser, validated server-side
+   (`isValidTimezone`), and `updateStreak` now computes day boundaries in the
+   user's zone (`dayMarkerInTZ`). Tests: 11:58 PM → 12:02 AM local increments
+   even inside one UTC day; crossing UTC midnight mid-local-afternoon does NOT
+   double-count; garbage timezones fall back to UTC.
+4. **Cents meter re-rendered React ~60×/s** — per-frame visuals (needle
+   position/color, cents readout, hint text, hold-progress ring) are now
+   painted directly from the RAF loop via refs; React state changes only on
+   transitions (note name, in-tune flag, whole seconds, phase). All 16
+   component tests pass unchanged behavior.
+5. **Landing LCP 22.4 s** — the full 3.9 MB Material Symbols font is now
+   subset via `icon_names` to the 58 glyphs the app uses (~8 KB).
+   Lighthouse: home perf 0.74 → **0.90**, LCP 22.4 s → **3.5 s** (simulated
+   slow 4G). Dashboard visually verified — every icon renders.
+   *Maintenance note: new icons must be appended (alphabetically) to the
+   `icon_names` list in [app/layout.tsx](app/layout.tsx).*
+6. **Mic failure UX** — dedicated messages per failure: permission denied,
+   no device found (`NotFoundError`), and mid-exercise disconnect
+   (`track.onended` → "microphone disconnected" + Try Again, resources
+   released). A silent-but-live track still times out gracefully.
+7. **Accessibility** — Lighthouse a11y now **1.0 on home and login** (was
+   0.95/0.91): low-contrast grays raised to ≥4.5:1, "Forgot?" tap target
+   enlarged to ≥24px. The tuner meter has `role="meter"` +
+   `aria-valuenow` (updated per frame) + label. `AudioContext.resume()`
+   belt-and-braces added for Safari.
+8. **`GET /api/stages`** now requires a session (it had no callers client-side).
+9. **CI** now runs typecheck + unit/component + DB + E2E against a Postgres
+   service container, then builds ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ---
 
-## Should fix soon
+## Remaining known limitations (accepted, not blockers)
 
-### 1. Streak timezone bug (confirmed as bug by product owner)
-Streaks are UTC-calendar-day based; there is no per-user timezone
-([lib/db/streak.ts](lib/db/streak.ts)). A user in UTC−8 playing late evenings
-can skip a UTC day while missing only one local evening → streak silently
-resets. Fix requires a user `timezone` column and day-math against it.
-`tests/db/streak.test.ts` pins the current behavior with a comment so the fix
-must consciously flip that assertion.
-
-### 2. Cents meter re-renders React every audio frame
-[PitchMatchExercise.tsx](components/exercises/PitchMatchExercise.tsx) calls
-`setLiveCents` / `setHoldProgress` (and `setLiveNoteName`) inside the
-`requestAnimationFrame` loop → a full component re-render ~60×/s while singing.
-It *works* (inline styles, tiny tree) but wastes main-thread budget on
-low-end devices. **Proposed fix (not applied, per instructions):** keep
-`smoothedCents` in a ref, write the needle's `style.left` and the progress
-ring's `stroke-dashoffset` directly in the RAF tick, and only `setState` for
-phase changes and note-name changes. ~30 lines, no visual change.
-
-### 3. Landing page LCP: 22.4 s (Lighthouse, simulated slow 4G)
-Cause: the full **3.9 MB Material Symbols icon font** from fonts.gstatic.com.
-Fix: subset the font to the ~30 glyphs actually used (or self-host a subset).
-`/login` is fine (perf 0.98, LCP 2.2 s) because less icon usage blocks paint.
-
-### 4. No rate limit… correction: login IS rate-limited; one gap remains
-`/api/auth/callback/credentials` (10/15min/IP) and register (5/15min/IP) are
-both limited. Remaining gap: the in-memory limiter resets on every serverless
-cold start on Vercel — consider an edge/KV-backed limiter eventually.
-
-### 5. Mic hardware failures mid-exercise give no dedicated message
-Unplugging the mic / another tab stealing it mid-hold silently degrades to the
-generic "Time's up" at timeout (verified by test — no crash, no hang). A
-`track.onended` handler showing "Microphone disconnected" would be kinder.
-Denied/missing-device permission paths DO show a clear message (tested), though
-the copy says "blocked" even when no device exists.
-
-### 6. Accessibility (Lighthouse a11y: home 0.95, login 0.91)
-- `color-contrast` failures on home + login (muted text on dark surfaces).
-- `target-size` failures on login.
-- The tuner meter has no ARIA (`role="meter"` + `aria-valuenow` suggested); the
-  live cents readout is visual-only.
-- A user who can't/won't use a mic can Skip pitch exercises but each skip costs
-  a heart → singing lessons are effectively impassable without a mic. Consider
-  a no-mic alternative path.
-
-## Nits / future work
-
-- `GET /api/stages` is unauthenticated. It returns only static curriculum
-  (already shipped in the client JS), so no data exposure — but it's a free DB
-  query for anonymous callers.
-- No `AudioContext.resume()` fallback. Context is created inside the click
-  handler (the accepted Safari/iOS pattern, asserted by test), but a
-  belt-and-braces `resume()` after creation is cheap.
-- CI runs lint + unit + build only. DB and E2E projects need a Postgres service
-  container in the workflow (`docker-compose.test.yml` is ready for it).
-- E2E drives non-pitch exercise steps via Skip; per-type UI drivers for the
-  other 16 exercise components would deepen coverage.
-- 10-minute real-browser memory soak not run; a 30-lifecycle resource-leak soak
-  (contexts/tracks/RAF) runs in the component suite instead.
+- **In-memory rate limiter** resets on serverless cold starts. bcrypt cost 12
+  plus per-IP limits still slow brute force substantially; move to a KV-backed
+  limiter when convenient.
+- **No-mic users** can Skip pitch exercises but each skip costs a heart, so
+  singing lessons effectively require a mic. Product decision, documented.
+- **Not covered by tests:** Google OAuth (external), VexFlow rendering
+  (visual), `user/settings|password|profile|export|banner-color` routes,
+  quests/leaderboards/daily-stage UI flows, 16 of 17 exercise components
+  (only PitchMatch has component tests; others are exercised only incidentally
+  in E2E), real-device Safari/iOS audio, concurrency load.
+- Existing users created before the timezone column keep UTC day-boundaries
+  until they re-onboard (app is pre-launch, so this set is empty in prod).
 
 ---
 
@@ -99,71 +75,43 @@ the copy says "blocked" even when no device exists.
 
 | Layer | Tests | What's protected |
 |---|---|---|
-| Unit (node) | 183 | Pitch/cents math vs hand-computed values, semitone-boundary rounding, octave folding, detector-error folding, leveling curve boundaries, date helpers, existing curriculum/gamification suites |
+| Unit (node) | 184 | Pitch/cents math vs hand-computed values, semitone-boundary rounding, octave folding, detector-error folding, leveling curve boundaries, date/TZ helpers, curriculum/gamification suites |
 | Pitch detector | 8 | Real `pitchy` against synthetic sine/harmonics/noise/silence/truncated buffers |
-| Component (jsdom) | 15 | PitchMatch full lifecycle with fake `AudioContext`/`getUserMedia`: pass, octave pass, out-of-tune fail, silence, noise, dropout grace, permission denied/missing/ignored, unmount cleanup, skip-during-prompt cleanup, 30-cycle leak soak |
-| DB (real Postgres) | 43 | Streak day-boundaries/skip/clock-skew, XP first-pass-only + concurrent double-submit, hearts refill boundaries, mastery EMA/intervals/cold-start, route auth (401s), IDOR attempts, locked-lesson enforcement, validation rejection, registration hardening |
-| E2E (Playwright, mocked mic at browser level) | 12 | Signup → onboarding → path; sign out/in state; full singing lesson pass with persistence across reload; out-of-tune fail → heart lost → weak concept recorded; refresh mid-lesson; streak across day boundary + gap reset; free play; protected-route redirects |
+| Component (jsdom) | 16 | PitchMatch lifecycle with fake `AudioContext`/`getUserMedia`: pass, octave pass, out-of-tune fail, silence, noise, dropout grace, permission denied / no device / prompt ignored / mid-exercise disconnect, unmount cleanup, skip-during-prompt cleanup, 30-cycle leak soak |
+| DB (real Postgres) | 46 | Streak day-boundaries incl. user-timezone cases, XP first-pass-only + concurrent double-submit, hearts refill boundaries, mastery EMA/cold-start, route auth (401s), IDOR attempts, locked-lesson enforcement, validation rejection, registration hardening |
+| E2E (Playwright, mocked mic) | 12 | Signup → onboarding → path; sign out/in; full singing lesson pass with persistence across reload; out-of-tune fail → heart lost → weak concept recorded; refresh mid-lesson; streak day-boundary + gap reset; free play; protected-route redirects |
 
-Coverage (unit+component+DB, statements): **lib/curriculum 92.8%, lib/music 88.9%,
-lib/api 88.2%, progress route 73.5%, lib/db 61.8%; 43.8% overall.**
-
-**Honest gaps:** Google OAuth (external), VexFlow rendering (visual),
-`user/settings|password|profile|export|banner-color` routes (untested),
-quests-claim full flow, leaderboards, daily-stage UI, section jump tests,
-16 of 17 exercise components (only PitchMatch has component tests), real-device
-Safari/iOS audio, concurrency load.
-
-Infra: disposable Postgres (`docker-compose.test.yml`, port 54329) + `.env.test`;
-`scripts/test-db.sh` migrates from empty + seeds deterministically (this also
-proves migrations apply cleanly from scratch). E2E refuses to run against any
-DB whose URL doesn't contain `tunebug_test`. No microphone hardware needed
-anywhere: jsdom fakes for component tests, an init-script `AudioContext`/
-`getUserMedia` fake with controllable sine generator for Playwright.
-
----
+Infra: disposable Postgres (`docker-compose.test.yml`, port 54329; CI uses a
+service container via `TEST_DB_SKIP_DOCKER=1`) + `.env.test` (dummy localhost
+values — must be committed). Tests refuse to run against any DB whose URL
+doesn't contain `tunebug_test`. No microphone hardware needed anywhere.
 
 ## Phase 7 — proof the tests have teeth
 
-Each mutation was applied to **source**, the suite run, the failure observed,
-then reverted (final tree verified clean against the pre-mutation state):
+Six mutations were injected into source, the failure observed, then reverted:
 
 | # | Injected bug | Result |
 |---|---|---|
-| 1 | `foldedCents`: 1200 → 1000 cents/octave | **5 tests failed** (unit + component) ✓ |
-| 2 | Pass threshold `>=` → `>` in progress route | threshold-boundary test failed ✓ |
-| 3 | Streak guard `diff <= 0` → `diff < 0` (same-day reset) | **NOT caught initially** — the same-day test only covered day 1 where reset(1)==expected(1). Added a multi-day same-day test; mutation now caught ✓ |
-| 4 | Auth gate disabled on progress POST | unauthenticated-401 test failed ✓ |
-| 5 | `isLessonUnlocked` → always `true` | both lock tests failed ✓ (these also caught the *real* pre-existing bug before the fix) |
+| 1 | `foldedCents`: 1200 → 1000 cents/octave | 5 tests failed ✓ |
+| 2 | Pass threshold `>=` → `>` | threshold-boundary test failed ✓ |
+| 3 | Streak guard `diff <= 0` → `diff < 0` | initially NOT caught — weak test found, strengthened (multi-day same-day case), then caught ✓ |
+| 4 | Auth gate disabled on progress POST | 401 test failed ✓ |
+| 5 | `isLessonUnlocked` → always `true` | both lock tests failed ✓ |
 | 6 | Leveling `STEP*(level+1)` → `STEP*level` | threshold test failed ✓ |
-
-Mutation 3 is the honest one: it exposed a weak assertion, which is exactly
-what this phase is for.
-
----
 
 ## Design decisions confirmed (not bugs)
 
-- **Octave-agnostic scoring** is intentional: 220 Hz and 880 Hz both satisfy an
-  A4 target so singers use their own register (`foldedCents`, documented in
-  code). Display still distinguishes A3/A5. Detector octave errors are thereby
-  also neutralized, and a median-of-5 window swallows single-frame fifth/octave
-  blips.
-- **Enharmonics:** the app is sharps-only end to end (`NOTE_NAMES` has no
-  flats; `noteStringToMidi` rejects `Db4`). No C#/Db split-key data bug is
-  possible; asserted in mastery tests.
-- **Free play requires login** — confirmed intended; asserted by E2E.
-- The working tree's pre-existing security hardening (timing-safe login,
-  expanded protected paths, CSP `upgrade-insecure-requests`, trusted-proxy
-  X-Forwarded-For parsing) was treated as baseline and is exercised by the
-  suite. It should be committed together with this work.
+- **Octave-agnostic pitch scoring** (220 Hz satisfies an A4 target) — singers
+  use their own register; display still distinguishes octaves.
+- **Sharps-only note naming** end to end — no enharmonic split-key data bug is
+  possible.
+- **Free play requires login** — confirmed intended.
 
 ## Secrets scan
 
-Production bundle (`.next/static`) grepped for DB URLs, `AUTH_*` values from
-`.env.local`, service-role patterns, and `NEXT_PUBLIC_` variables: **nothing
-found; zero `NEXT_PUBLIC_` vars exist in the codebase.** Dashboard data
-fetching is batched (`Promise.all`, includes) — no N+1 detected.
+Production bundle greped for DB URLs, `.env.local` values, service-role
+patterns, `NEXT_PUBLIC_` vars: nothing found. Dashboard queries batched — no
+N+1.
 
 ## How to run
 

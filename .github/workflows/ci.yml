@@ -8,11 +8,27 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      test-db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tunebug_test
+          POSTGRES_PASSWORD: tunebug_test
+          POSTGRES_DB: tunebug_test
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U tunebug_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     env:
-      # Dummy values — build and tests never open a real DB connection.
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+      # Build-time values; DB/E2E tests read .env.test (checked in, localhost only).
+      DATABASE_URL: postgresql://tunebug_test:tunebug_test@localhost:54329/tunebug_test
+      DIRECT_URL: postgresql://tunebug_test:tunebug_test@localhost:54329/tunebug_test
       AUTH_SECRET: ci-dummy-secret
+      # The service container above replaces docker compose in test-db.sh.
+      TEST_DB_SKIP_DOCKER: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -27,11 +43,23 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Lint
         run: npm run lint
 
-      - name: Test
+      - name: Unit + component tests
         run: npm test
+
+      - name: DB tests
+        run: npm run test:db
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
 
       - name: Build
         run: npm run build

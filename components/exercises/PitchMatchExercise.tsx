@@ -40,6 +40,13 @@ const SMOOTHING_MS = 180;
 const MEDIAN_WINDOW = 5;
 
 type Phase = "idle" | "listening" | "passed" | "failed" | "mic-error";
+type MicError = "denied" | "no-device" | "disconnected";
+
+const MIC_ERROR_COPY: Record<MicError, string> = {
+  denied: "Microphone access is blocked. Allow it in your browser's site settings, then try again.",
+  "no-device": "No microphone found. Plug one in or pick an input device, then try again.",
+  disconnected: "The microphone disconnected mid-exercise. Reconnect it, then try again.",
+};
 
 export function PitchMatchExercise({ config, difficulty, submitted, onComplete }: Props) {
   const settings = DIFFICULTY_SETTINGS[difficulty];
@@ -48,17 +55,27 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
   const timeoutMs = settings.timeoutSeconds * 1000;
 
   const [phase, setPhase] = useState<Phase>("idle");
-  const [liveCents, setLiveCents] = useState<number | null>(null);
+  // Transition-only states: these change a handful of times per exercise.
   const [liveNoteName, setLiveNoteName] = useState<string | null>(null);
-  const [holdProgress, setHoldProgress] = useState(0);
+  const [inTune, setInTune] = useState(false);
   const [timeLeft, setTimeLeft] = useState(settings.timeoutSeconds);
   const [notePlaying, setNotePlaying] = useState(false);
   const [requestingMic, setRequestingMic] = useState(false);
+  const [micError, setMicError] = useState<MicError>("denied");
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number>(0);
   const completedRef = useRef(false);
+
+  // Per-frame visuals are written straight to the DOM from the RAF loop —
+  // routing ~60 updates/s through React state re-rendered the whole exercise
+  // on every audio frame.
+  const meterRef = useRef<HTMLDivElement | null>(null);
+  const needleRef = useRef<HTMLDivElement | null>(null);
+  const centsTextRef = useRef<HTMLSpanElement | null>(null);
+  const hintTextRef = useRef<HTMLParagraphElement | null>(null);
+  const ringRef = useRef<SVGCircleElement | null>(null);
 
   function stopAudio() {
     cancelAnimationFrame(rafRef.current);
@@ -114,7 +131,9 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
         // Processing designed for speech calls distorts sung pitch.
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
-    } catch {
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : "";
+      setMicError(name === "NotFoundError" || name === "DevicesNotFoundError" ? "no-device" : "denied");
       setPhase("mic-error");
       return;
     } finally {
@@ -126,7 +145,20 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
       return;
     }
 
+    // Unplugged / OS revoked / another app grabbed the device: tell the user
+    // instead of silently timing out with a blank needle.
+    stream.getTracks().forEach((track) => {
+      track.addEventListener("ended", () => {
+        if (completedRef.current) return;
+        stopAudio();
+        setMicError("disconnected");
+        setPhase("mic-error");
+      });
+    });
+
     const audioCtx = new AudioContext();
+    // Safari can hand out a suspended context even inside a user gesture.
+    audioCtx.resume().catch(() => {});
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
     audioCtx.createMediaStreamSource(stream).connect(analyser);
@@ -138,7 +170,6 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
     const buf = new Float32Array(analyser.fftSize);
 
     setPhase("listening");
-    setHoldProgress(0);
     setTimeLeft(settings.timeoutSeconds);
 
     const startTime = performance.now();
@@ -149,6 +180,43 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
     let unvoicedMs = 0;
     const centsHistory: number[] = [];
     let smoothedCents: number | null = null;
+
+    // Paint the per-frame visuals without going through React.
+    const paintFrame = (cents: number | null) => {
+      const needle = needleRef.current;
+      if (needle) {
+        if (cents === null) {
+          needle.style.display = "none";
+        } else {
+          const clamped = Math.max(-METER_RANGE_CENTS, Math.min(METER_RANGE_CENTS, cents));
+          const pct = 50 + (clamped / METER_RANGE_CENTS) * 50;
+          const frameInTune = Math.abs(cents) <= settings.allowedDeviation;
+          needle.style.display = "block";
+          needle.style.left = `${pct}%`;
+          needle.style.backgroundColor = frameInTune ? C.successDim : C.tertiary;
+        }
+      }
+      meterRef.current?.setAttribute(
+        "aria-valuenow",
+        cents === null ? "0" : String(Math.round(cents))
+      );
+      if (centsTextRef.current && cents !== null) {
+        centsTextRef.current.textContent = `${cents > 0 ? "+" : ""}${Math.round(cents)}¢`;
+      }
+      if (hintTextRef.current && cents !== null) {
+        const frameInTune = Math.abs(cents) <= settings.allowedDeviation;
+        hintTextRef.current.textContent = frameInTune
+          ? "Hold it…"
+          : cents > 0
+            ? "A little lower"
+            : "A little higher";
+      }
+      if (ringRef.current) {
+        const circumference = 2 * Math.PI * 58;
+        const progress = Math.min(holdMs / holdNeededMs, 1);
+        ringRef.current.style.strokeDashoffset = String(circumference * (1 - progress));
+      }
+    };
 
     const tick = () => {
       const now = performance.now();
@@ -170,8 +238,9 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
         const alpha = Math.min(1, dt / SMOOTHING_MS);
         smoothedCents = smoothedCents === null ? median : smoothedCents + (median - smoothedCents) * alpha;
 
-        setLiveCents(smoothedCents);
+        // State only on TRANSITIONS (React bails out on identical values).
         setLiveNoteName(frequencyToNote(pitch).name);
+        setInTune(Math.abs(smoothedCents) <= settings.allowedDeviation);
         if (Math.abs(smoothedCents) <= settings.allowedDeviation) {
           holdMs += dt;
           offTargetMs = 0;
@@ -184,8 +253,8 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
         // consonants) instead of blanking and re-slamming it on re-entry.
         unvoicedMs += dt;
         if (unvoicedMs > GRACE_MS) {
-          setLiveCents(null);
           setLiveNoteName(null);
+          setInTune(false);
           centsHistory.length = 0;
           smoothedCents = null;
         }
@@ -194,7 +263,7 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
       }
 
       bestHoldMs = Math.max(bestHoldMs, holdMs);
-      setHoldProgress(Math.min(holdMs / holdNeededMs, 1));
+      paintFrame(smoothedCents);
       setTimeLeft(Math.max(0, Math.ceil((timeoutMs - (now - startTime)) / 1000)));
 
       if (holdMs >= holdNeededMs) {
@@ -215,11 +284,6 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  const inTune = liveCents !== null && Math.abs(liveCents) <= settings.allowedDeviation;
-  // Needle position: clamp to the meter span so the meter stays readable.
-  const needlePct = liveCents === null
-    ? null
-    : 50 + (Math.max(-METER_RANGE_CENTS, Math.min(METER_RANGE_CENTS, liveCents)) / METER_RANGE_CENTS) * 50;
   const zoneHalfPct = (settings.allowedDeviation / METER_RANGE_CENTS) * 50;
 
   return (
@@ -234,11 +298,14 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
           <svg width="128" height="128" viewBox="0 0 128 128" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
             <circle cx="64" cy="64" r="58" fill="none" stroke="var(--c-border)" strokeWidth="6" />
             <circle
+              ref={ringRef}
               cx="64" cy="64" r="58" fill="none"
               stroke={phase === "passed" ? C.successDim : C.primaryDim}
               strokeWidth="6" strokeLinecap="round"
               strokeDasharray={2 * Math.PI * 58}
-              strokeDashoffset={2 * Math.PI * 58 * (1 - (phase === "passed" ? 1 : holdProgress))}
+              // Live progress is painted by the RAF loop (style wins over this
+              // attribute); the attribute covers the pre-listening/passed states.
+              strokeDashoffset={2 * Math.PI * 58 * (phase === "passed" ? 0 : 1)}
               style={{ transition: "stroke-dashoffset 0.1s linear" }}
             />
           </svg>
@@ -297,9 +364,17 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
 
       {phase === "listening" && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%", maxWidth: 340 }}>
-          {/* Tuner meter */}
+          {/* Tuner meter — needle position/color painted by the RAF loop */}
           <div style={{ width: "100%" }}>
-            <div style={{ position: "relative", height: 14, borderRadius: 7, backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}>
+            <div
+              ref={meterRef}
+              role="meter"
+              aria-label="Pitch deviation from the target note, in cents"
+              aria-valuemin={0 - METER_RANGE_CENTS}
+              aria-valuemax={METER_RANGE_CENTS}
+              aria-valuenow={0}
+              style={{ position: "relative", height: 14, borderRadius: 7, backgroundColor: C.surfaceHigh, border: `2px solid ${C.border}` }}
+            >
               {/* In-tune zone, scaled to the meter's ±METER_RANGE_CENTS span */}
               <div style={{
                 position: "absolute", top: 0, bottom: 0,
@@ -308,14 +383,16 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
                 backgroundColor: "rgba(0,108,78,0.35)", borderRadius: 5,
               }} />
               {/* Needle */}
-              {needlePct !== null && (
-                <div style={{
+              <div
+                ref={needleRef}
+                style={{
                   position: "absolute", top: -6, bottom: -6,
-                  left: `${needlePct}%`, width: 4, marginLeft: -2, borderRadius: 2,
-                  backgroundColor: inTune ? C.successDim : C.tertiary,
+                  left: "50%", width: 4, marginLeft: -2, borderRadius: 2,
+                  backgroundColor: C.tertiary,
                   transition: "left 0.2s ease-out",
-                }} />
-              )}
+                  display: "none",
+                }}
+              />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
               <span style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 11 }}>♭ flat</span>
@@ -332,12 +409,11 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
                   fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 900, margin: 0,
                 }}>
                   {liveNoteName}
-                  <span style={{ fontSize: 14, fontWeight: 700, color: C.muted, marginLeft: 8 }}>
-                    {liveCents! > 0 ? "+" : ""}{Math.round(liveCents!)}¢
-                  </span>
+                  {/* Cents readout painted per-frame by the RAF loop */}
+                  <span ref={centsTextRef} style={{ fontSize: 14, fontWeight: 700, color: C.muted, marginLeft: 8 }} />
                 </p>
-                <p style={{ color: inTune ? C.successDim : C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: "2px 0 0", fontWeight: 700 }}>
-                  {inTune ? "Hold it…" : liveCents! > 0 ? "A little lower" : "A little higher"}
+                <p ref={hintTextRef} style={{ color: inTune ? C.successDim : C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 13, margin: "2px 0 0", fontWeight: 700 }}>
+                  {inTune ? "Hold it…" : "A little higher"}
                 </p>
               </>
             ) : (
@@ -389,7 +465,7 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", maxWidth: 320 }}>
           <span className="material-symbols-outlined" style={{ color: C.error, fontSize: 34 }}>mic_off</span>
           <p style={{ color: C.text, fontFamily: "'Nunito', sans-serif", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
-            Microphone access is blocked. Allow it in your browser&apos;s site settings, then try again.
+            {MIC_ERROR_COPY[micError]}
           </p>
           <button
             onClick={startListening}

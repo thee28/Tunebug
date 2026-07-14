@@ -101,26 +101,57 @@ describe("updateStreak", () => {
     expect(s?.lastActivityDate?.toISOString()).toBe("2026-07-11T00:00:00.000Z");
   });
 
-  /**
-   * KNOWN LIMITATION (documented, not asserted away): streaks are UTC-day
-   * based with no per-user timezone. A user in UTC−8 who plays 7 PM local
-   * on Monday and 9 PM local on Tuesday hits UTC days Tue+Wed — fine. But
-   * playing 5 PM Monday (01:00 UTC Tue) then 5 PM Tuesday (01:00 UTC Wed)
-   * also works... while 11 PM local Mon (07:00 UTC Tue) and 1 AM local Wed
-   * (09:00 UTC Thu) SKIPS a UTC day and breaks the streak even though the
-   * user missed only one local evening. This test pins the current
-   * (UTC-based) behavior so the eventual TZ fix must consciously change it.
-   */
-  it("UTC-day semantics: a local-evening pattern can break a streak (known TZ bug)", async () => {
-    // User in UTC-8. Plays Mon 11 PM local = Tue 07:00 UTC.
-    setNow("2026-07-07T07:00:00Z");
-    await updateStreak(userId);
-    // Plays Wed 1:00 AM local = Wed 09:00 UTC... wait, that's +1 UTC day → fine.
-    // The breaking case: next play Thu 01:00 local = Thu 09:00 UTC = 2 UTC days later.
-    setNow("2026-07-09T09:00:00Z");
-    await updateStreak(userId);
-    const s = await getStreak(userId);
-    // Current behavior: reset. A TZ-aware fix would make this 2.
-    expect(s?.currentStreak).toBe(1);
+  describe("user-timezone day boundaries (America/Los_Angeles, UTC−7 in July)", () => {
+    let laUserId: string;
+
+    beforeEach(async () => {
+      const u = await createTestUser({ timezone: "America/Los_Angeles" });
+      laUserId = u.id;
+    });
+
+    afterEach(async () => {
+      await deleteTestUser(laUserId);
+    });
+
+    it("11:58 PM then 12:02 AM LOCAL increments even inside one UTC day", async () => {
+      // Jul 10 23:58 LA = Jul 11 06:58 UTC; Jul 11 00:02 LA = Jul 11 07:02 UTC.
+      // Same UTC day — but consecutive LOCAL days must count as a streak.
+      setNow("2026-07-11T06:58:00Z");
+      await updateStreak(laUserId);
+      setNow("2026-07-11T07:02:00Z");
+      await updateStreak(laUserId);
+      const s = await getStreak(laUserId);
+      expect(s?.currentStreak).toBe(2);
+    });
+
+    it("crossing UTC midnight mid-local-afternoon does NOT double-count", async () => {
+      // Jul 10 16:50 LA = Jul 10 23:50 UTC; Jul 10 17:10 LA = Jul 11 00:10 UTC.
+      // Different UTC days — but the SAME local day stays a single streak day.
+      setNow("2026-07-10T23:50:00Z");
+      await updateStreak(laUserId);
+      setNow("2026-07-11T00:10:00Z");
+      await updateStreak(laUserId);
+      const s = await getStreak(laUserId);
+      expect(s?.currentStreak).toBe(1);
+    });
+
+    it("skipping one local evening still resets", async () => {
+      // Jul 7 and Jul 9 local days — Jul 8 missed.
+      setNow("2026-07-07T07:00:00Z"); // Jul 7 00:00 LA
+      await updateStreak(laUserId);
+      setNow("2026-07-09T09:00:00Z"); // Jul 9 02:00 LA
+      await updateStreak(laUserId);
+      const s = await getStreak(laUserId);
+      expect(s?.currentStreak).toBe(1);
+    });
+
+    it("garbage timezone falls back to UTC instead of crashing", async () => {
+      const bad = await createTestUser({ timezone: "Not/AZone" });
+      setNow("2026-07-10T12:00:00Z");
+      await updateStreak(bad.id);
+      const s = await getStreak(bad.id);
+      expect(s?.currentStreak).toBe(1);
+      await deleteTestUser(bad.id);
+    });
   });
 });

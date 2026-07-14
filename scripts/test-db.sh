@@ -4,7 +4,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-docker compose -f docker-compose.test.yml up -d --wait
+# CI provides its own Postgres service container on the same port.
+if [ "${TEST_DB_SKIP_DOCKER:-}" != "1" ]; then
+  docker compose -f docker-compose.test.yml up -d --wait
+fi
 
 # Export test env BEFORE any prisma command: dotenv (used by prisma.config.ts
 # to load .env.local) never overrides variables that are already set.

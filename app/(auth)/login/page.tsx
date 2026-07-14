@@ -191,11 +191,13 @@ return (
                 onFocus={focusInput}
                 onBlur={blurInput}
               />
+              {/* Padding grows the tap target to ≥24px (WCAG target-size);
+                  the negative margin keeps the visible text in place. */}
               {tab === "login" && (
                 <a
                   href="#"
                   className="absolute right-5 top-1/2 -translate-y-1/2 hover:text-white transition-colors uppercase tracking-wider"
-                  style={{ ...nunito, fontWeight: 700, fontSize: "12px", color: "rgba(120, 117, 131, 0.8)" }}
+                  style={{ ...nunito, fontWeight: 700, fontSize: "12px", color: "#a3a0ae", padding: "12px 10px", margin: "-12px -10px" }}
                 >
                   Forgot?
                 </a>
@@ -229,7 +231,7 @@ return (
             <div className="h-[2px] flex-grow" style={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
             <span
               className="uppercase"
-              style={{ ...nunito, fontWeight: 700, fontSize: "12px", color: "rgba(120, 117, 131, 0.8)" }}
+              style={{ ...nunito, fontWeight: 700, fontSize: "12px", color: "#a3a0ae" }}
             >
               or
             </span>
@@ -255,17 +257,17 @@ return (
 
           {/* Legal */}
           <footer className="mt-12 text-center max-w-[320px] pb-8">
-            <p className="leading-relaxed" style={{ fontSize: "12px", color: "rgba(120, 117, 131, 0.6)" }}>
+            <p className="leading-relaxed" style={{ fontSize: "12px", color: "#918e9c" }}>
               By signing in to Tunebug, you agree to our{" "}
-              <a href="#" className="hover:text-white transition-colors" style={{ ...nunito, fontWeight: 700, color: "rgba(120, 117, 131, 0.9)" }}>
+              <a href="#" className="hover:text-white transition-colors" style={{ ...nunito, fontWeight: 700, color: "#a8a5b3" }}>
                 Terms
               </a>{" "}
               and{" "}
-              <a href="#" className="hover:text-white transition-colors" style={{ ...nunito, fontWeight: 700, color: "rgba(120, 117, 131, 0.9)" }}>
+              <a href="#" className="hover:text-white transition-colors" style={{ ...nunito, fontWeight: 700, color: "#a8a5b3" }}>
                 Privacy Policy
               </a>.
             </p>
-            <p className="mt-4 leading-relaxed uppercase tracking-tighter" style={{ fontSize: "10px", color: "rgba(120, 117, 131, 0.4)" }}>
+            <p className="mt-4 leading-relaxed uppercase tracking-tighter" style={{ fontSize: "10px", color: "#918e9c" }}>
               This site is protected by reCAPTCHA Enterprise and the Google{" "}
               <a href="#" className="hover:text-white underline underline-offset-2">Privacy Policy</a>{" "}
               and{" "}

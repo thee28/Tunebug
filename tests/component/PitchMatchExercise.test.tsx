@@ -154,16 +154,28 @@ describe("PitchMatchExercise — out-of-tune and edge signals", () => {
     );
   });
 
-  it("signal that stops mid-hold (mic unplugged / tab steals mic): no crash, resolves at timeout", async () => {
+  it("mic unplugged mid-hold → dedicated 'disconnected' message + resources released", async () => {
     renderExercise();
     controller.signal = { type: "sine", freq: 440 };
     await startSinging();
     await advanceFrames(8, 60); // ~0.5s in tune — not enough to pass
+    await act(async () => {
+      controller.streams[0].getTracks()[0].end(); // device disappears
+    });
+    expect(screen.getByText(/microphone disconnected/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    // Not silently scored — the exercise is recoverable via Try Again.
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(controller.contexts[0].close).toHaveBeenCalled();
+  });
+
+  it("silent signal (tab steals audio without ending the track) still resolves at timeout", async () => {
+    renderExercise();
+    controller.signal = { type: "sine", freq: 440 };
+    await startSinging();
+    await advanceFrames(8, 60);
     controller.signal = { type: "silence" };
-    controller.streams[0].getTracks()[0].readyState = "ended";
     await advanceFrames(125, 100);
-    // Documents current behavior: generic timeout failure, no dedicated
-    // "mic disconnected" message (flagged in TEST_REPORT.md).
     expect(onComplete).toHaveBeenCalledTimes(1);
     expect(onComplete.mock.calls[0][0].passed).toBe(false);
   });
@@ -190,10 +202,10 @@ describe("PitchMatchExercise — permission failures", () => {
     expect(onComplete).not.toHaveBeenCalled();
   });
 
-  it("no input device → same clear error path, no crash", async () => {
+  it("no input device → dedicated 'no microphone found' message", async () => {
     renderExercise({ getUserMediaError: new DOMException("No device", "NotFoundError") });
     await startSinging();
-    expect(screen.getByText(/microphone access is blocked/i)).toBeInTheDocument();
+    expect(screen.getByText(/no microphone found/i)).toBeInTheDocument();
   });
 
   it("prompt ignored (getUserMedia never settles) → button shows waiting state, not a hang", async () => {

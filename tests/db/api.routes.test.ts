@@ -44,6 +44,7 @@ describe("unauthenticated access is rejected on every protected route", () => {
       (await import("@/app/api/hearts/route")).GET,
       (await import("@/app/api/mastery/route")).GET,
       (await import("@/app/api/daily-stage/route")).GET,
+      (await import("@/app/api/stages/route")).GET,
     ];
     for (const handler of routes) {
       const res = await handler();
