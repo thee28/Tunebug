@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Stage, Unit, Lesson } from "@/types/lesson";
 import type { Difficulty } from "@/lib/curriculum/content";
@@ -58,6 +59,7 @@ interface Props {
 }
 
 export default function LessonPath({ stages, difficulties, onShowSections, onShowGuidebook, onStartJumpTest, scrollToUnitSlug, reviewStageIndex, onExitReview }: Props) {
+  const router = useRouter();
   const mastery = useMastery();
   const [completedIds, setCompletedIds] = useState<Set<string>>(
     () =>
@@ -223,7 +225,12 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
                   setCompletedIds((prev) => new Set([...prev, exercise.lesson.id]));
                 }
               }}
-              onExit={() => setExercise(null)}
+              onExit={() => {
+                setExercise(null);
+                // Hearts/XP in the dashboard header are server-rendered;
+                // re-fetch them after a run so lost hearts show without a reload.
+                router.refresh();
+              }}
             />
           </motion.div>
         )}
