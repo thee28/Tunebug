@@ -67,6 +67,15 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number>(0);
   const completedRef = useRef(false);
+  // Mirrors notePlaying for the RAF loop. While the reference note plays, the
+  // mic hears the piano at the exact target pitch — detection (and the
+  // countdown) pause so playback can't accumulate hold or burn time.
+  const notePlayingRef = useRef(false);
+  // Wall-clock ms to exclude from the countdown (reference-note replays).
+  // Kept in a ref, credited per replay rather than per RAF frame, so pauses
+  // count even when the browser throttles requestAnimationFrame.
+  const pausedMsRef = useRef(0);
+  const listeningRef = useRef(false);
 
   // Per-frame visuals are written straight to the DOM from the RAF loop —
   // routing ~60 updates/s through React state re-rendered the whole exercise
@@ -94,6 +103,7 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
   function finish(result: ExerciseResult, nextPhase: Phase) {
     if (completedRef.current) return;
     completedRef.current = true;
+    listeningRef.current = false;
     stopAudio();
     setPhase(nextPhase);
     onComplete(result);
@@ -110,15 +120,26 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
+  // 1s note plus release tail — detection stays paused until it fades.
+  const PLAYBACK_MS = 1300;
+
   async function playTargetNote() {
     if (notePlaying) return;
     setNotePlaying(true);
+    notePlayingRef.current = true;
+    const playStart = performance.now();
+    const done = () => {
+      setNotePlaying(false);
+      notePlayingRef.current = false;
+      // Give the time back to the countdown, but only mid-attempt.
+      if (listeningRef.current) pausedMsRef.current += performance.now() - playStart;
+    };
     try {
       const piano = await getPiano();
       piano.triggerAttackRelease(config.targetNote, "1");
-      setTimeout(() => setNotePlaying(false), 1100);
+      setTimeout(done, PLAYBACK_MS);
     } catch {
-      setNotePlaying(false);
+      done();
     }
   }
 
@@ -171,6 +192,8 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
 
     setPhase("listening");
     setTimeLeft(settings.timeoutSeconds);
+    listeningRef.current = true;
+    pausedMsRef.current = 0;
 
     const startTime = performance.now();
     let lastFrame = startTime;
@@ -223,6 +246,16 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
       const dt = now - lastFrame;
       lastFrame = now;
 
+      // Reference note is playing: freeze detection, hold and countdown so
+      // the piano (at the exact target pitch) can't score for the user.
+      // (The countdown credit itself is added by playTargetNote's done().)
+      if (notePlayingRef.current) {
+        centsHistory.length = 0;
+        smoothedCents = null;
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
       analyser.getFloatTimeDomainData(buf);
       const [pitch, clarity] = detector.findPitch(buf, audioCtx.sampleRate);
 
@@ -264,13 +297,14 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
 
       bestHoldMs = Math.max(bestHoldMs, holdMs);
       paintFrame(smoothedCents);
-      setTimeLeft(Math.max(0, Math.ceil((timeoutMs - (now - startTime)) / 1000)));
+      const elapsed = now - startTime - pausedMsRef.current;
+      setTimeLeft(Math.max(0, Math.ceil((timeoutMs - elapsed) / 1000)));
 
       if (holdMs >= holdNeededMs) {
         finish({ score: 100, passed: true }, "passed");
         return;
       }
-      if (now - startTime >= timeoutMs) {
+      if (elapsed >= timeoutMs) {
         // Partial credit for sustained near-misses, always below passing.
         const score = Math.min(65, Math.round(70 * (bestHoldMs / holdNeededMs)));
         finish(
@@ -426,6 +460,24 @@ export function PitchMatchExercise({ config, difficulty, submitted, onComplete }
           <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 12, margin: 0 }}>
             {timeLeft}s left
           </p>
+
+          <button
+            onClick={playTargetNote}
+            className="btn-ghost-hover"
+            style={{
+              padding: "10px 24px", borderRadius: 12,
+              backgroundColor: "transparent", border: `2px solid ${C.border}`,
+              color: notePlaying ? C.muted : C.primaryDim,
+              fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
+              cursor: notePlaying ? "default" : "pointer",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+              {notePlaying ? "graphic_eq" : "volume_up"}
+            </span>
+            {notePlaying ? "Playing… (timer paused)" : "Hear the Note"}
+          </button>
         </div>
       )}
 

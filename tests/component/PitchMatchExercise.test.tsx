@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
-import { render, screen, act, cleanup } from "@testing-library/react";
+import { render, screen, act, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PitchMatchExercise } from "@/components/exercises/PitchMatchExercise";
 import type { ExerciseResult } from "@/components/exercises/ExerciseEngine";
@@ -190,6 +190,69 @@ describe("PitchMatchExercise — out-of-tune and edge signals", () => {
     controller.signal = { type: "sine", freq: 440 };
     await advanceFrames(10, 60); // 600ms more → total ≥ 1s
     expect(onComplete).toHaveBeenCalledWith({ score: 100, passed: true });
+  });
+});
+
+describe("PitchMatchExercise — reference-note replay while listening", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows a 'Hear the Note' button during the listening phase", async () => {
+    renderExercise();
+    controller.signal = { type: "sine", freq: 466.16 }; // off target — keeps listening
+    await startSinging();
+    await advanceFrames(5, 60);
+    expect(screen.getByRole("button", { name: /hear the note/i })).toBeInTheDocument();
+  });
+
+  it("piano playback can't score for the user — in-tune audio during playback is ignored", async () => {
+    renderExercise();
+    controller.signal = { type: "sine", freq: 440 }; // same pitch the piano would bleed in
+    await startSinging();
+
+    // Only the reference note's setTimeout goes fake; the RAF pump and the
+    // performance.now spy above stay in charge of the exercise clock.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fireEvent.click(screen.getByRole("button", { name: /hear the note/i }));
+    await act(async () => {}); // let getPiano() resolve
+    expect(screen.getByRole("button", { name: /playing/i })).toBeInTheDocument();
+
+    // 1.2s of perfectly in-tune signal while the piano plays. Beginner hold
+    // is 1s — without the freeze this would already have passed.
+    await advanceFrames(20, 60);
+    expect(onComplete).not.toHaveBeenCalled();
+
+    // Playback ends; the same in-tune signal now counts and passes.
+    await act(async () => {
+      vi.advanceTimersByTime(1300);
+    });
+    await advanceFrames(25, 60);
+    expect(onComplete).toHaveBeenCalledWith({ score: 100, passed: true });
+  });
+
+  it("replaying the note pauses the countdown instead of burning attempt time", async () => {
+    renderExercise();
+    controller.signal = { type: "sine", freq: 466.16 }; // never passes
+    await startSinging();
+    await advanceFrames(5, 100); // 0.5s in
+
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fireEvent.click(screen.getByRole("button", { name: /hear the note/i }));
+    await act(async () => {});
+    await advanceFrames(8, 100); // 0.8s passes on the wall clock during playback
+    await act(async () => {
+      vi.advanceTimersByTime(1300); // playback ends → 0.8s credited back
+    });
+
+    // Clock is at 1.3s but only 0.5s counted. Ride to just short of the
+    // uncredited 12s mark — without the pause this would already be a fail.
+    await advanceFrames(112, 100); // clock 12.5s, counted 11.7s
+    expect(onComplete).not.toHaveBeenCalled();
+
+    await advanceFrames(10, 100); // counted 12.7s — past the 12s timeout
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onComplete.mock.calls[0][0].passed).toBe(false);
   });
 });
 
