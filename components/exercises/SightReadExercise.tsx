@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getPiano } from "@/lib/audio/piano";
 import type { SightReadPianoConfig } from "@/types/music";
 import type { Difficulty } from "@/lib/curriculum/content";
 import type { ExerciseResult } from "./ExerciseEngine";
@@ -24,10 +25,18 @@ const C = {
 export function SightReadExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
 
-  const handleSelect = (note: string) => {
+  const handleSelect = async (note: string) => {
     if (submitted) return;
     setSelected(note);
     onAnswerChange(true);
+    // Sound the tapped key, like a real piano — lets learners hear their
+    // pick and change it before submitting.
+    try {
+      const piano = await getPiano();
+      piano.triggerAttackRelease(note, "0.4");
+    } catch {
+      // audio not ready — selection still works
+    }
   };
 
   useEffect(() => {

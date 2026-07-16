@@ -42,6 +42,16 @@ function noteStrToMidi(n: string): number {
 function midiToNoteStr(midi: number): string {
   return `${NOTE_CHROMATIC[midi % 12]}${Math.floor(midi / 12) - 1}`;
 }
+function isNaturalMidi(midi: number): boolean {
+  return !NOTE_CHROMATIC[midi % 12].includes("#");
+}
+// Nudge a midi note onto the nearest white key (beginner keyboard exercises
+// only cover naturals — black-key targets are unfair before sharps are taught).
+function snapToNatural(midi: number, dir: 1 | -1 = 1): number {
+  let m = midi;
+  while (!isNaturalMidi(m)) m += dir;
+  return m;
+}
 
 export function createRng(seed: number) {
   let s = seed >>> 0;
@@ -103,6 +113,16 @@ export function slotDifficulty(
 
 // ─── Distractor selection respecting closeness ──────────────────────
 function distractorsForNoteName(correct: string, allNames: string[], n: number, closeness: SlotDifficulty["distractorCloseness"], rng: () => number): string[] {
+  // A sharp answer with an all-natural distractor pool is a giveaway (the one
+  // sharp in the list is always right). Widen to the chromatic names and pin
+  // the sharp's own natural as a distractor — that contrast (C# vs C) is the
+  // distinction the sharp lessons teach.
+  if (correct.includes("#")) {
+    const pool = allNames.includes(correct) ? allNames : NOTE_CHROMATIC;
+    const natural = correct[0];
+    const rest = shuffled(pool.filter((x) => x !== correct && x !== natural), rng).slice(0, Math.max(0, n - 1));
+    return shuffled([natural, ...rest], rng).slice(0, n);
+  }
   const idx = allNames.indexOf(correct);
   if (idx < 0 || closeness === "far") {
     return shuffled(allNames.filter((x) => x !== correct), rng).slice(0, n);
@@ -365,22 +385,33 @@ export function fillSlot(
       const target = c.targetNote;
       // 3 pairs (6 tiles): the concept's note plus 2 adjacents.
       const aMidi = noteStrToMidi(target);
-      const adjacents = [aMidi + 2, aMidi - 2, aMidi + 5]
-        .filter((m) => m >= 36 && m <= 84)
-        .slice(0, 2)
-        .map(midiToNoteStr);
+      const rawAdjacents = [aMidi + 2, aMidi - 2, aMidi + 5, aMidi - 5]
+        .map((m) => (base === "beginner" ? snapToNatural(m, m > aMidi ? 1 : -1) : m));
+      const seenMidi = new Set([aMidi]);
+      const adjacents: string[] = [];
+      for (const m of rawAdjacents) {
+        if (m < 36 || m > 84 || seenMidi.has(m)) continue;
+        seenMidi.add(m);
+        adjacents.push(midiToNoteStr(m));
+        if (adjacents.length === 2) break;
+      }
       const notes = [target, ...adjacents];
       const cfg: MatchingPairsConfig = { notes };
       return { kind: "exercise", type: "MATCHING_PAIRS", config: cfg };
     }
     case "SEQUENCE_RECALL": {
       const c = concept.config as EarSingleConfig;
-      const len = diff.distractorCloseness === "adjacent" ? 4 : diff.distractorCloseness === "mixed" ? 3 : 2;
+      // Shorter sequences at lower base difficulty — 4-note recall is an
+      // advanced working-memory task, not a beginner one.
+      const maxLen = base === "beginner" ? 2 : base === "intermediate" ? 3 : 4;
+      const len = Math.min(maxLen, diff.distractorCloseness === "adjacent" ? 4 : diff.distractorCloseness === "mixed" ? 3 : 2);
       const aMidi = noteStrToMidi(c.targetNote);
       const seq: string[] = [c.targetNote];
       for (let i = 1; i < len; i++) {
         const step = (Math.floor(rng() * 5) - 2) || 1;
-        const next = Math.max(36, Math.min(84, aMidi + step * i));
+        let next = Math.max(36, Math.min(84, aMidi + step * i));
+        // Beginners only know the white keys — keep sequences on naturals.
+        if (base === "beginner") next = snapToNatural(next, step > 0 ? 1 : -1);
         seq.push(midiToNoteStr(next));
       }
       const oct = parseInt(c.targetNote.match(/(\d)$/)?.[1] ?? "4");
@@ -475,15 +506,29 @@ function typeIsValidFor(_type: ExerciseType, _concept: Concept): boolean {
   return true;
 }
 
+// Interaction formats too demanding for a given base difficulty. A section's
+// declared difficulty caps which formats the slot algorithm may serve, so
+// early sections never see working-memory or recall-heavy exercises.
+const TYPE_MIN_DIFFICULTY: Partial<Record<ExerciseType, Difficulty>> = {
+  SEQUENCE_RECALL: "intermediate", // multi-note recall on the keyboard
+};
+const DIFFICULTY_RANK: Record<Difficulty, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+function typeAllowedAt(type: ExerciseType, base: Difficulty): boolean {
+  const min = TYPE_MIN_DIFFICULTY[type];
+  return !min || DIFFICULTY_RANK[base] >= DIFFICULTY_RANK[min];
+}
+
 // ─── Type picker honoring anti-repeat constraints ──────────────────
 function pickType(
   concept: Concept,
   recentTypes: ExerciseType[], // most recent last
   rng: () => number,
-  forceGentle: boolean
+  forceGentle: boolean,
+  base: Difficulty
 ): ExerciseType {
   if (forceGentle) return GENTLEST_TYPE[concept.category];
-  const pool = CONCEPT_TYPE_POOL[concept.category].filter((t) => typeIsValidFor(t, concept));
+  const pool = CONCEPT_TYPE_POOL[concept.category].filter((t) => typeIsValidFor(t, concept) && typeAllowedAt(t, base));
+  if (pool.length === 0) return GENTLEST_TYPE[concept.category];
   if (pool.length === 1) return pool[0];
   // Hard: not equal to last
   const last = recentTypes[recentTypes.length - 1];
@@ -723,7 +768,7 @@ export function generateSlotPlan(input: SlotPlanInput): LessonStep[] {
 
     // Pick the exercise type (anti-repeat hard constraint)
     const forceGentle = intent.isIntro === true;
-    const type = pickType(concept, recentTypes, rng, forceGentle);
+    const type = pickType(concept, recentTypes, rng, forceGentle, input.difficulty);
 
     // Build difficulty + step (mastery-aware for known concepts)
     const mastery = input.masteryMap?.get(concept.id)?.masteryScore;

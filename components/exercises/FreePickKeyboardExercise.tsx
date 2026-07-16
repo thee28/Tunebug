@@ -37,10 +37,18 @@ export function FreePickKeyboardExercise({ config, submitted, onAnswerChange, on
     }
   }, [config.targetNote, playing]);
 
-  const handleSelect = (note: string) => {
+  const handleSelect = async (note: string) => {
     if (submitted) return;
     setSelected(note);
     onAnswerChange(true);
+    // Sound the tapped key so learners can compare it against the target
+    // and change their pick before submitting.
+    try {
+      const piano = await getPiano();
+      piano.triggerAttackRelease(note, "0.4");
+    } catch {
+      // audio not ready — selection still works
+    }
   };
 
   useEffect(() => {
