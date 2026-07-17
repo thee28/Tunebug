@@ -443,7 +443,11 @@ function FinalCTA() {
 }
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
-const footerLinks  = ["Privacy", "Terms", "Support", "Careers"];
+const footerLinks  = [
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms",   href: "/terms" },
+  { label: "Support", href: "/help" },
+];
 const socialIcons  = ["public", "groups", "play_circle"];
 
 function Footer() {
@@ -456,14 +460,14 @@ function Footer() {
       style={{ backgroundColor: C.dark, borderColor: "rgba(200,196,212,0.1)" }}>
       <div className="max-w-[1200px] mx-auto px-5 md:px-10 flex flex-col items-center gap-12">
         <div className="flex flex-wrap justify-center gap-4">
-          {footerLinks.map((link) => (
-            <a key={link} href="#"
+          {footerLinks.map(({ label, href }) => (
+            <Link key={label} href={href}
               className="text-xs font-semibold uppercase tracking-widest transition-colors"
               style={{ color: C.muted }}
               onMouseEnter={e => (e.currentTarget.style.color = C.primaryDim)}
               onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
-              {link}
-            </a>
+              {label}
+            </Link>
           ))}
         </div>
         <div className="flex flex-col items-center gap-4">
@@ -471,7 +475,7 @@ function Footer() {
             style={{ color: C.primaryDim, fontFamily: "'Nunito', sans-serif" }}>
             Tunebug
           </span>
-          <p className="text-sm" style={{ color: "rgba(71,69,82,0.6)" }}>© 2024 Tunebug Music. Play the rhythm.</p>
+          <p className="text-sm" style={{ color: "rgba(71,69,82,0.6)" }}>© 2026 Tunebug Music. Play the rhythm.</p>
         </div>
         <div className="flex gap-4">
           {socialIcons.map((icon) => (
