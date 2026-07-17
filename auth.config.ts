@@ -35,6 +35,11 @@ export const authConfig: NextAuthConfig = {
         nextUrl.pathname.startsWith(path)
       );
       if (isProtected && !isLoggedIn) return false;
+      const isAuthPage =
+        nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/login");
+      if (isAuthPage && isLoggedIn) {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
       return true;
     },
   },

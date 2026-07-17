@@ -34,6 +34,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Next refuses two dev servers sharing one distDir (lockfile). E2E runs its
+  // own dev server on :3100, so give it a separate build dir.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   turbopack: {
     root: __dirname,
   },

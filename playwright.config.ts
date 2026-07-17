@@ -32,6 +32,8 @@ export default defineConfig({
       // Must beat any AUTH_URL in .env.local, or auth redirects leave :3100.
       AUTH_URL: "http://localhost:3100",
       NEXTAUTH_URL: "http://localhost:3100",
+      // Own build dir so the lockfile doesn't collide with a :3000 dev server.
+      NEXT_DIST_DIR: ".next-e2e",
     },
   },
 });

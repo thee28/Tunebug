@@ -28,6 +28,17 @@ test.describe("auth and access control", () => {
     await expect(startBadge(page)).toBeVisible({ timeout: 15000 });
   });
 
+  test("logged-in users are redirected from landing and login to the dashboard", async ({ page }) => {
+    const email = uniqueEmail("landing");
+    await signUp(page, email);
+    await completeOnboarding(page);
+
+    for (const path of ["/", "/login"]) {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/dashboard/);
+    }
+  });
+
   test("sign out → protected pages blocked → sign back in → state intact", async ({ page }) => {
     const email = uniqueEmail("signout");
     await signUp(page, email, "Roundtrip Tester");
