@@ -24,6 +24,9 @@ const C = {
 export function SequenceRecallExercise({ config, submitted, onAnswerChange, onComplete }: Props) {
   const [userSeq, setUserSeq] = useState<string[]>([]);
   const [playing, setPlaying] = useState(false);
+  // Explore mode: keys just sound, nothing is recorded — lets learners hunt
+  // for the notes by ear before committing an answer.
+  const [answering, setAnswering] = useState(false);
 
   const playSequence = useCallback(async () => {
     if (playing) return;
@@ -43,7 +46,6 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
 
   const tapKey = (note: string) => {
     if (submitted) return;
-    if (userSeq.length >= config.sequence.length) return;
     try {
       // brief audio feedback for the tap
       (async () => {
@@ -51,6 +53,8 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
         piano.triggerAttackRelease(note, "0.3");
       })();
     } catch {}
+    if (!answering) return; // exploring — sound only
+    if (userSeq.length >= config.sequence.length) return;
     setUserSeq((s) => [...s, note]);
   };
 
@@ -71,6 +75,15 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
     onComplete({ score, passed, correctAnswerText: config.sequence.join(" → ") });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
+
+  const modeBtn = (active: boolean): React.CSSProperties => ({
+    padding: "8px 16px", borderRadius: 10,
+    backgroundColor: active ? C.primary : "transparent",
+    border: `2px solid ${active ? C.primary : C.border}`,
+    color: active ? "white" : C.muted,
+    fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 800,
+    cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
@@ -93,32 +106,48 @@ export function SequenceRecallExercise({ config, submitted, onAnswerChange, onCo
         </span>
       </button>
 
-      {/* Progress dots */}
-      <div style={{ display: "flex", gap: 8 }}>
-        {config.sequence.map((_, i) => {
-          const filled = i < userSeq.length;
-          const correct = filled && userSeq[i] === config.sequence[i];
-          return (
-            <div
-              key={i}
-              style={{
-                width: 16, height: 16, borderRadius: "50%",
-                backgroundColor: filled ? (correct ? C.success : C.error) : C.surfaceHigh,
-                border: `2px solid ${filled ? "transparent" : C.border}`,
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* Explore vs Answer mode */}
+      {!submitted && (
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setAnswering(false)} style={modeBtn(!answering)}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>piano</span>
+            Try the keys
+          </button>
+          <button onClick={() => setAnswering(true)} style={modeBtn(answering)}>
+            Answer
+          </button>
+        </div>
+      )}
+
+      {/* Progress dots — neutral while answering; right/wrong revealed on submit */}
+      {answering && (
+        <div style={{ display: "flex", gap: 8 }}>
+          {config.sequence.map((_, i) => {
+            const filled = i < userSeq.length;
+            const showResult = submitted && filled;
+            const correct = showResult && userSeq[i] === config.sequence[i];
+            return (
+              <div
+                key={i}
+                style={{
+                  width: 16, height: 16, borderRadius: "50%",
+                  backgroundColor: showResult ? (correct ? C.success : C.error) : filled ? C.primary : C.surfaceHigh,
+                  border: `2px solid ${filled ? "transparent" : C.border}`,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <Keyboard
         octaveRange={config.octaveRange}
         focusNotes={config.sequence}
-        disabled={submitted || userSeq.length >= config.sequence.length}
+        disabled={submitted || (answering && userSeq.length >= config.sequence.length)}
         onSelect={tapKey}
       />
 
-      {userSeq.length > 0 && !submitted && userSeq.length < config.sequence.length && (
+      {answering && userSeq.length > 0 && !submitted && (
         <button
           onClick={clear}
           style={{
