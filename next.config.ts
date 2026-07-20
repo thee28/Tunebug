@@ -16,7 +16,10 @@ const csp = [
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // Google OAuth signs in via a form POST that 302-redirects to Google.
+  // Browsers enforce form-action against redirect targets, so the sign-in host
+  // must be allowlisted or the redirect is blocked (stuck on "Redirecting…").
+  "form-action 'self' https://accounts.google.com",
   "object-src 'none'",
   // Force any accidental http:// subresource to upgrade to https.
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
