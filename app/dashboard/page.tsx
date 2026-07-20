@@ -238,6 +238,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <Link href="/help" className="nav-link" style={{ display: "block", padding: "10px 12px", borderRadius: 10, color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
                 Help Center
               </Link>
+              <Link href="/feedback" className="nav-link" style={{ display: "block", padding: "10px 12px", borderRadius: 10, color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
+                Feedback
+              </Link>
             </div>
 
             {/* Log Out */}
