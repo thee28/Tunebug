@@ -137,7 +137,7 @@ export function DailyStageClient({ stage }: Props) {
 
         {mode === "done" && (
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => { router.push("/dashboard"); router.refresh(); }}
             style={{
               padding: "14px 48px", borderRadius: 14,
               backgroundColor: C.primary, boxShadow: `0 4px 0 0 ${C.primaryDark}`,
