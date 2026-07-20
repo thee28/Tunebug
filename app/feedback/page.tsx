@@ -21,23 +21,29 @@ export default function FeedbackPage() {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  const canSend = message.trim().length > 0;
+  const canSend = message.trim().length > 0 && !sending;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSend) return;
-    const typeLabel = TYPES.find(t => t.value === type)?.label ?? "Feedback";
-    const subject = `Tunebug ${typeLabel}`;
-    const bodyLines = [
-      message.trim(),
-      "",
-      "---",
-      email.trim() ? `Reply-to: ${email.trim()}` : "",
-    ].filter(Boolean);
-    const href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
-    window.location.href = href;
-    setSent(true);
+    setSending(true);
+    setError("");
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, message: message.trim(), email: email.trim() }),
+      });
+      if (!res.ok) throw new Error("send failed");
+      setSent(true);
+    } catch {
+      setError(`Couldn't send. Please email us directly at ${SUPPORT_EMAIL}.`);
+    } finally {
+      setSending(false);
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -102,9 +108,8 @@ export default function FeedbackPage() {
               Thanks!
             </h2>
             <p style={{ color: C.muted, fontFamily: "'Nunito', sans-serif", fontSize: 14, lineHeight: 1.6, margin: "0 0 20px" }}>
-              Your email app should have opened with your message ready to send. If it didn&apos;t,
-              email us directly at{" "}
-              <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: C.accent, fontWeight: 700 }}>{SUPPORT_EMAIL}</a>.
+              Your message has been sent to our team. We&apos;ll get back to you
+              {email.trim() ? " by email" : ""} as soon as we can.
             </p>
             <button
               onClick={() => { setSent(false); setMessage(""); }}
@@ -177,6 +182,12 @@ export default function FeedbackPage() {
               />
             </div>
 
+            {error && (
+              <p style={{ color: "#ffb4ab", fontFamily: "'Nunito', sans-serif", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={!canSend}
@@ -188,7 +199,7 @@ export default function FeedbackPage() {
                 cursor: canSend ? "pointer" : "not-allowed",
               }}
             >
-              Submit
+              {sending ? "Sending…" : "Submit"}
             </button>
           </form>
         )}
