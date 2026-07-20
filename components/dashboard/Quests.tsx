@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { QuestProgress } from "@/lib/db/quests";
 import { buildQuestDefs } from "@/lib/quests";
+import { playRewardChime } from "@/lib/audio/reward";
 
 const C = {
   primary: "#574eb1", primaryDark: "#41379b", primaryDim: "#c5c0ff",
@@ -52,6 +53,7 @@ export default function Quests({ questProgress, claimedQuestIds, dailyXpGoal }: 
       });
       if (res.ok || res.status === 409) {
         // 409 = already claimed (e.g. another tab) — reflect that too.
+        if (res.ok) playRewardChime();
         setClaimed(prev => new Set(prev).add(questId));
         // Refresh the server-rendered XP counters in the header/sidebar.
         router.refresh();
