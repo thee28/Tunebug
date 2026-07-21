@@ -88,6 +88,18 @@ export default function LessonPath({ stages, difficulties, onShowSections, onSho
   const [guidebookHovered, setGuidebookHovered] = useState(false);
 
   const [bannerInfo, setBannerInfo] = useState<BannerInfo>(() => {
+    // The current unit is the first "available" one — a completed section is
+    // "complete", so skip past it. Picking the first merely-unlocked unit would
+    // land on a cleared Section 1 after a jump ahead.
+    for (let si = 0; si < stages.length; si++) {
+      for (let ui = 0; ui < stages[si].units.length; ui++) {
+        const unit = stages[si].units[ui];
+        if (unit.status === "available") {
+          return { section: si + 1, unit: ui + 1, unitTitle: unit.title, unitSlug: unit.slug };
+        }
+      }
+    }
+    // Everything complete (or nothing available yet) — fall back to first non-locked.
     for (let si = 0; si < stages.length; si++) {
       for (let ui = 0; ui < stages[si].units.length; ui++) {
         const unit = stages[si].units[ui];

@@ -28,16 +28,30 @@ export async function unlockPriorSections(
   });
   const priorIds = priorLessons.map((l) => l.id);
 
-  const alreadyPassed = await prisma.lessonProgress.findMany({
-    where: { userId, passed: true, lessonId: { in: priorIds } },
-    select: { lessonId: true },
+  // Idempotent: flip any existing not-yet-passed rows to passed, and only
+  // insert rows for lessons with no row at all. LessonProgress has no
+  // (userId, lessonId) unique constraint, so a plain createMany over every
+  // unpassed lesson would pile up duplicate rows on re-jumps/replays.
+  const existing = await prisma.lessonProgress.findMany({
+    where: { userId, lessonId: { in: priorIds } },
+    select: { lessonId: true, passed: true },
   });
-  const passedIds = new Set(alreadyPassed.map((p) => p.lessonId));
-  const toMark = priorIds.filter((id) => !passedIds.has(id));
+  const passedBefore = new Set(existing.filter((e) => e.passed).map((e) => e.lessonId));
+  const hasRow = new Set(existing.map((e) => e.lessonId));
 
-  if (toMark.length > 0) {
+  const toFlip = priorIds.filter((id) => hasRow.has(id) && !passedBefore.has(id));
+  const toCreate = priorIds.filter((id) => !hasRow.has(id));
+  const newlyPassed = toFlip.length + toCreate.length;
+
+  if (toFlip.length > 0) {
+    await prisma.lessonProgress.updateMany({
+      where: { userId, passed: false, lessonId: { in: toFlip } },
+      data: { passed: true, score: 100 },
+    });
+  }
+  if (toCreate.length > 0) {
     await prisma.lessonProgress.createMany({
-      data: toMark.map((lessonId) => ({
+      data: toCreate.map((lessonId) => ({
         userId,
         lessonId,
         score: 100,
@@ -46,11 +60,13 @@ export async function unlockPriorSections(
         xpEarned: 0,
       })),
     });
+  }
+  if (newlyPassed > 0) {
     await updateStreak(userId);
   }
 
   // Non-fatal, same as the progress route.
   const unlocked = await syncAchievements(userId).catch(() => [] as string[]);
 
-  return { skippedLessons: toMark.length, unlockedAchievements: unlocked };
+  return { skippedLessons: newlyPassed, unlockedAchievements: unlocked };
 }
